@@ -165,6 +165,53 @@ export const IconHash = make(
     <path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18" />
   </>
 );
+export const IconUndo = make(
+  <>
+    <path d="M9 14 4 9l5-5" />
+    <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />
+  </>
+);
+export const IconRedo = make(
+  <>
+    <path d="m15 14 5-5-5-5" />
+    <path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13" />
+  </>
+);
+export const IconEraser = make(
+  <>
+    <path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21" />
+    <path d="M22 21H7" />
+    <path d="m5 11 9 9" />
+  </>
+);
+export const IconBold = make(<path d="M6 12h9a4 4 0 0 1 0 8H7a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h7a4 4 0 0 1 0 8" />);
+export const IconItalic = make(<path d="M19 4h-9M14 20H5M15 4 9 20" />);
+export const IconStrikethrough = make(
+  <>
+    <path d="M16 4H9a3 3 0 0 0-2.83 4" />
+    <path d="M14 12a4 4 0 0 1 0 8H6" />
+    <path d="M4 12h16" />
+  </>
+);
+export const IconHighlight = make(
+  <>
+    <path d="m9 11-6 6v3h9l3-3" />
+    <path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4" />
+  </>
+);
+export const IconQuote = make(<path d="M17 6H3M21 12H8M21 18H8M3 12v6" />);
+export const IconCode = make(<path d="m16 18 6-6-6-6M8 6l-6 6 6 6" />);
+export const IconListBullet = make(<path d="M3 6h.01M3 12h.01M3 18h.01M8 6h13M8 12h13M8 18h13" />);
+export const IconListOrdered = make(
+  <path d="M10 6h11M10 12h11M10 18h11M4 6h1v4M4 10h2M6 18H4c0-1 2-2 2-3s-1-1.5-2-1" />
+);
+export const IconTable = make(
+  <>
+    <rect x="3" y="3" width="18" height="18" rx="2" />
+    <path d="M3 9h18M3 15h18M12 3v18" />
+  </>
+);
+export const IconBrackets =make(<path d="M16 3h3v18h-3M8 21H5V3h3" />);
 export const IconCheckSquare = make(
   <>
     <path d="m9 11 3 3L22 4" />

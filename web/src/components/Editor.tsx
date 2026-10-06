@@ -3,6 +3,12 @@ import { useStore, isUnder } from '../store';
 import { filesApi } from '../api';
 import { parseNote, composeNote, type FrontmatterData } from '../frontmatter';
 import Properties from './Properties';
+import EditorToolbar from './EditorToolbar';
+import { EditorState } from '@codemirror/state';
+import { EditorView, drawSelection, keymap } from '@codemirror/view';
+import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
+import { markdown, markdownKeymap, markdownLanguage } from '@codemirror/lang-markdown';
+import { livePreview, HighlightSyntax } from '../livePreview';
 
 interface Props {
   filePath: string;
@@ -34,21 +40,56 @@ export function cancelPendingSave(path: string) {
   }
 }
 
+function createState(doc: string, onChange: (doc: string) => void) {
+  return EditorState.create({
+    doc,
+    extensions: [
+      history(),
+      drawSelection(),
+      EditorView.lineWrapping,
+      markdown({ base: markdownLanguage, extensions: [HighlightSyntax] }),
+      livePreview,
+      keymap.of([...markdownKeymap, ...defaultKeymap, ...historyKeymap, indentWithTab]),
+      EditorView.updateListener.of((u) => {
+        if (u.docChanged) onChange(u.state.doc.toString());
+      }),
+    ],
+  });
+}
+
 export default function Editor({ filePath, content, onContentChange }: Props) {
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const hostRef = useRef<HTMLDivElement>(null);
+  const viewRef = useRef<EditorView | null>(null);
   const setTabDirty = useStore((s) => s.setTabDirty);
   const note = useMemo(() => parseNote(content), [content]);
   // Con un frontmatter inválido se edita el texto completo, sin panel de propiedades
   const body = note.valid ? note.body : content;
 
+  // El listener de CodeMirror se crea una vez: siempre llama al manejador del último render
+  const onBodyChangeRef = useRef<(newBody: string) => void>(() => {});
+  onBodyChangeRef.current = (newBody) => handleBodyChange(newBody);
+
   useEffect(() => {
-    if (textareaRef.current && textareaRef.current.value !== body) {
-      textareaRef.current.value = body;
+    const view = new EditorView({
+      parent: hostRef.current!,
+      state: createState(body, (doc) => onBodyChangeRef.current(doc)),
+    });
+    viewRef.current = view;
+    return () => {
+      view.destroy();
+      viewRef.current = null;
+    };
+  }, []);
+
+  // Contenido cambiado desde fuera (otra nota, propiedades...): estado nuevo, historial limpio
+  useEffect(() => {
+    const view = viewRef.current;
+    if (view && view.state.doc.toString() !== body) {
+      view.setState(createState(body, (doc) => onBodyChangeRef.current(doc)));
     }
   }, [body]);
 
-  const handleBodyChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newBody = e.target.value;
+  const handleBodyChange = (newBody: string) => {
     if (!note.valid) commit(newBody);
     else commit(note.head !== null ? note.head + newBody : composeNote(note.data, newBody));
   };
@@ -75,19 +116,16 @@ export default function Editor({ filePath, content, onContentChange }: Props) {
   };
 
   return (
-    <div className="editor-scroll">
-      {note.valid && (
-        <div className="editor-properties">
-          <Properties data={note.data} editable onChange={handlePropertiesChange} />
-        </div>
-      )}
-      <textarea
-        ref={textareaRef}
-        className="editor-textarea"
-        onChange={handleBodyChange}
-        defaultValue={body}
-        spellCheck="false"
-      />
-    </div>
+    <>
+      <EditorToolbar viewRef={viewRef} />
+      <div className="editor-scroll">
+        {note.valid && (
+          <div className="editor-properties">
+            <Properties data={note.data} editable onChange={handlePropertiesChange} />
+          </div>
+        )}
+        <div ref={hostRef} className="editor-cm" />
+      </div>
+    </>
   );
 }

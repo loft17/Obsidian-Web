@@ -92,7 +92,7 @@ Más detalle sobre el flujo de datos y la API en [ARQUITECTURA.md](00_INFO-APP/A
 - **Frontend:** React 18 + Vite + TypeScript
 - **Estado:** Zustand
 - **Estilos:** CSS propio inspirado en Obsidian
-- **Editor:** textarea (CodeMirror 6 previsto)
+- **Editor:** CodeMirror 6 con vista previa en vivo y barra de formato
 
 ## Solución de problemas
 

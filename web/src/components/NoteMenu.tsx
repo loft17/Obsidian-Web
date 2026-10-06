@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { EditorView } from '@codemirror/view';
 import { useStore } from '../store';
 import { filesApi } from '../api';
 import { flushPendingSave, cancelPendingSave } from './Editor';
@@ -199,11 +200,14 @@ function SearchBar({ onClose }: { onClose: () => void }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const rangesRef = useRef<Range[]>([]);
 
-  const getTextarea = () => document.querySelector<HTMLTextAreaElement>('.editor-textarea');
+  const getEditor = () => {
+    const dom = document.querySelector<HTMLElement>('.editor-cm .cm-editor');
+    return dom ? EditorView.findFromDOM(dom) : null;
+  };
   const getReading = () => document.querySelector<HTMLElement>('.reading-view-inner');
 
-  const textareaMatches = (ta: HTMLTextAreaElement) => {
-    const hay = ta.value.toLowerCase();
+  const editorMatches = (view: EditorView) => {
+    const hay = view.state.doc.toString().toLowerCase();
     const needle = query.toLowerCase();
     const found: number[] = [];
     for (let i = hay.indexOf(needle); needle && i >= 0; i = hay.indexOf(needle, i + needle.length)) found.push(i);
@@ -213,21 +217,20 @@ function SearchBar({ onClose }: { onClose: () => void }) {
   // Mostrar el resultado `i`: seleccionar en el editor o resaltar en la lectura
   const show = (i: number, focusEditor: boolean) => {
     if (editMode) {
-      const ta = getTextarea();
-      if (!ta) return;
-      const found = textareaMatches(ta);
+      const view = getEditor();
+      if (!view) return;
+      const found = editorMatches(view);
       setTotal(found.length);
       if (found.length === 0) return;
       const n = (i + found.length) % found.length;
       setIndex(n);
       const start = found[n];
-      ta.setSelectionRange(start, start + query.length);
-      // Desplazar la línea del resultado al centro del área visible
-      const before = ta.value.substring(0, start);
-      const line = before.split('\n').length - 1;
-      const lineHeight = parseFloat(getComputedStyle(ta).lineHeight) || 20;
-      ta.scrollTop = Math.max(0, line * lineHeight - ta.clientHeight / 2);
-      if (focusEditor) ta.focus({ preventScroll: true });
+      // Seleccionar el resultado y llevar su línea al centro del área visible
+      view.dispatch({
+        selection: { anchor: start, head: start + query.length },
+        effects: EditorView.scrollIntoView(start, { y: 'center' }),
+      });
+      if (focusEditor) view.focus();
     } else {
       const ranges = rangesRef.current;
       if (ranges.length === 0) return;
@@ -253,8 +256,8 @@ function SearchBar({ onClose }: { onClose: () => void }) {
     setIndex(0);
     if (!query) return setTotal(0);
     if (editMode) {
-      const ta = getTextarea();
-      setTotal(ta ? textareaMatches(ta).length : 0);
+      const view = getEditor();
+      setTotal(view ? editorMatches(view).length : 0);
       return;
     }
     const root = getReading();
@@ -298,7 +301,7 @@ function SearchBar({ onClose }: { onClose: () => void }) {
           if (e.key === 'Enter') {
             e.preventDefault();
             // En edición la primera pulsación va al primer resultado; las siguientes avanzan
-            step(e.shiftKey ? -1 : editMode && getTextarea()?.selectionStart === getTextarea()?.selectionEnd ? 0 : 1);
+            step(e.shiftKey ? -1 : editMode && getEditor()?.state.selection.main.empty ? 0 : 1);
           }
         }}
       />
