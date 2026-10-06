@@ -1,6 +1,6 @@
 {
   "name": "obiweb",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Web viewer/editor for Obsidian vaults",
   "type": "module",
   "main": "server/index.js",

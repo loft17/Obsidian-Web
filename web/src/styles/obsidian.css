@@ -682,12 +682,21 @@ a:hover {
   padding: 14px 16px;
   border-radius: 6px;
   overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   margin-bottom: 12px;
 }
 
 .reading-view pre code {
   background: none;
   padding: 0;
+  white-space: inherit;
+}
+
+.reading-view hr {
+  border: none;
+  border-top: 1px solid var(--background-modifier-border, rgba(128, 128, 128, 0.3));
+  margin: 28px 0;
 }
 
 .reading-view .code-block {
