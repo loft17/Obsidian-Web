@@ -527,6 +527,54 @@ a:hover {
   padding: 0;
 }
 
+.reading-view .code-block {
+  background-color: var(--background-secondary);
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.reading-view .code-block pre {
+  margin: 0;
+  padding-top: 4px;
+  background: none;
+}
+
+.reading-view .code-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px 0 16px;
+}
+
+.reading-view .code-block-lang {
+  font-family: 'Consolas', 'Menlo', monospace;
+  font-size: 11px;
+  color: var(--text-faint);
+  text-transform: lowercase;
+}
+
+.reading-view .code-block-copy {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 6px;
+  background-color: var(--interactive-normal);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.reading-view .code-block-copy:hover {
+  background-color: var(--interactive-hover);
+  color: var(--text-normal);
+}
+
+.reading-view .code-block-copy.copied {
+  color: var(--color-green);
+}
+
 .reading-view blockquote {
   border-left: 3px solid var(--interactive-accent);
   padding-left: 12px;
