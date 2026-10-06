@@ -1,4 +1,4 @@
-﻿:root {
+:root {
   --background-primary: #1a1a1a;
   --background-secondary: #1e1e1e;
   --background-secondary-alt: #252525;
@@ -419,13 +419,16 @@ a:hover {
   line-height: 1.3;
 }
 
+/* Properties (frontmatter) */
 .properties {
-  margin-bottom: 8px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .properties-heading {
   font-weight: 600;
-  font-size: 14px;
+  font-size: 16px;
   margin-bottom: 8px;
 }
 
@@ -433,40 +436,199 @@ a:hover {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  padding: 3px 0;
-  font-size: 13px;
+  padding: 3px 6px;
+  margin: 0 -6px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+}
+
+.property-row.editable:focus-within {
+  border-color: var(--background-modifier-border);
 }
 
 .property-key {
-  width: 120px;
-  min-width: 120px;
+  flex: 0 0 160px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  min-height: 28px;
+  color: var(--text-muted);
+}
+
+.property-key svg {
+  flex: none;
   color: var(--text-faint);
 }
 
 .property-value {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  min-height: 28px;
   color: var(--text-normal);
 }
 
-.tags {
+.property-input,
+.property-new-key {
+  width: 100%;
+  padding: 2px 4px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-normal);
+  font: inherit;
+  color-scheme: dark;
+}
+
+.property-input:hover {
+  background: var(--interactive-normal);
+}
+
+.property-input:focus,
+.property-new-key:focus {
+  outline: none;
+  background: var(--interactive-normal);
+}
+
+.property-remove {
+  flex: none;
   display: flex;
-  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+  opacity: 0;
+}
+
+.property-row:hover .property-remove,
+.property-row:focus-within .property-remove {
+  opacity: 1;
+}
+
+.property-remove:hover {
+  color: var(--color-red);
+}
+
+.property-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+  padding: 4px 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.property-add:hover {
+  color: var(--text-normal);
+}
+
+.property-new-key {
+  margin-top: 2px;
+}
+
+/* Tags (pills) and aliases (plain text) */
+.chip-list {
+  display: flex;
   flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
 }
 
-.tag {
-  display: inline-block;
-  background-color: rgba(139, 127, 216, 0.18);
-  color: var(--interactive-accent);
-  padding: 0 8px;
-  border-radius: 12px;
-  font-size: 12px;
-  line-height: 20px;
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
 }
 
+.chip-pill {
+  padding: 0 4px 0 9px;
+  border-radius: 14px;
+  background-color: rgba(139, 127, 216, 0.2);
+  color: var(--text-accent);
+  line-height: 22px;
+}
+
+.chip-remove {
+  display: flex;
+  align-items: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+}
+
+.chip-pill .chip-remove {
+  color: var(--text-accent);
+}
+
+.chip-remove:hover {
+  color: var(--text-normal);
+}
+
+.chip-input {
+  min-width: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-normal);
+  font: inherit;
+}
+
+.chip-input:focus {
+  outline: none;
+}
+
+/* Dates */
+.date-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.date-value svg {
+  color: var(--text-faint);
+}
+
+.date-sep {
+  color: var(--text-faint);
+}
+
+/* Editor with properties */
+.editor-scroll {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.editor-properties {
+  flex: none;
+  padding: 16px 16px 0;
+}
+
+.editor-textarea {
+  flex: 1;
+  min-height: 240px;
+  padding: 16px;
+  border: none;
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  resize: none;
+}
 .reading-view-content {
   padding-top: 8px;
 }

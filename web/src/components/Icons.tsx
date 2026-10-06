@@ -141,3 +141,26 @@ export const IconMenu = make(
     <circle cx="12" cy="19" r="1" />
   </>
 );
+export const IconLink = make(
+  <>
+    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+  </>
+);
+export const IconAliases = make(
+  <>
+    <path d="m15 14 5-5-5-5" />
+    <path d="M4 20v-7a4 4 0 0 1 4-4h12" />
+  </>
+);
+export const IconHash = make(
+  <>
+    <path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18" />
+  </>
+);
+export const IconCheckSquare = make(
+  <>
+    <path d="m9 11 3 3L22 4" />
+    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+  </>
+);

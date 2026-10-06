@@ -1,6 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useStore, isUnder } from '../store';
 import { filesApi } from '../api';
+import { parseNote, composeNote, type FrontmatterData } from '../frontmatter';
+import Properties from './Properties';
 
 interface Props {
   filePath: string;
@@ -35,15 +37,25 @@ export function cancelPendingSave(path: string) {
 export default function Editor({ filePath, content, onContentChange }: Props) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const setTabDirty = useStore((s) => s.setTabDirty);
+  const note = useMemo(() => parseNote(content), [content]);
+  // Con un frontmatter inválido se edita el texto completo, sin panel de propiedades
+  const body = note.valid ? note.body : content;
 
   useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.value = content;
+    if (textareaRef.current && textareaRef.current.value !== body) {
+      textareaRef.current.value = body;
     }
-  }, [content]);
+  }, [body]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newContent = e.target.value;
+  const handleBodyChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newBody = e.target.value;
+    if (!note.valid) commit(newBody);
+    else commit(note.head !== null ? note.head + newBody : composeNote(note.data, newBody));
+  };
+
+  const handlePropertiesChange = (data: FrontmatterData) => commit(composeNote(data, body));
+
+  const commit = (newContent: string) => {
     onContentChange(newContent);
     setTabDirty(filePath, true);
 
@@ -63,23 +75,19 @@ export default function Editor({ filePath, content, onContentChange }: Props) {
   };
 
   return (
-    <textarea
-      ref={textareaRef}
-      style={{
-        flex: 1,
-        padding: '16px',
-        border: 'none',
-        background: 'var(--background-primary)',
-        color: 'var(--text-normal)',
-        fontFamily: "'Monaco', 'Menlo', monospace",
-        fontSize: '13px',
-        lineHeight: '1.6',
-        resize: 'none',
-        overflow: 'auto',
-      }}
-      onChange={handleChange}
-      defaultValue={content}
-      spellCheck="false"
-    />
+    <div className="editor-scroll">
+      {note.valid && (
+        <div className="editor-properties">
+          <Properties data={note.data} editable onChange={handlePropertiesChange} />
+        </div>
+      )}
+      <textarea
+        ref={textareaRef}
+        className="editor-textarea"
+        onChange={handleBodyChange}
+        defaultValue={body}
+        spellCheck="false"
+      />
+    </div>
   );
 }

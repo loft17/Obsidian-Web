@@ -1,7 +1,7 @@
 import { useMemo, type MouseEvent } from 'react';
 import markdownIt from 'markdown-it';
-import matter from 'gray-matter';
-import { IconTag, IconCalendar, IconText } from './Icons';
+import { parseNote } from '../frontmatter';
+import Properties from './Properties';
 
 const md = markdownIt({
   html: false,
@@ -65,23 +65,8 @@ interface Props {
   filePath?: string;
 }
 
-function formatValue(value: unknown): string {
-  if (value instanceof Date) {
-    const d = value;
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}/${d.getUTCFullYear()}`;
-  }
-  return String(value);
-}
-
 export default function ReadingView({ content, filePath }: Props) {
-  const { data: frontmatter, content: markdownContent } = useMemo(() => {
-    try {
-      return matter(content);
-    } catch {
-      return { data: {} as Record<string, unknown>, content };
-    }
-  }, [content]);
+  const { data: frontmatter, body: markdownContent } = useMemo(() => parseNote(content), [content]);
 
   const html = useMemo(() => {
     let text = markdownContent;
@@ -90,47 +75,15 @@ export default function ReadingView({ content, filePath }: Props) {
     return md.render(text);
   }, [markdownContent]);
 
-  const entries = Object.entries(frontmatter);
   const fileName = (filePath?.split('/').pop() || 'Untitled').replace(/\.md$/i, '');
   const title = (frontmatter.title as string) || fileName;
-
-  const iconFor = (key: string) => {
-    if (key === 'tags') return <IconTag size={16} />;
-    if (key === 'date' || key === 'fecha') return <IconCalendar size={16} />;
-    return <IconText size={16} />;
-  };
 
   return (
     <div className="reading-view">
       <div className="reading-view-inner">
         <h1 className="reading-view-title">{title}</h1>
 
-        {entries.length > 0 && (
-          <div className="properties">
-            <div className="properties-heading">Propiedades</div>
-            {entries.map(([key, value]) => (
-              <div key={key} className="property-row">
-                <span className="property-key">
-                  {iconFor(key)}
-                  {key}
-                </span>
-                <span className="property-value">
-                  {key === 'tags' ? (
-                    <span className="tags">
-                      {(Array.isArray(value) ? value : [value]).map((tag) => (
-                        <span key={String(tag)} className="tag">{String(tag)}</span>
-                      ))}
-                    </span>
-                  ) : Array.isArray(value) ? (
-                    value.map(formatValue).join(', ')
-                  ) : (
-                    formatValue(value)
-                  )}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
+        <Properties data={frontmatter} />
 
         <div
           className="reading-view-content"
