@@ -1,0 +1,59 @@
+import { useState } from 'react';
+import { authApi } from '../api';
+
+interface Props {
+  onComplete: () => void;
+}
+
+export default function Login({ onComplete }: Props) {
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (!password) {
+      setError('Contraseña requerida');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await authApi.login(password);
+      onComplete();
+    } catch (err: any) {
+      setError(err?.error || 'Contraseña incorrecta');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="auth-screen">
+      <div className="auth-form">
+        <h1>Obisidan Web</h1>
+        <p style={{ fontSize: '12px', color: 'var(--text-faint)', marginBottom: '16px' }}>
+          Ingresa tu contraseña
+        </p>
+
+        {error && <div className="error">{error}</div>}
+
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <input
+            type="password"
+            placeholder="Contraseña"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={loading}
+            autoFocus
+          />
+          <button type="submit" disabled={loading}>
+            {loading ? 'Verificando...' : 'Entrar'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
