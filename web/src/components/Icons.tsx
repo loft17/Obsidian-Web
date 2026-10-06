@@ -81,6 +81,13 @@ export const IconFile = make(
     <path d="M14 2v6h6" />
   </>
 );
+export const IconUserCircle = make(
+  <>
+    <circle cx="12" cy="12" r="10" />
+    <circle cx="12" cy="10" r="3" />
+    <path d="M7 20.7a5 5 0 0 1 10 0" />
+  </>
+);
 export const IconClose = make(
   <>
     <path d="M18 6 6 18" />

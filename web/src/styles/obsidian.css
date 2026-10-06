@@ -1,4 +1,4 @@
-:root {
+﻿:root {
   --background-primary: #1a1a1a;
   --background-secondary: #1e1e1e;
   --background-secondary-alt: #252525;
@@ -338,6 +338,7 @@ a:hover {
 
 .breadcrumb {
   position: relative;
+  z-index: 10;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -977,4 +978,197 @@ a:hover {
   height: 1px;
   background-color: var(--background-modifier-border);
   margin: 4px 0;
+}
+
+.search-bar {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 360px;
+  padding: 6px;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  z-index: 999;
+}
+
+.search-bar input {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 8px;
+}
+
+.search-bar button {
+  padding: 4px 8px;
+  background-color: var(--interactive-normal);
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-normal);
+}
+
+.search-bar button:hover {
+  background-color: var(--interactive-hover);
+}
+
+.search-count {
+  min-width: 36px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+::highlight(note-search) {
+  background-color: rgba(221, 184, 82, 0.35);
+  color: inherit;
+}
+
+::highlight(note-search-current) {
+  background-color: rgba(221, 184, 82, 0.9);
+  color: #000;
+}
+
+/* Settings modal */
+.settings-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(900px, 92vw);
+  height: min(640px, 85vh);
+  background-color: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 10px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+}
+
+.settings-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px 8px 16px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.settings-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.settings-sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  padding: 12px;
+  overflow-y: auto;
+  background-color: var(--background-secondary);
+  border-right: 1px solid var(--background-modifier-border);
+}
+
+.settings-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  margin-bottom: 16px;
+  color: var(--text-muted);
+  background-color: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+}
+
+.settings-search input {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-normal);
+  background: none;
+  border: none;
+  outline: none;
+  font-size: 13px;
+}
+
+.settings-nav-title {
+  padding: 4px 10px;
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.settings-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.settings-nav-item:hover,
+.settings-nav-item.active {
+  background-color: var(--background-tertiary);
+  color: var(--text-normal);
+}
+
+.settings-content {
+  flex: 1;
+  padding: 24px 32px;
+  overflow-y: auto;
+}
+
+.settings-group {
+  padding: 4px 18px;
+  background-color: var(--background-secondary);
+  border-radius: 10px;
+}
+
+.setting-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.setting-item:last-child {
+  border-bottom: none;
+}
+
+.setting-item select {
+  appearance: none;
+  padding: 6px 30px 6px 12px;
+  background-color: var(--background-tertiary);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  color: var(--text-normal);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.setting-item select:hover {
+  border-color: var(--text-muted);
+}
+
+.setting-item select:focus {
+  outline: none;
+  border-color: var(--interactive-accent);
+}
+
+.setting-item select option {
+  background-color: var(--background-secondary);
+  color: var(--text-normal);
+}
+
+.setting-name {
+  color: var(--text-normal);
+}
+
+.setting-desc {
+  font-size: 12px;
+  color: var(--text-muted);
 }

@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import { useStore } from '../store';
+import SettingsModal from './SettingsModal';
 import { authApi } from '../api';
 import { IconSidebar, IconFolderOpen, IconSearch, IconBookmark, IconSettings, IconLogout } from './Icons';
 
 export default function Ribbon() {
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const sidebarOpen = useStore((s) => s.sidebarOpen);
   const toggleSidebar = useStore((s) => s.toggleSidebar);
 
@@ -29,13 +32,14 @@ export default function Ribbon() {
       </div>
 
       <div className="ribbon-group bottom">
-        <div className="ribbon-item" title="Configuración" onClick={() => console.log('TODO: settings')}>
+        <div className="ribbon-item" title="Configuración" onClick={() => setSettingsOpen(true)}>
           <IconSettings />
         </div>
         <div className="ribbon-item" title="Salir" onClick={handleLogout}>
           <IconLogout />
         </div>
       </div>
+      {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
     </div>
   );
 }

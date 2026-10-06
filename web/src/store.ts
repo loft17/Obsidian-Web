@@ -25,6 +25,8 @@ interface AppStore {
   setTabDirty: (path: string, isDirty: boolean) => void;
   editMode: boolean;
   setEditMode: (mode: boolean) => void;
+  defaultEditMode: boolean;
+  setDefaultEditMode: (mode: boolean) => void;
   expandedFolders: Set<string>;
   toggleFolder: (path: string) => void;
   collapseAll: () => void;
@@ -34,6 +36,15 @@ interface AppStore {
 
 // true si `path` es `base` o está dentro de la carpeta `base`
 export const isUnder = (path: string, base: string) => path === base || path.startsWith(base + '/');
+
+const DEFAULT_MODE_KEY = 'defaultNoteMode';
+const initialDefaultEditMode = (() => {
+  try {
+    return localStorage.getItem(DEFAULT_MODE_KEY) !== 'view';
+  } catch {
+    return true;
+  }
+})();
 
 export const useStore =create<AppStore>((set) => ({
   tree: [],
@@ -50,11 +61,12 @@ export const useStore =create<AppStore>((set) => ({
       if (state.tabs.find((t) => t.path === path)) return { activeTab: path };
       const tab = { path, name, isDirty: false };
       const idx = state.tabs.findIndex((t) => t.path === state.activeTab);
+      const editMode = state.defaultEditMode;
       // Sin pestaña activa: crear una; si no, reemplazar la activa
-      if (idx < 0) return { tabs: [...state.tabs, tab], activeTab: path };
+      if (idx < 0) return { tabs: [...state.tabs, tab], activeTab: path, editMode };
       const tabs = [...state.tabs];
       tabs[idx] = tab;
-      return { tabs, activeTab: path };
+      return { tabs, activeTab: path, editMode };
     }),
   // Si la ruta es una carpeta, afecta también a todo lo que contiene
   renameTab: (oldPath, newPath) =>
@@ -81,8 +93,17 @@ export const useStore =create<AppStore>((set) => ({
     set((state) => ({
       tabs: state.tabs.map((t) => (t.path === path ? { ...t, isDirty } : t)),
     })),
-  editMode: true,
+  editMode: initialDefaultEditMode,
   setEditMode: (mode) => set({ editMode: mode }),
+  defaultEditMode: initialDefaultEditMode,
+  setDefaultEditMode: (mode) => {
+    try {
+      localStorage.setItem(DEFAULT_MODE_KEY, mode ? 'edit' : 'view');
+    } catch {
+      // almacenamiento no disponible: la preferencia solo dura la sesión
+    }
+    set({ defaultEditMode: mode });
+  },
   expandedFolders: new Set(),
   collapseAll: () => set({ expandedFolders: new Set() }),
   sidebarOpen: true,

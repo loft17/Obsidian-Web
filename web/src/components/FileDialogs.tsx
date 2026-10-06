@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 
 function useEscape(onClose: () => void) {
   useEffect(() => {
@@ -20,14 +21,16 @@ function DialogShell({
   children: React.ReactNode;
 }) {
   useEscape(onClose);
-  return (
+  // Portal: un ancestro con `transform` rompería el `position: fixed` del overlay
+  return createPortal(
     <div className="modal-overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal file-dialog">
         <div className="file-dialog-title">{title}</div>
         {children}
         {error && <div className="error">{error}</div>}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
