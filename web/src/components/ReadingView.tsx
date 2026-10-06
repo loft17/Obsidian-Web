@@ -2,6 +2,7 @@ import { useMemo, type MouseEvent } from 'react';
 import markdownIt from 'markdown-it';
 import { parseNote } from '../frontmatter';
 import Properties from './Properties';
+import { useStore } from '../store';
 
 const md = markdownIt({
   html: false,
@@ -25,6 +26,27 @@ md.inline.ruler.before('emphasis', 'mark', (state, silent) => {
     state.push('mark_close', 'mark', -1);
   }
   state.pos = end + 2;
+  return true;
+});
+
+// Etiquetas en línea al estilo Obsidian: #etiqueta (no solo números; admite anidadas con /)
+const INLINE_TAG = /^#([\p{L}\p{N}_\-/]*[\p{L}_\-/][\p{L}\p{N}_\-/]*)/u;
+
+md.inline.ruler.before('emphasis', 'tag', (state, silent) => {
+  const start = state.pos;
+  if (state.src.charCodeAt(start) !== 0x23 /* # */) return false;
+  if (start > 0 && !/\s/.test(state.src[start - 1])) return false;
+  const m = INLINE_TAG.exec(state.src.slice(start, state.posMax));
+  if (!m) return false;
+  if (!silent) {
+    const open = state.push('tag_open', 'a', 1);
+    open.attrSet('href', '#');
+    open.attrSet('class', 'tag');
+    open.attrSet('data-tag', m[1]);
+    state.push('text', '', 0).content = m[0];
+    state.push('tag_close', 'a', -1);
+  }
+  state.pos = start + m[0].length;
   return true;
 });
 
@@ -142,6 +164,12 @@ async function copyText(text: string) {
 }
 
 function handleContentClick(e: MouseEvent<HTMLDivElement>) {
+  const tag = (e.target as HTMLElement).closest<HTMLElement>('a.tag');
+  if (tag) {
+    e.preventDefault();
+    useStore.getState().searchTag(tag.dataset.tag ?? '');
+    return;
+  }
   const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('.code-block-copy');
   if (!btn) return;
   const code = btn.closest('.code-block')?.querySelector('pre code');
@@ -163,6 +191,7 @@ interface Props {
 
 export default function ReadingView({ content, filePath }: Props) {
   const { data: frontmatter, body: markdownContent } = useMemo(() => parseNote(content), [content]);
+  const searchTag = useStore((s) => s.searchTag);
 
   const html = useMemo(() => {
     let text = markdownContent;
@@ -179,7 +208,7 @@ export default function ReadingView({ content, filePath }: Props) {
       <div className="reading-view-inner">
         <h1 className="reading-view-title">{title}</h1>
 
-        <Properties data={frontmatter} />
+        <Properties data={frontmatter} onTagClick={searchTag} />
 
         <div
           className="reading-view-content"

@@ -3,9 +3,6 @@ import { useStore, hiddenMatchers, isHiddenPath } from '../store';
 import { searchApi, SearchResult, SearchMatch } from '../api';
 import { IconChevronRight, IconChevronDown, IconClose, IconSearch } from './Icons';
 
-// Se conserva la última búsqueda al cambiar entre vistas de la barra lateral
-let lastQuery = '';
-
 function Highlighted({ text, start, length }: Pick<SearchMatch, 'text' | 'start' | 'length'>) {
   return (
     <>
@@ -27,14 +24,14 @@ export default function SearchPanel() {
   const hiddenFolders = useStore((s) => s.hiddenFolders);
   const activeTab = useStore((s) => s.activeTab);
   const openFile = useStore((s) => s.openFile);
-  const [query, setQuery] = useState(lastQuery);
+  const query = useStore((s) => s.searchQuery);
+  const setQuery = useStore((s) => s.setSearchQuery);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    lastQuery = query;
     const q = query.trim();
     if (!q) {
       setResults([]);

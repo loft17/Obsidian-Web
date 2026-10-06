@@ -16,6 +16,7 @@ interface Props {
   data: FrontmatterData;
   editable?: boolean;
   onChange?: (data: FrontmatterData) => void;
+  onTagClick?: (tag: string) => void;
 }
 
 type Kind = 'tags' | 'list' | 'date' | 'number' | 'checkbox' | 'text';
@@ -51,11 +52,13 @@ function ChipList({
   pill,
   editable,
   onChange,
+  onItemClick,
 }: {
   items: string[];
   pill: boolean;
   editable: boolean;
   onChange: (items: string[]) => void;
+  onItemClick?: (item: string) => void;
 }) {
   const [draft, setDraft] = useState('');
 
@@ -77,7 +80,12 @@ function ChipList({
   return (
     <div className="chip-list">
       {items.map((item, i) => (
-        <span key={`${item}-${i}`} className={pill ? 'chip chip-pill' : 'chip'}>
+        <span
+          key={`${item}-${i}`}
+          className={`${pill ? 'chip chip-pill' : 'chip'}${onItemClick ? ' clickable' : ''}`}
+          title={onItemClick ? `Buscar notas con #${item}` : undefined}
+          onClick={onItemClick && (() => onItemClick(item))}
+        >
           {item}
           {editable && (
             <button
@@ -122,7 +130,7 @@ function DateText({ value }: { value: string }) {
   );
 }
 
-export default function Properties({ data, editable = false, onChange }: Props) {
+export default function Properties({ data, editable = false, onChange, onTagClick }: Props) {
   const [adding, setAdding] = useState(false);
   const [newKey, setNewKey] = useState('');
 
@@ -167,6 +175,7 @@ export default function Properties({ data, editable = false, onChange }: Props) 
                   pill={kind === 'tags'}
                   editable={editable}
                   onChange={(items) => setValue(key, items)}
+                  onItemClick={kind === 'tags' && !editable ? onTagClick : undefined}
                 />
               ) : kind === 'checkbox' ? (
                 <input

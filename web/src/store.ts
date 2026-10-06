@@ -36,6 +36,9 @@ interface AppStore {
   toggleSidebar: () => void;
   sidebarView: SidebarView;
   showSidebarView: (view: SidebarView) => void;
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
+  searchTag: (tag: string) => void;
 }
 
 export type SidebarView = 'files' | 'search';
@@ -155,6 +158,11 @@ export const useStore =create<AppStore>((set) => ({
         ? { sidebarOpen: false }
         : { sidebarOpen: true, sidebarView: view }
     ),
+  // Se conserva la última búsqueda al cambiar entre vistas de la barra lateral
+  searchQuery: '',
+  setSearchQuery: (query) => set({ searchQuery: query }),
+  searchTag: (tag) =>
+    set({ sidebarOpen: true, sidebarView: 'search', searchQuery: `tag:${tag.replace(/^#/, '')}` }),
   toggleFolder: (path) =>
     set((state) => {
       const expanded = new Set(state.expandedFolders);
