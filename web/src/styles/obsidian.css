@@ -756,6 +756,26 @@ a:hover {
   color: var(--interactive-accent);
 }
 
+.reading-view table {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin-bottom: 12px;
+}
+
+.reading-view th,
+.reading-view td {
+  border: 1px solid var(--background-modifier-border);
+  padding: 4px 10px;
+  text-align: left;
+}
+
+.reading-view th {
+  font-weight: 700;
+}
+
 /* Status bar */
 .status-bar {
   height: 26px;
@@ -1164,6 +1184,39 @@ a:hover {
   color: var(--text-normal);
 }
 
+.setting-input {
+  flex: 1;
+  padding: 6px 10px;
+  background-color: var(--background-tertiary);
+  color: var(--text-normal);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+}
+
+.setting-input:focus {
+  outline: none;
+  border-color: var(--interactive-accent);
+}
+
+.setting-textarea {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0 0 14px;
+  padding: 8px 10px;
+  resize: vertical;
+  background-color: var(--background-tertiary);
+  color: var(--text-normal);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  font-family: var(--font-monospace, monospace);
+  font-size: 13px;
+}
+
+.setting-textarea:focus {
+  outline: none;
+  border-color: var(--interactive-accent);
+}
+
 .setting-name {
   color: var(--text-normal);
 }
@@ -1171,4 +1224,19 @@ a:hover {
 .setting-desc {
   font-size: 12px;
   color: var(--text-muted);
+}
+
+.shortcut-keys {
+  white-space: nowrap;
+  color: var(--text-faint);
+}
+
+.shortcut-keys kbd {
+  padding: 2px 6px;
+  font-family: inherit;
+  font-size: 12px;
+  background-color: var(--background-secondary-alt);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  color: var(--text-normal);
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useStore, isUnder } from '../store';
+import { useStore, isUnder, hiddenMatchers } from '../store';
 import { filesApi } from '../api';
 import { flushPendingSave, cancelPendingSave } from './Editor';
 import { RenameDialog, MoveDialog, ConfirmDialog } from './FileDialogs';
@@ -102,6 +102,7 @@ function FileTreeNode({
 
 export default function FileExplorer() {
   const tree = useStore((s) => s.tree);
+  const hiddenFolders = useStore((s) => s.hiddenFolders);
   const toggleFolder = useStore((s) => s.toggleFolder);
   const collapseAll = useStore((s) => s.collapseAll);
   const expandedFolders = useStore((s) => s.expandedFolders);
@@ -220,7 +221,15 @@ export default function FileExplorer() {
     };
   }, [menu]);
 
-  const { roots, grouped } = buildTree(tree);
+  const matchers = hiddenMatchers(hiddenFolders);
+  const visibleTree = matchers.length
+    ? tree.filter((item) => {
+        const segments = item.path.split('/');
+        const folders = item.type === 'folder' ? segments : segments.slice(0, -1);
+        return !folders.some((name) => matchers.some((re) => re.test(name)));
+      })
+    : tree;
+  const { roots, grouped } = buildTree(visibleTree);
 
   return (
     <>

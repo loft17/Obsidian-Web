@@ -8,6 +8,7 @@ import setupRoutes from './routes/setup.js';
 import authRoutes from './routes/auth.js';
 import filesRoutes from './routes/files.js';
 import searchRoutes from './routes/search.js';
+import settingsRoutes from './routes/settings.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -74,6 +75,7 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use('/api/settings', settingsRoutes(dataDir, getConfig));
 app.use('/api/files', filesRoutes(dataDir, getConfig));
 app.use('/api/search', searchRoutes(dataDir, getConfig));
 

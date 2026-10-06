@@ -41,6 +41,19 @@ export default function NoteMenu() {
     setDialog(null);
   }, [activeTab]);
 
+  // Ctrl/Cmd+F abre la búsqueda en el documento en lugar de la del navegador
+  useEffect(() => {
+    if (!activeTab) return;
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [activeTab]);
+
   if (!activeTab) return null;
 
   const openDialog = (kind: NonNullable<typeof dialog>) => {

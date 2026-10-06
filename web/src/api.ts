@@ -97,6 +97,23 @@ export const filesApi = {
   },
 };
 
+export const settingsApi = {
+  getVault: async (): Promise<{ vaultPath: string }> => {
+    const res = await fetch(`${API_URL}/settings/vault`);
+    if (!res.ok) throw new Error((await res.json()).error);
+    return res.json();
+  },
+  setVault: async (vaultPath: string): Promise<{ vaultPath: string }> => {
+    const res = await fetch(`${API_URL}/settings/vault`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ vaultPath }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error);
+    return res.json();
+  },
+};
+
 export const searchApi = {
   search: async (q: string) => {
     const res = await fetch(`${API_URL}/search?q=${encodeURIComponent(q)}`);

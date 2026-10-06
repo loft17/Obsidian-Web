@@ -13,6 +13,8 @@ interface Tab {
 }
 
 interface AppStore {
+  hiddenFolders: string;
+  setHiddenFolders: (value: string) => void;
   tree: TreeItem[];
   setTree: (tree: TreeItem[]) => void;
   tabs: Tab[];
@@ -46,7 +48,33 @@ const initialDefaultEditMode = (() => {
   }
 })();
 
+const HIDDEN_KEY = 'hiddenFolders';
+const initialHiddenFolders = (() => {
+  try {
+    return localStorage.getItem(HIDDEN_KEY) ?? '';
+  } catch {
+    return '';
+  }
+})();
+
+// Un patrón por línea; `*` es comodín. Se compara con el nombre de cada carpeta (sin distinguir mayúsculas)
+export const hiddenMatchers = (patterns: string): RegExp[] =>
+  patterns
+    .split('\n')
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map((p) => new RegExp('^' + p.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$', 'i'));
+
 export const useStore =create<AppStore>((set) => ({
+  hiddenFolders: initialHiddenFolders,
+  setHiddenFolders: (value) => {
+    try {
+      localStorage.setItem(HIDDEN_KEY, value);
+    } catch {
+      // almacenamiento no disponible: la preferencia solo dura la sesión
+    }
+    set({ hiddenFolders: value });
+  },
   tree: [],
   setTree: (tree) => set({ tree }),
   tabs: [],

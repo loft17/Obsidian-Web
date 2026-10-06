@@ -4,7 +4,8 @@ import { filesApi } from '../api';
 import Ribbon from './Ribbon';
 import FileExplorer from './FileExplorer';
 import Tabs from './Tabs';
-import Editor from './Editor';
+import Editor, { flushPendingSave } from './Editor';
+import { QuickOpenDialog } from './FileDialogs';
 import ReadingView from './ReadingView';
 import StatusBar from './StatusBar';
 import NoteMenu from './NoteMenu';
@@ -17,6 +18,38 @@ export default function MainLayout() {
   const sidebarOpen = useStore((s) => s.sidebarOpen);
   const [fileContent, setFileContent] = useState('');
   const [loading, setLoading] = useState(false);
+  const [quickOpen, setQuickOpen] = useState(false);
+  const tree = useStore((s) => s.tree);
+  const openFile = useStore((s) => s.openFile);
+
+  // Atajos globales: Ctrl/Cmd+P abrir nota, +S guardar, +E editar/leer, +B barra lateral
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey) return;
+      const { activeTab, editMode, setEditMode, toggleSidebar } = useStore.getState();
+      switch (e.key.toLowerCase()) {
+        case 'p':
+          e.preventDefault();
+          setQuickOpen(true);
+          break;
+        case 's':
+          e.preventDefault();
+          if (activeTab) flushPendingSave(activeTab);
+          break;
+        case 'e':
+          if (!activeTab) return;
+          e.preventDefault();
+          setEditMode(!editMode);
+          break;
+        case 'b':
+          e.preventDefault();
+          toggleSidebar();
+          break;
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
 
   useEffect(() => {
     if (!activeTab) return;
@@ -90,6 +123,13 @@ export default function MainLayout() {
           <StatusBar content={fileContent} />
         </div>
       </div>
+      {quickOpen && (
+        <QuickOpenDialog
+          files={tree.filter((i) => i.type === 'file' && /\.md$/i.test(i.path))}
+          onSelect={openFile}
+          onClose={() => setQuickOpen(false)}
+        />
+      )}
     </div>
   );
 }

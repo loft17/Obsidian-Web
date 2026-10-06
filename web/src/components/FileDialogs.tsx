@@ -176,6 +176,71 @@ export function MoveDialog({
   );
 }
 
+export function QuickOpenDialog({
+  files,
+  onSelect,
+  onClose,
+}: {
+  files: { path: string; name: string }[];
+  onSelect: (path: string, name: string) => void;
+  onClose: () => void;
+}) {
+  const [filter, setFilter] = useState('');
+  const [selected, setSelected] = useState(0);
+
+  const needle = filter.toLowerCase();
+  const options = files.filter((f) => f.path.toLowerCase().includes(needle)).slice(0, 50);
+  const current = Math.min(selected, Math.max(options.length - 1, 0));
+
+  const choose = (i: number) => {
+    const file = options[i];
+    if (!file) return;
+    onSelect(file.path, file.name);
+    onClose();
+  };
+
+  return (
+    <DialogShell title="Abrir nota" onClose={onClose}>
+      <input
+        autoFocus
+        className="file-dialog-input"
+        placeholder="Buscar nota..."
+        value={filter}
+        onChange={(e) => {
+          setFilter(e.target.value);
+          setSelected(0);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            choose(current);
+          } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            setSelected(Math.min(current + 1, options.length - 1));
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            setSelected(Math.max(current - 1, 0));
+          }
+        }}
+      />
+      <div className="file-dialog-list">
+        {options.length === 0 && <div className="dropdown-empty">No hay notas que coincidan</div>}
+        {options.map((f, i) => (
+          <div
+            key={f.path}
+            ref={(el) => i === current && el?.scrollIntoView({ block: 'nearest' })}
+            className="dropdown-item"
+            style={i === current ? { background: 'var(--interactive-hover)' } : undefined}
+            onClick={() => choose(i)}
+          >
+            {f.path.replace(/\.md$/i, '')}
+          </div>
+        ))}
+      </div>
+    </DialogShell>
+  );
+}
+
 export function ConfirmDialog({
   title,
   message,
