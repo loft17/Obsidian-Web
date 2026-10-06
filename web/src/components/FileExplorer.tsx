@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useStore, isUnder, hiddenMatchers } from '../store';
+import { useStore, isUnder, hiddenMatchers, isHiddenPath } from '../store';
 import { filesApi } from '../api';
 import { flushPendingSave, cancelPendingSave } from './Editor';
 import { RenameDialog, MoveDialog, ConfirmDialog } from './FileDialogs';
@@ -223,11 +223,7 @@ export default function FileExplorer() {
 
   const matchers = hiddenMatchers(hiddenFolders);
   const visibleTree = matchers.length
-    ? tree.filter((item) => {
-        const segments = item.path.split('/');
-        const folders = item.type === 'folder' ? segments : segments.slice(0, -1);
-        return !folders.some((name) => matchers.some((re) => re.test(name)));
-      })
+    ? tree.filter((item) => !isHiddenPath(item.path, item.type === 'folder', matchers))
     : tree;
   const { roots, grouped } = buildTree(visibleTree);
 

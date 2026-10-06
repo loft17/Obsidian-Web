@@ -114,9 +114,25 @@ export const settingsApi = {
   },
 };
 
+export interface SearchMatch {
+  line: number;
+  text: string;
+  start: number;
+  length: number;
+}
+
+export interface SearchResult {
+  path: string;
+  name: string;
+  nameMatch: boolean;
+  total: number;
+  matches: SearchMatch[];
+}
+
 export const searchApi = {
-  search: async (q: string) => {
-    const res = await fetch(`${API_URL}/search?q=${encodeURIComponent(q)}`);
+  search: async (q: string, signal?: AbortSignal): Promise<SearchResult[]> => {
+    const res = await fetch(`${API_URL}/search?q=${encodeURIComponent(q)}`, { signal });
+    if (!res.ok) throw new Error((await res.json()).error);
     return res.json();
   },
 };

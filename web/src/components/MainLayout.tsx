@@ -3,6 +3,7 @@ import { useStore } from '../store';
 import { filesApi } from '../api';
 import Ribbon from './Ribbon';
 import FileExplorer from './FileExplorer';
+import SearchPanel from './SearchPanel';
 import Tabs from './Tabs';
 import Editor, { flushPendingSave } from './Editor';
 import { QuickOpenDialog } from './FileDialogs';
@@ -16,16 +17,24 @@ export default function MainLayout() {
   const editMode = useStore((s) => s.editMode);
   const setEditMode = useStore((s) => s.setEditMode);
   const sidebarOpen = useStore((s) => s.sidebarOpen);
+  const sidebarView = useStore((s) => s.sidebarView);
   const [fileContent, setFileContent] = useState('');
   const [loading, setLoading] = useState(false);
   const [quickOpen, setQuickOpen] = useState(false);
   const tree = useStore((s) => s.tree);
   const openFile = useStore((s) => s.openFile);
 
-  // Atajos globales: Ctrl/Cmd+P abrir nota, +S guardar, +E editar/leer, +B barra lateral
+  // Atajos globales: Ctrl/Cmd+P abrir nota, +S guardar, +E editar/leer, +B barra lateral, +Shift+F buscar
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey) return;
+      if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+      if (e.shiftKey) {
+        if (e.key.toLowerCase() === 'f') {
+          e.preventDefault();
+          useStore.setState({ sidebarOpen: true, sidebarView: 'search' });
+        }
+        return;
+      }
       const { activeTab, editMode, setEditMode, toggleSidebar } = useStore.getState();
       switch (e.key.toLowerCase()) {
         case 'p':
@@ -74,9 +83,7 @@ export default function MainLayout() {
       <Ribbon />
       <div className="main-content">
         {sidebarOpen && (
-          <aside className="sidebar-left">
-            <FileExplorer />
-          </aside>
+          <aside className="sidebar-left">{sidebarView === 'search' ? <SearchPanel /> : <FileExplorer />}</aside>
         )}
 
         <div className="editor-container">

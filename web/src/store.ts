@@ -34,7 +34,11 @@ interface AppStore {
   collapseAll: () => void;
   sidebarOpen: boolean;
   toggleSidebar: () => void;
+  sidebarView: SidebarView;
+  showSidebarView: (view: SidebarView) => void;
 }
+
+export type SidebarView = 'files' | 'search';
 
 // true si `path` es `base` o está dentro de la carpeta `base`
 export const isUnder = (path: string, base: string) => path === base || path.startsWith(base + '/');
@@ -64,6 +68,13 @@ export const hiddenMatchers = (patterns: string): RegExp[] =>
     .map((p) => p.trim())
     .filter(Boolean)
     .map((p) => new RegExp('^' + p.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$', 'i'));
+
+// true si alguna carpeta de la ruta coincide con los patrones ocultos
+export const isHiddenPath = (path: string, isFolder: boolean, matchers: RegExp[]) => {
+  const segments = path.split('/');
+  const folders = isFolder ? segments : segments.slice(0, -1);
+  return folders.some((name) => matchers.some((re) => re.test(name)));
+};
 
 export const useStore =create<AppStore>((set) => ({
   hiddenFolders: initialHiddenFolders,
@@ -136,6 +147,14 @@ export const useStore =create<AppStore>((set) => ({
   collapseAll: () => set({ expandedFolders: new Set() }),
   sidebarOpen: true,
   toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
+  sidebarView: 'files',
+  // Pulsar la vista que ya está abierta cierra la barra lateral, como en Obsidian
+  showSidebarView: (view) =>
+    set((state) =>
+      state.sidebarOpen && state.sidebarView === view
+        ? { sidebarOpen: false }
+        : { sidebarOpen: true, sidebarView: view }
+    ),
   toggleFolder: (path) =>
     set((state) => {
       const expanded = new Set(state.expandedFolders);

@@ -8,6 +8,8 @@ export default function Ribbon() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const sidebarOpen = useStore((s) => s.sidebarOpen);
   const toggleSidebar = useStore((s) => s.toggleSidebar);
+  const sidebarView = useStore((s) => s.sidebarView);
+  const showSidebarView = useStore((s) => s.showSidebarView);
 
   const handleLogout = async () => {
     await authApi.logout();
@@ -20,10 +22,18 @@ export default function Ribbon() {
         <div className="ribbon-item" title="Mostrar/ocultar barra lateral" onClick={toggleSidebar}>
           <IconSidebar />
         </div>
-        <div className={`ribbon-item ${sidebarOpen ? 'active' : ''}`} title="Archivos" onClick={toggleSidebar}>
+        <div
+          className={`ribbon-item ${sidebarOpen && sidebarView === 'files' ? 'active' : ''}`}
+          title="Archivos"
+          onClick={() => showSidebarView('files')}
+        >
           <IconFolderOpen />
         </div>
-        <div className="ribbon-item" title="Búsqueda" onClick={() => console.log('TODO: search')}>
+        <div
+          className={`ribbon-item ${sidebarOpen && sidebarView === 'search' ? 'active' : ''}`}
+          title="Búsqueda (Ctrl+Shift+F)"
+          onClick={() => showSidebarView('search')}
+        >
           <IconSearch />
         </div>
         <div className="ribbon-item" title="Marcadores">
