@@ -20,7 +20,7 @@ Accede y edita tus notas Markdown desde cualquier navegador (ideal para un VPS),
 3. [Instalación rápida (local)](#-instalación-rápida-local)
 4. [Primer inicio: configuración inicial](#️-primer-inicio-configuración-inicial)
 5. [Variables de entorno](#️-variables-de-entorno)
-6. [`TRUST_PROXY` en detalle](#-trust_proxy-en-detalle)
+6. [`TRUST_PROXY`](#-trust_proxy)
 7. [Despliegue en producción (VPS)](#-despliegue-en-producción-vps)
    - [Usuario dedicado](#1-usuario-dedicado)
    - [Instalación](#2-instalación)
@@ -134,7 +134,7 @@ node --env-file=.env server/index.js
 | :--- | :--- | :--- |
 | `PORT` | `3000` | Puerto de escucha. **Solo se usa si `data/config.json` no define un puerto** (y la configuración inicial siempre lo define). Útil sobre todo antes del primer setup. |
 | `HOST` | *(todas las interfaces)* | Interfaz de escucha. En producción usa **`127.0.0.1`** para que solo el proxy inverso pueda conectar. Sin definir, el servidor avisa al arrancar. |
-| `TRUST_PROXY` | *(desactivado)* | **Obligatorio detrás de un proxy inverso.** Indica a Express en qué proxies confiar para leer la IP, el esquema y el dominio reales. Ver [`TRUST_PROXY` en detalle](#-trust_proxy-en-detalle). |
+| `TRUST_PROXY` | *(desactivado)* | Omítela si no usas proxy. **Obligatoria detrás de un proxy inverso** (normalmente `1`). Ver [`TRUST_PROXY`](#-trust_proxy). |
 | `VAULTS_ROOT` | *(sin límite)* | Si se define, el vault solo puede estar dentro de esta carpeta, tanto en la configuración inicial como al cambiarlo desde *Preferencias*. Ej.: `/srv/vaults`. |
 | `REMOTE_IMAGES` | *(desactivado)* | Con `REMOTE_IMAGES=1` se permiten imágenes `https:` externas en las notas. Por defecto se bloquean (ver [Seguridad](#️-seguridad)). |
 
@@ -142,62 +142,20 @@ node --env-file=.env server/index.js
 
 ---
 
-## 🔁 `TRUST_PROXY` en detalle
+## 🔁 `TRUST_PROXY`
 
-### Qué hace
+- **Opcional si accedes a la app directamente** (sin proxy). En ese caso **no** la definas: cualquiera podría falsificar su IP y saltarse el límite de intentos de login.
+- **Obligatoria si hay un proxy inverso delante** (Caddy, nginx…). Sin ella, todo lo que guarda o modifica algo (login, guardar notas…) devuelve **`403 "Origen no permitido"`**, porque la app no ve el esquema ni el dominio reales.
 
-Cuando la app está detrás de un proxy inverso (Caddy, nginx, Traefik, Cloudflare Tunnel…), **todas** las peticiones le llegan desde el proxy (normalmente `127.0.0.1`) y por HTTP plano. Los datos reales del cliente viajan en cabeceras que añade el proxy:
+Valor habitual: **`TRUST_PROXY=1`** (un proxy en el mismo servidor). Con varios proxies encadenados, indica su número (`2`, `3`…) o sus IPs.
 
-| Cabecera | Contiene | La app la usa para… |
-| :--- | :--- | :--- |
-| `X-Forwarded-For` | IP real del cliente | Límite de intentos de login y de búsquedas por IP |
-| `X-Forwarded-Proto` | `https` | Marcar la cookie como `Secure`, enviar HSTS y validar el origen (CSRF) |
-| `X-Forwarded-Host` / `Host` | Dominio público | Validar el origen (CSRF) |
+El proxy debe enviar las cabeceras `Host` y `X-Forwarded-Proto`. Caddy lo hace solo; en nginx añade:
 
-Esas cabeceras las puede falsificar cualquiera, así que Express **las ignora salvo que `TRUST_PROXY` le diga en qué proxies confiar**.
-
-### Qué pasa si falta detrás de un proxy
-
-| Síntoma | Causa |
-| :--- | :--- |
-| ❌ **Todo lo que guarda o modifica algo devuelve `403 "Origen no permitido"`** (guardar notas, login, crear, renombrar, subir…) | El navegador envía `Origin: https://notas.ejemplo.com`, pero la app cree que la petición llegó por `http://` (y, en nginx, a `127.0.0.1:3000`). Al no coincidir esquema/dominio/puerto, la protección CSRF la rechaza. |
-| 🔓 La cookie de sesión **no** se marca `Secure` y **no** se envía HSTS | La app no sabe que el cliente usa HTTPS. |
-| 🚫 Un atacante puede **bloquear el login a todo el mundo** | Todos los clientes parecen la misma IP (`127.0.0.1`), así que 5 fallos de una persona bloquean a todos. Lo mismo con el límite de búsquedas (60/min compartidas). |
-
-### Qué pasa si se activa SIN proxy
-
-**No lo actives si la app está expuesta directamente a Internet.** Cualquiera podría enviar un `X-Forwarded-For` falso en cada intento y saltarse el límite de intentos de login por IP (solo quedaría el límite global).
-
-### Valores admitidos
-
-Se pasa tal cual a la opción [`trust proxy` de Express](https://expressjs.com/en/guide/behind-proxies.html):
-
-| Valor | Significado | Cuándo usarlo |
-| :--- | :--- | :--- |
-| `1` | Confía en **un** salto (el proxy inmediato) | ✅ **Lo habitual**: Caddy o nginx en el mismo servidor. |
-| `2`, `3`… | Confía en N saltos | Hay varios proxies encadenados (p. ej. Cloudflare → nginx → app). |
-| `loopback` | Confía solo en proxies en `127.0.0.1`/`::1` | Alternativa más estricta cuando el proxy está en la misma máquina. |
-| `10.0.0.5` o `10.0.0.0/8, 127.0.0.1` | Confía en esas IPs/subredes | El proxy está en otra máquina o contenedor (Docker). |
-
-### Cabeceras que debe enviar el proxy
-
-- **Caddy**: envía `X-Forwarded-For`, `X-Forwarded-Proto` y `X-Forwarded-Host`, y conserva `Host`. **No hay que configurar nada.**
-- **nginx**: por defecto **no** las envía y además reescribe `Host`. Es imprescindible añadir:
-
-  ```nginx
-  proxy_set_header Host              $host;
-  proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
-  proxy_set_header X-Forwarded-Proto $scheme;
-  ```
-
-### Cómo comprobarlo
-
-```bash
-# Debe aparecer "Strict-Transport-Security" (solo se envía si la app detecta HTTPS)
-curl -sI https://notas.ejemplo.com | grep -i strict-transport
+```nginx
+proxy_set_header Host              $host;
+proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Proto $scheme;
 ```
-
-Y en el navegador (DevTools → Application → Cookies), la cookie `token` debe tener marcadas **Secure**, **HttpOnly** y **SameSite=Strict**.
 
 ---
 
@@ -378,7 +336,7 @@ Dentro del vault, la app solo usa:
 - **Sesiones revocables**: la cookie (firmada, `HttpOnly`, `SameSite=Strict`, `Secure` sobre HTTPS) lleva un token aleatorio; en el servidor solo se guarda su hash. Caducan a los **30 días** o tras **7 días sin uso**. Desde *Preferencias → Seguridad* puedes cambiar la contraseña (cierra las demás sesiones) o cerrar todas las sesiones.
 - **Límite de intentos** (login, cambio de vault y cambio de contraseña): 5 fallos en 15 min bloquean la IP 1 min, duplicándose con cada bloqueo seguido hasta 1 h. Las IPv6 se agrupan por su prefijo /64. Además, 50 fallos en total en 15 min bloquean el login para todos durante 5 min.
 - **Cambiar el vault exige la contraseña** actual, además de la sesión.
-- **Protección CSRF**: las peticiones que modifican algo se rechazan si vienen de otro sitio (`Sec-Fetch-Site: cross-site`) o si su `Origin` no coincide exactamente (esquema, dominio y puerto) con el de la web. Por eso [`TRUST_PROXY`](#-trust_proxy-en-detalle) es obligatorio detrás de un proxy.
+- **Protección CSRF**: las peticiones que modifican algo se rechazan si vienen de otro sitio (`Sec-Fetch-Site: cross-site`) o si su `Origin` no coincide exactamente (esquema, dominio y puerto) con el de la web. Por eso [`TRUST_PROXY`](#-trust_proxy) es obligatorio detrás de un proxy.
 - **Cabeceras de seguridad**: CSP estricta (sin scripts externos ni `eval`), `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy: no-referrer`, `Cross-Origin-Opener-Policy` y HSTS cuando llega por HTTPS.
 - **Imágenes externas bloqueadas**: una imagen de otra web en una nota revela tu IP a ese servidor al abrirla (píxeles de rastreo). Por defecto solo se cargan imágenes del vault; las externas aparecen como imagen rota, sin aviso. Arranca con `REMOTE_IMAGES=1` para permitirlas.
 - **Aislamiento del vault**: no se admiten rutas con `../` ni que salgan del vault.
@@ -614,7 +572,7 @@ Todas las rutas cuelgan de `/api`. Salvo `setup` y `auth`, exigen una sesión v�
 
 | Problema | Causa probable y solución |
 | :--- | :--- |
-| **`403 "Origen no permitido"`** al guardar, iniciar sesión, etc. | Estás detrás de un proxy sin `TRUST_PROXY=1`, o nginx no envía `Host`/`X-Forwarded-Proto`. Ver [`TRUST_PROXY`](#-trust_proxy-en-detalle). También ocurre si accedes por un dominio/puerto distinto del que reenvía el proxy. |
+| **`403 "Origen no permitido"`** al guardar, iniciar sesión, etc. | Estás detrás de un proxy sin `TRUST_PROXY=1`, o nginx no envía `Host`/`X-Forwarded-Proto`. Ver [`TRUST_PROXY`](#-trust_proxy). También ocurre si accedes por un dominio/puerto distinto del que reenvía el proxy. |
 | **`403` en la configuración inicial** | Token incorrecto. Cópialo de la consola del servidor (`journalctl -u obsidian-web`). |
 | **No encuentro el token de configuración** | Solo se muestra si no existe `data/config.json`. Reinicia el servicio y mira los primeros mensajes del log. |
 | **`429 Demasiados intentos`** | Límite de intentos de login. Espera el tiempo indicado. Si te ocurre sin haber fallado, puede que estés detrás de un proxy sin `TRUST_PROXY` y otra IP esté fallando. |
