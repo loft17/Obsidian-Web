@@ -8,7 +8,9 @@ import Tabs from './Tabs';
 import Editor, { flushPendingSave } from './Editor';
 import { QuickOpenDialog } from './FileDialogs';
 import ReadingView from './ReadingView';
+import ImageViewer from './ImageViewer';
 import StatusBar from './StatusBar';
+import { isImage } from '../attachments';
 import NoteMenu from './NoteMenu';
 import { IconBook, IconEdit } from './Icons';
 
@@ -23,6 +25,7 @@ export default function MainLayout() {
   const [quickOpen, setQuickOpen] = useState(false);
   const tree = useStore((s) => s.tree);
   const openFile = useStore((s) => s.openFile);
+  const activeIsImage = !!activeTab && isImage(activeTab);
 
   // Atajos globales: Ctrl/Cmd+P abrir nota, +S guardar, +E editar/leer, +B barra lateral, +Shift+F buscar
   useEffect(() => {
@@ -46,7 +49,7 @@ export default function MainLayout() {
           if (activeTab) flushPendingSave(activeTab);
           break;
         case 'e':
-          if (!activeTab) return;
+          if (!activeTab || isImage(activeTab)) return;
           e.preventDefault();
           setEditMode(!editMode);
           break;
@@ -62,6 +65,11 @@ export default function MainLayout() {
 
   useEffect(() => {
     if (!activeTab) return;
+    // Las imágenes las carga el visor; leerlas como texto las corrompería al autoguardar
+    if (isImage(activeTab)) {
+      setFileContent('');
+      return;
+    }
 
     const loadFile = async () => {
       setLoading(true);
@@ -99,13 +107,15 @@ export default function MainLayout() {
                 ))}
               </div>
               <div className="breadcrumb-actions">
-                <button
-                  className="icon-btn"
-                  title={editMode ? 'Cambiar a vista de lectura' : 'Cambiar a edición'}
-                  onClick={() => setEditMode(!editMode)}
-                >
-                  {editMode ? <IconBook /> : <IconEdit />}
-                </button>
+                {!activeIsImage && (
+                  <button
+                    className="icon-btn"
+                    title={editMode ? 'Cambiar a vista de lectura' : 'Cambiar a edición'}
+                    onClick={() => setEditMode(!editMode)}
+                  >
+                    {editMode ? <IconBook /> : <IconEdit />}
+                  </button>
+                )}
                 <NoteMenu />
               </div>
             </div>
@@ -116,7 +126,9 @@ export default function MainLayout() {
                 Cargando...
               </div>
             ) : activeTab ? (
-              editMode ? (
+              activeIsImage ? (
+                <ImageViewer filePath={activeTab} />
+              ) : editMode ? (
                 <Editor filePath={activeTab} content={fileContent} onContentChange={setFileContent} />
               ) : (
                 <ReadingView content={fileContent} filePath={activeTab} />
@@ -127,7 +139,7 @@ export default function MainLayout() {
               </div>
             )}
           </div>
-          <StatusBar content={fileContent} />
+          {!activeIsImage && <StatusBar content={fileContent} />}
         </div>
       </div>
       {quickOpen && (

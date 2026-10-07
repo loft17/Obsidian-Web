@@ -98,11 +98,11 @@ Más detalle sobre el flujo de datos y la API en [ARQUITECTURA.md](00_INFO-APP/A
 
 ## Solución de problemas
 
-Consulta [TROUBLESHOOTING.md](00_INFO-APP/TROUBLESHOOTING.md). Para un diagnóstico rápido en el servidor:
+Consulta [TROUBLESHOOTING.md](utils/TROUBLESHOOTING.md). Para un diagnóstico rápido en el servidor:
 
 ```bash
 chmod +x 00_INFO-APP/diagnose.sh
-./00_INFO-APP/diagnose.sh
+./utils/diagnose.sh
 ```
 
 ## Hoja de ruta

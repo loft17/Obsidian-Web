@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useStore, isUnder, hiddenMatchers, isHiddenPath } from '../store';
 import { filesApi } from '../api';
 import { flushPendingSave, cancelPendingSave } from './Editor';
-import { RenameDialog, MoveDialog, ConfirmDialog } from './FileDialogs';
+import { RenameDialog, MoveDialog, DeleteFileDialog } from './FileDialogs';
 import { IconChevronRight, IconChevronDown, IconCollapseAll, IconFileNew, IconFolderNew } from './Icons';
 
 interface TreeItem {
@@ -199,10 +199,14 @@ export default function FileExplorer() {
   const handleMove = (oldPath: string, folder: string) =>
     changePath(oldPath, `${folder ? folder + '/' : ''}${fileName(oldPath)}`);
 
-  const handleDelete = async (path: string) => {
+  const handleDelete = async (path: string, images: string[]) => {
     cancelPendingSave(path);
     await filesApi.deleteFile(path);
     removeTab(path);
+    for (const image of images) {
+      await filesApi.deleteFile(image);
+      removeTab(image);
+    }
     await refreshTree();
     setDialog(null);
   };
@@ -322,16 +326,12 @@ export default function FileExplorer() {
         />
       )}
       {dialog?.kind === 'delete' && (
-        <ConfirmDialog
+        <DeleteFileDialog
+          path={dialog.path}
+          isFolder={dialog.isFolder}
           title={dialog.isFolder ? 'Borrar carpeta' : 'Borrar archivo'}
-          message={
-            <>
-              ¿Seguro que quieres borrar <strong>{fileName(dialog.path)}</strong>
-              {dialog.isFolder && ' y todo su contenido'}? Se moverá a la papelera de la bóveda (.trash).
-            </>
-          }
           confirmLabel="Borrar"
-          onConfirm={() => handleDelete(dialog.path)}
+          onDelete={(images) => handleDelete(dialog.path, images)}
           onClose={() => setDialog(null)}
         />
       )}

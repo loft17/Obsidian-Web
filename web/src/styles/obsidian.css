@@ -659,6 +659,49 @@ a:hover {
   opacity: 0.6;
 }
 
+/* Visor de imágenes */
+.image-viewer {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  gap: 12px;
+}
+
+.image-viewer img {
+  max-width: 100%;
+  max-height: calc(100% - 32px);
+  object-fit: contain;
+  cursor: zoom-in;
+}
+
+.image-viewer.actual-size {
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+.image-viewer.actual-size img {
+  max-width: none;
+  max-height: none;
+  cursor: zoom-out;
+}
+
+.image-viewer-info {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.image-viewer-message {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-faint);
+}
+
 /* Reading view */
 .reading-view {
   flex: 1;
@@ -1373,6 +1416,29 @@ a:hover {
   margin: 0;
   font-size: 13px;
   color: var(--text-muted, var(--text-normal));
+}
+
+.delete-images {
+  margin-top: 10px;
+  font-size: 13px;
+}
+
+.delete-images-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  color: var(--text-normal);
+}
+
+.delete-images-list {
+  margin: 6px 0 0;
+  padding-left: 26px;
+  max-height: 120px;
+  overflow-y: auto;
+  color: var(--text-muted, var(--text-normal));
+  font-size: 12px;
+  word-break: break-all;
 }
 
 .file-dialog-list {

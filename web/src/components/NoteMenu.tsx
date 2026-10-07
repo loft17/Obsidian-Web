@@ -4,7 +4,8 @@ import { useStore } from '../store';
 import { filesApi } from '../api';
 import { flushPendingSave, cancelPendingSave } from './Editor';
 import { IconMenu } from './Icons';
-import { RenameDialog, MoveDialog, ConfirmDialog } from './FileDialogs';
+import { RenameDialog, MoveDialog, DeleteFileDialog } from './FileDialogs';
+import { isImage } from '../attachments';
 
 const fileName = (path: string) => path.split('/').pop() || path;
 const parentFolder = (path: string) => (path.includes('/') ? path.substring(0, path.lastIndexOf('/')) : '');
@@ -44,7 +45,7 @@ export default function NoteMenu() {
 
   // Ctrl/Cmd+F abre la búsqueda en el documento en lugar de la del navegador
   useEffect(() => {
-    if (!activeTab) return;
+    if (!activeTab || isImage(activeTab)) return;
     const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'f') {
         e.preventDefault();
@@ -56,6 +57,7 @@ export default function NoteMenu() {
   }, [activeTab]);
 
   if (!activeTab) return null;
+  const activeIsImage = isImage(activeTab);
 
   const openDialog = (kind: NonNullable<typeof dialog>) => {
     setOpen(false);
@@ -78,10 +80,14 @@ export default function NoteMenu() {
 
   const handleMove = (folder: string) => changePath(`${folder ? folder + '/' : ''}${fileName(activeTab)}`);
 
-  const handleDelete = async () => {
+  const handleDelete = async (images: string[]) => {
     cancelPendingSave(activeTab);
     await filesApi.deleteFile(activeTab);
     removeTab(activeTab);
+    for (const image of images) {
+      await filesApi.deleteFile(image);
+      removeTab(image);
+    }
     setTree(await filesApi.getTree());
     setDialog(null);
   };
@@ -114,18 +120,22 @@ export default function NoteMenu() {
           <div className="dropdown-item" onClick={() => openDialog('move')}>
             Mover archivo a...
           </div>
-          <div className="dropdown-item" onClick={handleExportPDF}>
-            Exportar a PDF
-          </div>
-          <div
-            className="dropdown-item"
-            onClick={() => {
-              setOpen(false);
-              setSearchOpen(true);
-            }}
-          >
-            Buscar
-          </div>
+          {!activeIsImage && (
+            <>
+              <div className="dropdown-item" onClick={handleExportPDF}>
+                Exportar a PDF
+              </div>
+              <div
+                className="dropdown-item"
+                onClick={() => {
+                  setOpen(false);
+                  setSearchOpen(true);
+                }}
+              >
+                Buscar
+              </div>
+            </>
+          )}
           <hr className="dropdown-divider" />
           <div className="dropdown-item danger" onClick={() => openDialog('delete')}>
             Eliminar archivo
@@ -149,16 +159,11 @@ export default function NoteMenu() {
         />
       )}
       {dialog === 'delete' && (
-        <ConfirmDialog
+        <DeleteFileDialog
+          path={activeTab}
           title="Eliminar archivo"
-          message={
-            <>
-              ¿Seguro que quieres eliminar <strong>{fileName(activeTab)}</strong>? Se moverá a la papelera de la bóveda
-              (.trash).
-            </>
-          }
           confirmLabel="Eliminar"
-          onConfirm={handleDelete}
+          onDelete={handleDelete}
           onClose={() => setDialog(null)}
         />
       )}

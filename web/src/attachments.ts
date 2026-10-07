@@ -1,5 +1,6 @@
 // Resolución de adjuntos (imágenes) al estilo Obsidian: ![[imagen.png]] y ![](ruta/imagen.png)
 import { useStore } from './store';
+import { filesApi, searchApi } from './api';
 
 const IMAGE_EXT = /\.(png|jpe?g|gif|webp|svg|bmp|avif|ico)$/i;
 
@@ -64,6 +65,69 @@ export const rawFileUrl = (vaultPath: string) => `/api/files/raw/${encodeURIComp
 // URL final para un src de imagen (externo se respeta tal cual)
 export const attachmentUrl = (src: string, notePath: string) =>
   isExternal(src) ? src : rawFileUrl(resolveAttachment(src, notePath));
+
+const EMBED = /!\[\[([^\]\n]+?)\]\]/g;
+const MD_IMAGE = /!\[[^\]\n]*\]\(\s*(?:<([^>\n]+)>|([^)\s]+))[^)\n]*\)/g;
+
+// Imágenes del vault incrustadas en una nota: rutas reales del árbol, sin repetir
+export function noteImages(content: string, notePath: string): string[] {
+  const files = new Map<string, string>();
+  for (const item of useStore.getState().tree) {
+    if (item.type !== 'folder') files.set(item.path.toLowerCase(), item.path);
+  }
+  const links = [
+    ...Array.from(content.matchAll(EMBED), (m) => m[1].split('|')[0]),
+    ...Array.from(content.matchAll(MD_IMAGE), (m) => m[1] ?? m[2]),
+  ];
+  const found = new Map<string, string>();
+  for (const link of links) {
+    const target = link.split('#')[0].trim();
+    if (!target || isExternal(target) || !isImage(target)) continue;
+    const key = resolveAttachment(target, notePath).toLowerCase();
+    const path = files.get(key);
+    if (path) found.set(key, path);
+  }
+  return [...found.values()];
+}
+
+// Imágenes de la nota separadas en exclusivas (`own`) y usadas también por otras notas (`shared`)
+export async function noteImageUsage(notePath: string): Promise<{ own: string[]; shared: string[] }> {
+  const { content } = await filesApi.readFile(notePath);
+  const own: string[] = [];
+  const shared: string[] = [];
+  const cache = new Map<string, string[]>();
+  const imagesOf = async (path: string) => {
+    if (!cache.has(path)) {
+      try {
+        cache.set(path, noteImages((await filesApi.readFile(path)).content, path));
+      } catch {
+        cache.set(path, []);
+      }
+    }
+    return cache.get(path)!;
+  };
+
+  for (const image of noteImages(content, notePath)) {
+    const name = image.split('/').pop()!;
+    // Candidatas: notas que mencionan el nombre (tal cual o codificado en ![](...))
+    const queries = [...new Set([name, encodeURI(name)])];
+    const candidates = new Set<string>();
+    for (const q of queries) {
+      for (const r of await searchApi.search(q)) {
+        if (r.total > 0 && r.path !== notePath) candidates.add(r.path);
+      }
+    }
+    let used = false;
+    for (const path of candidates) {
+      if ((await imagesOf(path)).includes(image)) {
+        used = true;
+        break;
+      }
+    }
+    (used ? shared : own).push(image);
+  }
+  return { own, shared };
+}
 
 // Obsidian admite tamaño tras "|": "texto|300" o "texto|300x200"
 export function parseSize(text: string): { text: string; width?: number; height?: number } {

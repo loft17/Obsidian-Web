@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { flushPendingSave } from './Editor';
+import { noteImageUsage } from '../attachments';
 
 function useEscape(onClose: () => void) {
   useEffect(() => {
@@ -253,6 +255,8 @@ export function ConfirmDialog({
   confirmLabel: string;
   onConfirm: () => Promise<void>;
   onClose: () => void;
+  disabled?: boolean;
+  children?: React.ReactNode;
 }) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -272,8 +276,94 @@ export function ConfirmDialog({
     <DialogShell title={title} error={error} onClose={onClose}>
       <form onSubmit={handleSubmit}>
         <p className="file-dialog-message">{message}</p>
-        <DialogButtons confirmLabel={confirmLabel} danger disabled={busy} onCancel={onClose} />
+        {children}
+        <DialogButtons confirmLabel={confirmLabel} danger disabled={busy || disabled} onCancel={onClose} />
       </form>
     </DialogShell>
+  );
+}
+
+// Confirmación de borrado; si es una nota, ofrece borrar también sus imágenes (marcado por defecto).
+// Las imágenes que otras notas también usan nunca se borran.
+export function DeleteFileDialog({
+  path,
+  isFolder,
+  title,
+  confirmLabel,
+  onDelete,
+  onClose,
+}: {
+  path: string;
+  isFolder?: boolean;
+  title: string;
+  confirmLabel: string;
+  onDelete: (images: string[]) => Promise<void>;
+  onClose: () => void;
+}) {
+  const isNote = !isFolder && /\.md$/i.test(path);
+  const [usage, setUsage] = useState<{ own: string[]; shared: string[] } | null>(null);
+  const [loading, setLoading] = useState(isNote);
+  const [deleteImages, setDeleteImages] = useState(true);
+
+  useEffect(() => {
+    if (!isNote) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        await flushPendingSave(path);
+        const result = await noteImageUsage(path);
+        if (!cancelled) setUsage(result);
+      } catch {
+        // Si falla la detección se borra solo la nota
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [path, isNote]);
+
+  const own = usage?.own ?? [];
+  const shared = usage?.shared ?? [];
+  const name = path.split('/').pop() || path;
+
+  return (
+    <ConfirmDialog
+      title={title}
+      message={
+        <>
+          ¿Seguro que quieres borrar <strong>{name}</strong>
+          {isFolder && ' y todo su contenido'}? Se moverá a la papelera de la bóveda (.trash).
+        </>
+      }
+      confirmLabel={confirmLabel}
+      disabled={loading}
+      onConfirm={() => onDelete(deleteImages ? own : [])}
+      onClose={onClose}
+    >
+      {loading && <p className="file-dialog-message">Buscando imágenes de la nota…</p>}
+      {own.length > 0 && (
+        <div className="delete-images">
+          <label className="delete-images-toggle">
+            <input type="checkbox" checked={deleteImages} onChange={(e) => setDeleteImages(e.target.checked)} />
+            Borrar también {own.length === 1 ? 'su imagen' : `sus ${own.length} imágenes`}
+          </label>
+          <ul className="delete-images-list">
+            {own.map((p) => (
+              <li key={p} title={p}>
+                {p}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {shared.length > 0 && (
+        <p className="file-dialog-message">
+          Se conservan {shared.length === 1 ? '1 imagen usada' : `${shared.length} imágenes usadas`} también en otras
+          notas.
+        </p>
+      )}
+    </ConfirmDialog>
   );
 }
