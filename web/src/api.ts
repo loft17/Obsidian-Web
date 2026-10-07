@@ -5,11 +5,11 @@ export const setupApi = {
     const res = await fetch(`${API_URL}/setup/status`);
     return res.json();
   },
-  init: async (vaultPath: string, password: string, port: number = 3000) => {
+  init: async (setupToken: string, vaultPath: string, password: string, port: number = 3000) => {
     const res = await fetch(`${API_URL}/setup/init`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ vaultPath, password, port }),
+      body: JSON.stringify({ setupToken, vaultPath, password, port }),
     });
     return res.json();
   },
@@ -22,6 +22,8 @@ export const authApi = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password }),
     });
+    // El formulario muestra `error` (contraseña incorrecta, demasiados intentos...)
+    if (!res.ok) throw await res.json().catch(() => ({}));
     return res.json();
   },
   logout: async () => {

@@ -2,30 +2,52 @@ import express from 'express';
 import cookieParser from 'cookie-parser';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { readFileSync, existsSync, writeFileSync, mkdirSync } from 'fs';
+import { readFileSync, existsSync, writeFileSync, mkdirSync, readdirSync, chmodSync } from 'fs';
 import crypto from 'crypto';
 import setupRoutes from './routes/setup.js';
 import authRoutes from './routes/auth.js';
 import filesRoutes from './routes/files.js';
 import searchRoutes from './routes/search.js';
 import settingsRoutes from './routes/settings.js';
+import { createSessionStore } from './sessions.js';
+import { securityHeaders, csrfGuard } from './security.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 const dataDir = join(__dirname, '..', 'data');
 
 // Generate or load cookie secret
-mkdirSync(dataDir, { recursive: true });
+// data/ guarda el hash de la contraseña, el secreto de las cookies y las sesiones:
+// solo el usuario que ejecuta la app puede leerla (también corrige instalaciones antiguas)
+mkdirSync(dataDir, { recursive: true, mode: 0o700 });
+try {
+  chmodSync(dataDir, 0o700);
+  for (const f of readdirSync(dataDir)) chmodSync(join(dataDir, f), 0o600);
+} catch (err) {
+  console.warn('[Security] No se pudieron ajustar los permisos de data/:', err.message);
+}
 const secretPath = join(dataDir, '.secret');
 let cookieSecret;
 if (existsSync(secretPath)) {
   cookieSecret = readFileSync(secretPath, 'utf8').trim();
 } else {
   cookieSecret = crypto.randomBytes(32).toString('hex');
-  writeFileSync(secretPath, cookieSecret);
+  writeFileSync(secretPath, cookieSecret, { mode: 0o600 });
 }
 
+const sessions = createSessionStore(dataDir);
+
+// Detrás de un proxy inverso (nginx, Caddy...) define TRUST_PROXY=1 para que req.ip
+// sea la IP real del cliente (la usa el límite de intentos de login)
+const trustProxy = process.env.TRUST_PROXY;
+if (trustProxy) app.set('trust proxy', /^\d+$/.test(trustProxy) ? Number(trustProxy) : trustProxy);
+
+const distPath = join(__dirname, '..', 'web', 'dist');
+
 // Middleware
+app.disable('x-powered-by');
+app.use(securityHeaders(distPath));
+app.use('/api', csrfGuard);
 app.use(express.json());
 app.use(cookieParser(cookieSecret));
 
@@ -44,35 +66,21 @@ const getConfig = () => {
 };
 
 // Serve static web files (before auth middleware so they're always accessible)
-const distPath = join(__dirname, '..', 'web', 'dist');
 if (existsSync(distPath)) {
   app.use(express.static(distPath));
 }
 
 // Routes
-app.use('/api/setup', setupRoutes(dataDir));
-app.use('/api/auth', authRoutes(dataDir));
+app.use('/api/setup', setupRoutes(dataDir, sessions));
+app.use('/api/auth', authRoutes(dataDir, sessions));
 
 // Protected routes (require login if configured)
-app.use((req, res, next) => {
-  const cfg = getConfig();
-
-  // Rutas públicas que no necesitan autenticación
-  const publicRoutes = ['/api/setup', '/api/auth/login', '/api/auth/logout'];
-  const isPublicRoute = publicRoutes.some(route => req.path.startsWith(route));
-
-  // Excluir archivos estáticos del middleware de autenticación (nunca la API:
-  // /api/files/raw/imagen.png sirve archivos del vault)
-  const isStaticFile = !req.path.startsWith('/api/') &&
-    /\.(js|css|svg|png|jpg|jpeg|gif|ico|json|woff|woff2|ttf|eot)$/i.test(req.path);
-
-  if (cfg && !isPublicRoute && !isStaticFile && req.path !== '/') {
-    const token = req.signedCookies.token;
-    if (!token) {
-      console.log(`[Auth] Unauthorized access attempt to ${req.method} ${req.path}`);
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-    console.log(`[Auth] Authorized access to ${req.method} ${req.path}`);
+// Montado en '/api' (Express no distingue mayúsculas, así que también cubre '/API/...').
+// /api/setup y /api/auth ya respondieron arriba; todo lo demás de la API exige sesión
+app.use('/api', (req, res, next) => {
+  if (getConfig() && !sessions.isValid(req.signedCookies.token)) {
+    console.log(`[Auth] Unauthorized access attempt to ${req.method} ${req.originalUrl}`);
+    return res.status(401).json({ error: 'Unauthorized' });
   }
   next();
 });
@@ -88,10 +96,21 @@ if (existsSync(distPath)) {
   });
 }
 
+// Errores no controlados (p. ej. JSON malformado): sin trazas ni rutas internas en la respuesta
+app.use((err, req, res, next) => {
+  if (res.headersSent) return next(err);
+  const status = err.status || err.statusCode || 500;
+  if (status >= 500) console.error('[Error]', err);
+  res.status(status).json({ error: status >= 500 ? 'Error interno' : 'Petición no válida' });
+});
+
 const port = (getConfig()?.port) || process.env.PORT || 3000;
-app.listen(port, () => {
+// HOST=127.0.0.1 para escuchar solo en local (detrás de un proxy inverso con HTTPS);
+// sin definir, escucha en todas las interfaces
+const host = process.env.HOST || undefined;
+app.listen(port, host, () => {
   const cfg = getConfig();
-  console.log(`Obisidan Web listening on http://localhost:${port}`);
+  console.log(`Obisidan Web listening on http://${host || 'localhost'}:${port}`);
   if (cfg) {
     console.log(`Vault: ${cfg.vaultPath}`);
   } else {

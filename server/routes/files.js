@@ -2,6 +2,7 @@ import express, { Router } from 'express';
 import matter from 'gray-matter';
 import MarkdownIt from 'markdown-it';
 import * as vault from '../vault.js';
+import { publicError, scriptHash } from '../security.js';
 
 const md = new MarkdownIt({ html: false, linkify: true, breaks: true });
 
@@ -24,6 +25,10 @@ const PRINT_STYLES = `
 
 const escapeHtml = (s) => md.utils.escapeHtml(s);
 
+const PRINT_SCRIPT = "window.addEventListener('load', function () { setTimeout(function () { window.print(); }, 300); });";
+// La página de exportación solo puede ejecutar su script de impresión
+const PRINT_CSP = `default-src 'none'; script-src ${scriptHash(PRINT_SCRIPT)}; style-src 'unsafe-inline'; img-src 'self' data: https:; frame-ancestors 'none'`;
+
 export default (dataDir, getConfig) => {
   const router = Router();
 
@@ -34,7 +39,7 @@ export default (dataDir, getConfig) => {
       if (!cfg) return res.status(400).json({ error: 'Not configured' });
       handler(cfg, req, res);
     } catch (err) {
-      res.status(400).json({ error: err.message });
+      res.status(400).json({ error: publicError(err) });
     }
   };
 
@@ -66,6 +71,7 @@ export default (dataDir, getConfig) => {
       // frontmatter inválido: se exporta el texto completo
     }
     const title = escapeHtml(req.params.filePath.split('/').pop().replace(/\.md$/i, ''));
+    res.set('Content-Security-Policy', PRINT_CSP);
     res.type('html').send(`<!DOCTYPE html>
 <html>
 <head>
@@ -76,7 +82,7 @@ export default (dataDir, getConfig) => {
 <body>
 <h1>${title}</h1>
 ${md.render(body)}
-<script>window.addEventListener('load', function () { setTimeout(function () { window.print(); }, 300); });</script>
+<script>${PRINT_SCRIPT}</script>
 </body>
 </html>`);
   }));

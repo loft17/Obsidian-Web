@@ -6,6 +6,7 @@ interface Props {
 }
 
 export default function Setup({ onComplete }: Props) {
+  const [setupToken, setSetupToken] = useState('');
   const [vaultPath, setVaultPath] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -17,6 +18,10 @@ export default function Setup({ onComplete }: Props) {
     e.preventDefault();
     setError('');
 
+    if (!setupToken.trim()) {
+      setError('El token de configuración es requerido');
+      return;
+    }
     if (!vaultPath.trim()) {
       setError('La ruta del vault es requerida');
       return;
@@ -32,7 +37,7 @@ export default function Setup({ onComplete }: Props) {
 
     setLoading(true);
     try {
-      const result = await setupApi.init(vaultPath, password, parseInt(port));
+      const result = await setupApi.init(setupToken, vaultPath, password, parseInt(port));
       if (result.success || result.error === undefined) {
         // Setup completado exitosamente
         // Recarga la página para que App.tsx refresque el estado
@@ -60,6 +65,20 @@ export default function Setup({ onComplete }: Props) {
         {error && <div className="error">{error}</div>}
 
         <form onSubmit={handleSubmit} className="setup-wizard">
+          <div className="setup-wizard-field">
+            <label>Token de configuración</label>
+            <input
+              type="text"
+              autoComplete="off"
+              value={setupToken}
+              onChange={(e) => setSetupToken(e.target.value)}
+              disabled={loading}
+            />
+            <small style={{ color: 'var(--text-faint)', fontSize: '11px' }}>
+              Se muestra en la consola del servidor al arrancar.
+            </small>
+          </div>
+
           <div className="setup-wizard-field">
             <label>Ruta del Vault</label>
             <input

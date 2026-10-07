@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import * as vault from '../vault.js';
+import { publicError } from '../security.js';
 
 const MAX_RESULTS = 200;
 const MAX_MATCHES_PER_FILE = 5;
@@ -139,7 +140,7 @@ export default (dataDir, getConfig) => {
       results.sort((a, b) => Number(b.nameMatch) - Number(a.nameMatch) || b.total - a.total || a.path.localeCompare(b.path));
       res.json(results.slice(0, MAX_RESULTS));
     } catch (err) {
-      res.status(400).json({ error: err.message });
+      res.status(400).json({ error: publicError(err, 'Error en la búsqueda') });
     }
   });
 

@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { writeFileSync, mkdirSync, existsSync, statSync } from 'fs';
-import { join, isAbsolute, resolve } from 'path';
+import { join } from 'path';
 import * as vault from '../vault.js';
+import { publicError } from '../security.js';
 
 export default (dataDir, getConfig) => {
   const router = Router();
@@ -13,20 +14,24 @@ export default (dataDir, getConfig) => {
 
   // getConfig relee config.json en cada petición, así que el cambio se aplica al instante
   router.post('/vault', (req, res) => {
-    const vaultPath = String(req.body?.vaultPath ?? '').trim();
-    if (!vaultPath || !isAbsolute(vaultPath)) {
-      return res.status(400).json({ error: 'La ruta debe ser absoluta' });
+    // Sin configurar, esta ruta no exige sesión: no puede crear un config.json sin contraseña
+    const cfg = getConfig();
+    if (!cfg) return res.status(400).json({ error: 'Not configured' });
+    let full;
+    try {
+      full = vault.checkVaultPath(req.body?.vaultPath, dataDir);
+    } catch (err) {
+      return res.status(400).json({ error: publicError(err) });
     }
     try {
-      const full = resolve(vaultPath);
       if (existsSync(full) && !statSync(full).isDirectory()) {
         return res.status(400).json({ error: 'La ruta existe pero no es una carpeta' });
       }
       mkdirSync(full, { recursive: true });
-      writeFileSync(configPath, JSON.stringify({ ...getConfig(), vaultPath: full }, null, 2));
+      writeFileSync(configPath, JSON.stringify({ ...cfg, vaultPath: full }, null, 2), { mode: 0o600 });
       res.json({ vaultPath: full });
     } catch (err) {
-      res.status(500).json({ error: err.message || 'No se pudo cambiar la ruta' });
+      res.status(500).json({ error: publicError(err, 'No se pudo cambiar la ruta') });
     }
   });
 
@@ -46,7 +51,7 @@ export default (dataDir, getConfig) => {
       vault.updateAppConfig(cfg.vaultPath, { attachmentFolderPath: value || '/' });
       res.json({ attachmentFolderPath: value || '/' });
     } catch (err) {
-      res.status(500).json({ error: err.message || 'No se pudo guardar' });
+      res.status(500).json({ error: publicError(err, 'No se pudo guardar') });
     }
   });
 

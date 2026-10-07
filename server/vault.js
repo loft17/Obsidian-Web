@@ -34,7 +34,44 @@ const guardPath = (vaultPath, userPath) => {
   return resolved;
 };
 
-const toVaultPath = (vaultPath, fullPath) => relative(resolve(vaultPath), fullPath).split('\\').join('/');
+// Carpetas del sistema que nunca pueden ser (ni contener) un vault
+const SYSTEM_DIRS = ['/bin', '/boot', '/dev', '/etc', '/lib', '/lib32', '/lib64', '/libx32', '/proc', '/run', '/sbin', '/snap', '/sys', '/usr', '/var'];
+
+// Valida la ruta de un vault nuevo y devuelve la ruta absoluta. Evita que desde la web
+// se apunte el vault a "/", a carpetas del sistema, a una carpeta personal entera o a la
+// carpeta data/ de la app (contraseña, secreto de cookies, sesiones), lo que daría acceso
+// de lectura/escritura a todo eso. Con VAULTS_ROOT definido, el vault debe estar dentro.
+export const checkVaultPath = (vaultPath, dataDir) => {
+  const input = String(vaultPath ?? '').trim();
+  if (!input || !isAbsolute(input)) throw new Error('La ruta debe ser absoluta');
+  let full = resolve(input);
+  // Si existe (o existe un ancestro), se resuelven los enlaces simbólicos
+  let existing = full;
+  while (!entryExists(existing) && dirname(existing) !== existing) existing = dirname(existing);
+  try {
+    full = join(realpathSync(existing), relative(existing, full));
+  } catch {
+    throw new Error('Ruta no válida');
+  }
+
+  const forbidden = () => new Error('Esa carpeta no se puede usar como vault');
+  if (dirname(full) === full) throw forbidden(); // raíz del sistema
+  for (const dir of SYSTEM_DIRS) {
+    if (full === dir || isInside(dir, full)) throw forbidden();
+  }
+  // Carpetas personales completas (sí se permiten subcarpetas: /root/MiVault)
+  if (full === '/root' || full === '/home' || dirname(full) === '/home') throw forbidden();
+  const data = resolve(dataDir);
+  if (full === data || isInside(full, data) || isInside(data, full)) throw forbidden();
+
+  const allowedRoot = process.env.VAULTS_ROOT;
+  if (allowedRoot && !isInside(resolve(allowedRoot), full)) {
+    throw new Error(`El vault debe estar dentro de ${resolve(allowedRoot)}`);
+  }
+  return full;
+};
+
+const toVaultPath =(vaultPath, fullPath) => relative(resolve(vaultPath), fullPath).split('\\').join('/');
 
 export const resolveFile = (vaultPath, filePath) => guardPath(vaultPath, filePath);
 
