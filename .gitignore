@@ -5,3 +5,4 @@ dist/
 data/
 data/.secret
 web/dist/
+push.sh

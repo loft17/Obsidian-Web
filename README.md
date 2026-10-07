@@ -62,10 +62,19 @@ PORT=8080 npm start
 npm run dev
 ```
 
-Arranca a la vez:
+Arranca a la vez dos procesos:
 
-- **Vite** con hot-reload en `http://localhost:5173` (frontend)
-- **Express** con `--watch` en `http://localhost:3000` (API)
+- **Vite** en `http://localhost:5173`: sirve el frontend directamente desde `web/src` con hot-reload (los cambios se ven al instante, sin compilar).
+- **Express** con `--watch` en `http://localhost:3000`: la API, que se reinicia sola al cambiar archivos de `server/`.
+
+**Durante el desarrollo abre `http://localhost:5173`**, no el 3000. Vite reenvía todas las peticiones a `/api` hacia Express (ver `server.proxy` en [web/vite.config.ts](web/vite.config.ts)), así que no hay problemas de CORS ni de cookies.
+
+> Esto solo aplica en desarrollo. En producción (`npm start`) no existe el puerto 5173: Express sirve el frontend ya compilado desde `web/dist` en su propio puerto.
+
+Ten en cuenta que:
+
+- **El proxy apunta siempre al puerto 3000.** Si cambias el puerto de la API (con `PORT` o con `port` en `data/config.json`), actualiza también la URL del proxy en `web/vite.config.ts`, o las llamadas a `/api` fallarán en desarrollo.
+- **Vite solo escucha en `localhost`.** Si el proyecto corre en un servidor remoto y quieres abrirlo desde otro equipo, arranca Vite con `npm run web:dev -- --host` (o añade `host: true` en `server` dentro de `web/vite.config.ts`). Otra opción es un túnel SSH: `ssh -L 5173:localhost:5173 usuario@servidor`.
 
 Otros scripts útiles:
 
