@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import express, { Router } from 'express';
 import matter from 'gray-matter';
 import MarkdownIt from 'markdown-it';
 import * as vault from '../vault.js';
@@ -85,6 +85,19 @@ ${md.render(body)}
     vault.writeFile(cfg.vaultPath, req.params.filePath, req.body.content);
     res.json({ success: true });
   }));
+
+  // Sube un adjunto de la nota `note` (cuerpo binario); la carpeta destino sale de los ajustes
+  router.post(
+    '/upload',
+    express.raw({ type: () => true, limit: '50mb' }),
+    withVault((cfg, req, res) => {
+      const note = String(req.query.note || '');
+      const name = String(req.query.name || '');
+      if (!name || !Buffer.isBuffer(req.body) || !req.body.length) throw new Error('Archivo vacío');
+      const folder = vault.attachmentFolder(cfg.vaultPath, note);
+      res.json({ path: vault.saveAttachment(cfg.vaultPath, folder, name, req.body) });
+    })
+  );
 
   router.delete('/:filePath', withVault((cfg, req, res) => {
     vault.deleteFile(cfg.vaultPath, req.params.filePath);

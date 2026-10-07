@@ -71,6 +71,51 @@ export const copyFile = (vaultPath, filePath) => {
   return toVaultPath(vaultPath, destFull);
 };
 
+// Ajustes de Obsidian (.obsidian/app.json) compartidos con la app de escritorio
+const appConfigPath = (vaultPath) => join(resolve(vaultPath), '.obsidian', 'app.json');
+
+export const readAppConfig = (vaultPath) => {
+  try {
+    return JSON.parse(readFileSync(appConfigPath(vaultPath), 'utf8'));
+  } catch {
+    return {};
+  }
+};
+
+export const updateAppConfig = (vaultPath, changes) => {
+  const path = appConfigPath(vaultPath);
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, JSON.stringify({ ...readAppConfig(vaultPath), ...changes }, null, 2), 'utf8');
+};
+
+// Carpeta (ruta dentro del vault) donde se guardan los adjuntos de `notePath`,
+// según `attachmentFolderPath` de Obsidian:
+//   "/" → raíz · "./" → carpeta de la nota · "./sub" → subcarpeta de la nota · "dir" → carpeta fija
+export const attachmentFolder = (vaultPath, notePath) => {
+  const setting = String(readAppConfig(vaultPath).attachmentFolderPath ?? '/').trim();
+  const noteDir = notePath.split('/').slice(0, -1).join('/');
+  let folder;
+  if (setting === '' || setting === '/') folder = '';
+  else if (setting === '.' || setting === './') folder = noteDir;
+  else if (setting.startsWith('./')) folder = [noteDir, setting.slice(2)].filter(Boolean).join('/');
+  else folder = setting;
+  return folder.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
+};
+
+// Guarda un adjunto sin sobrescribir: "imagen.png", "imagen 1.png"...
+export const saveAttachment = (vaultPath, folder, fileName, data) => {
+  const safeName = basename(fileName.replace(/\\/g, '/')).replace(/[<>:"|?*\x00-\x1f]/g, '') || 'adjunto';
+  const ext = extname(safeName);
+  const base = basename(safeName, ext);
+  let fullPath = guardPath(vaultPath, folder ? `${folder}/${safeName}` : safeName);
+  for (let n = 1; existsSync(fullPath); n++) {
+    fullPath = join(dirname(fullPath), `${base} ${n}${ext}`);
+  }
+  mkdirSync(dirname(fullPath), { recursive: true });
+  writeFileSync(fullPath, data);
+  return toVaultPath(vaultPath, fullPath);
+};
+
 export const createNote = (vaultPath, filePath) => {
   const fullPath = guardPath(vaultPath, filePath);
   if (existsSync(fullPath)) throw new Error('Ya existe un archivo con ese nombre');

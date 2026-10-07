@@ -650,7 +650,13 @@ a:hover {
   color: var(--interactive-accent);
   text-decoration: underline;
   text-underline-offset: 2px;
-  cursor: text;
+  cursor: pointer;
+}
+
+/* Enlaces internos a notas que aún no existen (se crean al pulsarlos) */
+.cm-lp-wikilink.is-unresolved,
+.reading-view a.wikilink.is-unresolved {
+  opacity: 0.6;
 }
 
 /* Reading view */

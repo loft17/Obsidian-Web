@@ -1,0 +1,73 @@
+// Subida de imágenes al pegar desde el portapapeles o arrastrar y soltar en el editor
+import { EditorView } from '@codemirror/view';
+import { filesApi } from './api';
+import { useStore } from './store';
+import { isImage } from './attachments';
+
+const pad = (n: number) => String(n).padStart(2, '0');
+
+// Mismo nombre que usa Obsidian: "Pasted image 20240131120000.png"
+const pastedName = (file: File) => {
+  const d = new Date();
+  const stamp = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+  const ext = file.type.split('/')[1]?.replace('jpeg', 'jpg').replace('svg+xml', 'svg') || 'png';
+  return `Pasted image ${stamp}.${ext}`;
+};
+
+const imageFiles = (list: FileList | null | undefined) =>
+  [...(list ?? [])].filter((f) => f.type.startsWith('image/') || isImage(f.name));
+
+// Enlace más corto posible: solo el nombre si no hay otro archivo que se llame igual
+const linkTarget = (path: string) => {
+  const name = path.split('/').pop()!;
+  const lower = name.toLowerCase();
+  const same = useStore.getState().tree.filter((f) => f.path.split('/').pop()!.toLowerCase() === lower);
+  return same.length > 1 ? path : name;
+};
+
+async function upload(view: EditorView, notePath: string, files: File[], pos: number, named: (f: File) => string) {
+  try {
+    const paths: string[] = [];
+    for (const file of files) paths.push((await filesApi.uploadAttachment(notePath, file, named(file))).path);
+    // Refrescar el árbol antes de insertar, para que el enlace se resuelva al pintarlo
+    useStore.getState().setTree(await filesApi.getTree());
+    const text = paths.map((p) => `![[${linkTarget(p)}]]`).join('\n');
+    const at = Math.min(pos, view.state.doc.length);
+    view.dispatch({
+      changes: { from: at, insert: text },
+      selection: { anchor: at + text.length },
+      scrollIntoView: true,
+    });
+    view.focus();
+  } catch (err) {
+    alert(`No se pudo subir la imagen: ${(err as Error).message}`);
+  }
+}
+
+export const imageUpload = (getPath: () => string) =>
+  EditorView.domEventHandlers({
+    paste(event, view) {
+      const files = imageFiles(event.clipboardData?.files);
+      if (!files.length) return false;
+      event.preventDefault();
+      const { from, to } = view.state.selection.main;
+      if (from !== to) view.dispatch({ changes: { from, to } });
+      upload(view, getPath(), files, from, pastedName);
+      return true;
+    },
+    dragover(event) {
+      if ([...(event.dataTransfer?.items ?? [])].some((i) => i.kind === 'file')) {
+        event.preventDefault();
+        return true;
+      }
+      return false;
+    },
+    drop(event, view) {
+      const files = imageFiles(event.dataTransfer?.files);
+      if (!files.length) return false;
+      event.preventDefault();
+      const pos = view.posAtCoords({ x: event.clientX, y: event.clientY }) ?? view.state.selection.main.head;
+      upload(view, getPath(), files, pos, (f) => f.name || pastedName(f));
+      return true;
+    },
+  });

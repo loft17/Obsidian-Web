@@ -86,6 +86,17 @@ export const filesApi = {
     if (!res.ok) throw new Error((await res.json()).error);
     return res.json();
   },
+  // Devuelve la ruta dentro del vault donde se ha guardado el adjunto
+  uploadAttachment: async (notePath: string, file: Blob, name: string): Promise<{ path: string }> => {
+    const params = new URLSearchParams({ note: notePath, name });
+    const res = await fetch(`${API_URL}/files/upload?${params}`, {
+      method: 'POST',
+      headers: { 'Content-Type': file.type || 'application/octet-stream' },
+      body: file,
+    });
+    if (!res.ok) throw new Error((await res.json()).error);
+    return res.json();
+  },
   createFolder: async (path: string) => {
     const res = await fetch(`${API_URL}/files/create-folder`, {
       method: 'POST',
@@ -108,6 +119,20 @@ export const settingsApi = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ vaultPath }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error);
+    return res.json();
+  },
+  getAttachments: async (): Promise<{ attachmentFolderPath: string }> => {
+    const res = await fetch(`${API_URL}/settings/attachments`);
+    if (!res.ok) throw new Error((await res.json()).error);
+    return res.json();
+  },
+  setAttachments: async (attachmentFolderPath: string): Promise<{ attachmentFolderPath: string }> => {
+    const res = await fetch(`${API_URL}/settings/attachments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ attachmentFolderPath }),
     });
     if (!res.ok) throw new Error((await res.json()).error);
     return res.json();

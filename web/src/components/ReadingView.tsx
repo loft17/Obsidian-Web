@@ -1,9 +1,12 @@
-import { useMemo, type MouseEvent } from 'react';
+import { useEffect, useMemo, useRef, type MouseEvent } from 'react';
 import markdownIt from 'markdown-it';
 import { parseNote } from '../frontmatter';
 import Properties from './Properties';
 import { useStore } from '../store';
 import { attachmentUrl, isImage, parseSize } from '../attachments';
+import {
+  followWikilink, isResolved, parseWikilink, resolveWikilink, scrollToHeading, takePendingHeading, wikilinkLabel,
+} from '../wikilinks';
 
 const md = markdownIt({
   html: false,
@@ -51,6 +54,30 @@ md.inline.ruler.before('emphasis', 'tag', (state, silent) => {
   return true;
 });
 
+// Enlace interno: muestra el alias y marca las notas que aún no existen
+function pushWikilink(state: typeof md.inline.State.prototype, inner: string) {
+  const notePath: string = state.env.notePath ?? '';
+  const open = state.push('wikilink_open', 'a', 1);
+  open.attrSet('href', '#');
+  open.attrSet('class', isResolved(inner, notePath) ? 'wikilink' : 'wikilink is-unresolved');
+  open.attrSet('data-href', inner);
+  state.push('text', '', 0).content = wikilinkLabel(inner);
+  state.push('wikilink_close', 'a', -1);
+}
+
+// Enlaces internos al estilo Obsidian: [[nota]], [[nota|alias]], [[nota#encabezado]]
+md.inline.ruler.before('link', 'wikilink', (state, silent) => {
+  const start = state.pos;
+  if (state.src.slice(start, start + 2) !== '[[') return false;
+  const end = state.src.indexOf(']]', start + 2);
+  if (end < 0 || end + 2 > state.posMax) return false;
+  const inner = state.src.slice(start + 2, end);
+  if (!inner.trim() || inner.includes('\n') || inner.includes('[')) return false;
+  if (!silent) pushWikilink(state, inner);
+  state.pos = end + 2;
+  return true;
+});
+
 // Incrustaciones al estilo Obsidian: ![[imagen.png]] o ![[imagen.png|300]]
 md.inline.ruler.before('image', 'embed', (state, silent) => {
   const start = state.pos;
@@ -68,11 +95,7 @@ md.inline.ruler.before('image', 'embed', (state, silent) => {
       token.children = [];
     } else {
       // Notas incrustadas: de momento, un enlace interno
-      const open = state.push('wikilink_open', 'a', 1);
-      open.attrSet('href', '#');
-      open.attrSet('class', 'wikilink');
-      state.push('text', '', 0).content = inner;
-      state.push('wikilink_close', 'a', -1);
+      pushWikilink(state, inner);
     }
   }
   state.pos = end + 2;
@@ -207,7 +230,24 @@ async function copyText(text: string) {
   }
 }
 
-function handleContentClick(e: MouseEvent<HTMLDivElement>) {
+// Clic en [[enlace]]: abre la nota (Ctrl/Cmd o botón central → pestaña nueva);
+// [[#encabezado]] o un enlace a la propia nota solo desplaza la vista
+function openWikilink(e: MouseEvent<HTMLDivElement>, notePath: string) {
+  const link = (e.target as HTMLElement).closest<HTMLElement>('a.wikilink');
+  if (!link) return false;
+  e.preventDefault();
+  const inner = link.dataset.href ?? '';
+  const { target, heading } = parseWikilink(inner);
+  if (resolveWikilink(target, notePath) === notePath) {
+    if (heading) scrollToHeading(e.currentTarget, heading);
+  } else {
+    followWikilink(inner, notePath, e.ctrlKey || e.metaKey || e.button === 1);
+  }
+  return true;
+}
+
+function handleContentClick(e: MouseEvent<HTMLDivElement>, notePath: string) {
+  if (openWikilink(e, notePath)) return;
   const tag = (e.target as HTMLElement).closest<HTMLElement>('a.tag');
   if (tag) {
     e.preventDefault();
@@ -237,15 +277,21 @@ export default function ReadingView({ content, filePath }: Props) {
   const { data: frontmatter, body: markdownContent } = useMemo(() => parseNote(content), [content]);
   const searchTag = useStore((s) => s.searchTag);
   // Las rutas de las imágenes se resuelven contra el árbol del vault
+  // (y también los [[enlaces]], para marcar los que apuntan a notas inexistentes)
   const tree = useStore((s) => s.tree);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const notePath = filePath ?? '';
 
-  const html = useMemo(() => {
-    let text = markdownContent;
-    // Process wikilinks: [[note]]
-    // (las incrustaciones ![[...]] las procesa la regla "embed")
-    text = text.replace(/(?<!!)\[\[([^\]]+)\]\]/g, '<a href="#" class="wikilink">$1</a>');
-    return md.render(text, { notePath: filePath ?? '' });
-  }, [markdownContent, filePath, tree]);
+  const html = useMemo(
+    () => md.render(markdownContent, { notePath }),
+    [markdownContent, notePath, tree]
+  );
+
+  // Llegada desde [[nota#encabezado]]
+  useEffect(() => {
+    const heading = takePendingHeading(notePath);
+    if (heading && contentRef.current) scrollToHeading(contentRef.current, heading);
+  }, [html, notePath]);
 
   const fileName = (filePath?.split('/').pop() || 'Untitled').replace(/\.md$/i, '');
   const title = (frontmatter.title as string) || fileName;
@@ -258,8 +304,10 @@ export default function ReadingView({ content, filePath }: Props) {
         <Properties data={frontmatter} onTagClick={searchTag} />
 
         <div
+          ref={contentRef}
           className="reading-view-content"
-          onClick={handleContentClick}
+          onClick={(e) => handleContentClick(e, notePath)}
+          onAuxClick={(e) => e.button === 1 && openWikilink(e, notePath)}
           dangerouslySetInnerHTML={{ __html: html }} />
       </div>
     </div>

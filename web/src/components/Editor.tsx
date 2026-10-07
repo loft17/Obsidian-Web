@@ -9,6 +9,7 @@ import { EditorView, drawSelection, keymap } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { markdown, markdownKeymap, markdownLanguage } from '@codemirror/lang-markdown';
 import { livePreview, HighlightSyntax, notePath } from '../livePreview';
+import { imageUpload } from '../imageUpload';
 
 interface Props {
   filePath: string;
@@ -50,6 +51,7 @@ function createState(doc: string, onChange: (doc: string) => void, getPath: () =
       EditorView.lineWrapping,
       markdown({ base: markdownLanguage, extensions: [HighlightSyntax] }),
       livePreview,
+      imageUpload(getPath),
       keymap.of([...markdownKeymap, ...defaultKeymap, ...historyKeymap, indentWithTab]),
       EditorView.updateListener.of((u) => {
         if (u.docChanged) onChange(u.state.doc.toString());

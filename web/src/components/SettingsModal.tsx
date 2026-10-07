@@ -37,6 +37,105 @@ function AppearanceSection() {
   );
 }
 
+type AttachmentMode = 'root' | 'same' | 'sub' | 'folder';
+
+// Traduce `attachmentFolderPath` de Obsidian a la opción del desplegable y su carpeta
+const parseAttachmentSetting = (value: string): { mode: AttachmentMode; folder: string } => {
+  if (value === '' || value === '/') return { mode: 'root', folder: '' };
+  if (value === '.' || value === './') return { mode: 'same', folder: '' };
+  if (value.startsWith('./')) return { mode: 'sub', folder: value.slice(2) };
+  return { mode: 'folder', folder: value };
+};
+
+const buildAttachmentSetting = (mode: AttachmentMode, folder: string) => {
+  const name = folder.trim().replace(/^\/+|\/+$/g, '') || 'attachments';
+  if (mode === 'root') return '/';
+  if (mode === 'same') return './';
+  return mode === 'sub' ? `./${name}` : name;
+};
+
+// Se guarda en .obsidian/app.json del vault, compartido con Obsidian de escritorio
+function AttachmentsSetting() {
+  const [loaded, setLoaded] = useState(false);
+  const [mode, setMode] = useState<AttachmentMode>('root');
+  const [folder, setFolder] = useState('');
+  const [savedFolder, setSavedFolder] = useState('');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    settingsApi
+      .getAttachments()
+      .then((r) => {
+        const parsed = parseAttachmentSetting(r.attachmentFolderPath);
+        setMode(parsed.mode);
+        setFolder(parsed.folder);
+        setSavedFolder(parsed.folder);
+        setLoaded(true);
+      })
+      .catch((err) => setError(err.message));
+  }, []);
+
+  const save = async (newMode: AttachmentMode, newFolder: string) => {
+    setError('');
+    try {
+      const r = await settingsApi.setAttachments(buildAttachmentSetting(newMode, newFolder));
+      const parsed = parseAttachmentSetting(r.attachmentFolderPath);
+      setMode(parsed.mode);
+      setFolder(parsed.folder);
+      setSavedFolder(parsed.folder);
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+
+  const saveFolder = () => folder.trim() !== savedFolder && save(mode, folder);
+
+  return (
+    <>
+      <div className="setting-item">
+        <div className="setting-info">
+          <div className="setting-name">Ubicación predeterminada para los archivos adjuntos nuevos</div>
+          <div className="setting-desc">Dónde se ubican los archivos adjuntos recién agregados.</div>
+          {error && <div className="setting-desc" style={{ color: 'var(--text-error, #e5484d)' }}>{error}</div>}
+        </div>
+        <select
+          value={mode}
+          disabled={!loaded}
+          onChange={(e) => save(e.target.value as AttachmentMode, folder)}
+        >
+          <option value="root">Carpeta de la bóveda</option>
+          <option value="same">Misma carpeta donde está el archivo</option>
+          <option value="sub">En la subcarpeta de la carpeta actual</option>
+          <option value="folder">En la carpeta especificada abajo</option>
+        </select>
+      </div>
+      {(mode === 'sub' || mode === 'folder') && (
+        <div className="setting-item">
+          <div className="setting-info">
+            <div className="setting-name">
+              {mode === 'sub' ? 'Nombre de la subcarpeta' : 'Ruta de la carpeta de archivos adjuntos'}
+            </div>
+            <div className="setting-desc">
+              {mode === 'sub'
+                ? `Si su archivo está en "bóveda/carpeta", y su nombre de la subcarpeta establecida en "${folder || 'adjuntos'}", los archivos adjuntos se guardarán en "bóveda/carpeta/${folder || 'adjuntos'}".`
+                : 'Ruta relativa a la raíz de la bóveda donde se guardarán todos los adjuntos.'}
+            </div>
+          </div>
+          <input
+            className="setting-input"
+            type="text"
+            placeholder="attachments"
+            value={folder}
+            onChange={(e) => setFolder(e.target.value)}
+            onBlur={saveFolder}
+            onKeyDown={(e) => e.key === 'Enter' && saveFolder()}
+          />
+        </div>
+      )}
+    </>
+  );
+}
+
 function FilesSection() {
   const hiddenFolders = useStore((s) => s.hiddenFolders);
   const setHiddenFolders = useStore((s) => s.setHiddenFolders);
@@ -91,6 +190,7 @@ function FilesSection() {
           Guardar
         </button>
       </div>
+      <AttachmentsSetting />
       <div className="setting-item">
         <div className="setting-info">
           <div className="setting-name">Ocultar carpetas</div>

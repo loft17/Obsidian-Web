@@ -8,6 +8,7 @@ import { Tag, tags } from '@lezer/highlight';
 import type { MarkdownConfig } from '@lezer/markdown';
 import { liveTables } from './liveTables';
 import { attachmentUrl, isImage, parseSize } from './attachments';
+import { followWikilink, isResolved } from './wikilinks';
 
 // ==resaltado== no forma parte de GFM: se define igual que el tachado de @lezer/markdown
 const highlightTag = Tag.define();
@@ -119,7 +120,11 @@ const hide = Decoration.replace({});
 const bullet = Decoration.replace({ widget: new BulletWidget() });
 const rule = Decoration.replace({ widget: new RuleWidget() });
 const linkText = Decoration.mark({ class: 'cm-lp-link' });
-const wikilink = Decoration.mark({ class: 'cm-lp-wikilink' });
+const wikilinkMark = (inner: string, resolved: boolean) =>
+  Decoration.mark({
+    class: resolved ? 'cm-lp-wikilink' : 'cm-lp-wikilink is-unresolved',
+    attributes: { 'data-href': inner },
+  });
 const line = (cls: string) => Decoration.line({ class: cls });
 
 function activeLines(state: EditorState) {
@@ -239,9 +244,16 @@ function build(view: EditorView): DecorationSet {
         image(start, end, target.trim(), m[1].includes('|') ? m[1] : target.trim().split('/').pop()!);
         continue;
       }
-      add(wikilink, start + m[0].indexOf('[[') + 2, end - 2);
-      if (!isActive(start)) {
-        add(hide, start, start + m[0].indexOf('[[') + 2);
+      const open = start + m[0].indexOf('[[') + 2;
+      const mark = wikilinkMark(m[1], isResolved(m[1], currentNote));
+      if (isActive(start)) {
+        add(mark, open, end - 2);
+      } else {
+        // [[nota|alias]]: fuera de la línea del cursor solo se ve el alias
+        const bar = m[1].indexOf('|');
+        const labelFrom = bar < 0 ? open : open + bar + 1;
+        add(hide, start, labelFrom);
+        add(mark, labelFrom, end - 2);
         add(hide, end - 2, end);
       }
     }
@@ -264,4 +276,19 @@ const livePreviewPlugin = ViewPlugin.fromClass(
   { decorations: (v) => v.decorations }
 );
 
-export const livePreview = [syntaxHighlighting(markdownHighlight), livePreviewPlugin, liveTables];
+// Clic en un [[enlace]] ya renderizado (fuera de la línea del cursor) o Ctrl/Cmd+clic
+// en cualquiera: abre la nota. Ctrl/Cmd o botón central → pestaña nueva.
+const wikilinkClicks = EditorView.domEventHandlers({
+  mousedown(e, view) {
+    const link = (e.target as HTMLElement).closest<HTMLElement>('.cm-lp-wikilink');
+    if (!link || e.button > 1 || e.shiftKey || e.altKey) return false;
+    const modifier = e.ctrlKey || e.metaKey;
+    const pos = view.posAtDOM(link);
+    if (!modifier && e.button === 0 && activeLines(view.state).has(view.state.doc.lineAt(pos).number)) return false;
+    e.preventDefault();
+    followWikilink(link.dataset.href ?? '', view.state.facet(notePath)(), modifier || e.button === 1);
+    return true;
+  },
+});
+
+export const livePreview = [syntaxHighlighting(markdownHighlight), livePreviewPlugin, liveTables, wikilinkClicks];

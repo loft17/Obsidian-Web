@@ -7,6 +7,8 @@ Visor y editor web para un vault de Obsidian local. Con él puedes leer y editar
 - **Explorador de archivos** con carpetas colapsables
 - **Pestañas**: clic abre la nota en la pestaña activa; clic derecho → "Abrir en pestaña nueva"
 - **Modos de edición y lectura**: el modo lectura renderiza el Markdown
+- **Wikilinks navegables**: `[[nota]]`, `[[nota|alias]]` y `[[nota#encabezado]]`. Clic para abrir (Ctrl/Cmd+clic o botón central → pestaña nueva); si la nota no existe se muestra atenuada y se crea en la raíz del vault al pulsarla
+- **Imágenes**: arrastra y suelta o pega desde el portapapeles para subirlas a la nota. La carpeta destino se elige en *Preferencias → Archivos* y se guarda en `.obsidian/app.json`, compartida con Obsidian de escritorio
 - **Autoguardado** con debounce mientras escribes
 - **Gestión de notas** desde el menú contextual: duplicar, mover a otra carpeta, renombrar y borrar (se mueven a `.trash`)
 - **Esquema** de encabezados en la barra lateral derecha
@@ -105,10 +107,9 @@ chmod +x 00_INFO-APP/diagnose.sh
 
 ## Hoja de ruta
 
-- **Fase 2:** editor CodeMirror 6 y wikilinks navegables
+- ~~**Fase 2:** editor CodeMirror 6 y wikilinks navegables~~ ✔
 - **Fase 3:** sincronización con Dropbox / GitHub
 - **Fase 4:** vista de grafo, búsqueda full-text en la interfaz y backlinks
-- Más adelante: soporte de plugins
 
 ## Licencia
 
