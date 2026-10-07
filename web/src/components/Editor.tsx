@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { useStore, isUnder } from '../store';
+import { useStore, isUnder, type EditorMode } from '../store';
 import { filesApi } from '../api';
 import { parseNote, composeNote, type FrontmatterData } from '../frontmatter';
 import Properties from './Properties';
 import EditorToolbar from './EditorToolbar';
-import { EditorState } from '@codemirror/state';
+import { Compartment, EditorState } from '@codemirror/state';
 import { EditorView, drawSelection, keymap } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { markdown, markdownKeymap, markdownLanguage } from '@codemirror/lang-markdown';
-import { livePreview, HighlightSyntax, notePath } from '../livePreview';
+import { livePreview, sourceMode, HighlightSyntax, notePath } from '../livePreview';
 import { imageUpload } from '../imageUpload';
 
 interface Props {
@@ -41,6 +41,10 @@ export function cancelPendingSave(path: string) {
   }
 }
 
+// Permite cambiar entre vista previa en vivo y modo fuente sin recrear el editor
+const modeCompartment = new Compartment();
+const modeExtension = (mode: EditorMode) => (mode === 'source' ? sourceMode : livePreview);
+
 function createState(doc: string, onChange: (doc: string) => void, getPath: () => string) {
   return EditorState.create({
     doc,
@@ -50,7 +54,7 @@ function createState(doc: string, onChange: (doc: string) => void, getPath: () =
       drawSelection(),
       EditorView.lineWrapping,
       markdown({ base: markdownLanguage, extensions: [HighlightSyntax] }),
-      livePreview,
+      modeCompartment.of(modeExtension(useStore.getState().editorMode)),
       imageUpload(getPath),
       keymap.of([...markdownKeymap, ...defaultKeymap, ...historyKeymap, indentWithTab]),
       EditorView.updateListener.of((u) => {
@@ -64,6 +68,7 @@ export default function Editor({ filePath, content, onContentChange }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const setTabDirty = useStore((s) => s.setTabDirty);
+  const editorMode = useStore((s) => s.editorMode);
   const note = useMemo(() => parseNote(content), [content]);
   // Con un frontmatter inválido se edita el texto completo, sin panel de propiedades
   const body = note.valid ? note.body : content;
@@ -86,6 +91,10 @@ export default function Editor({ filePath, content, onContentChange }: Props) {
       viewRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    viewRef.current?.dispatch({ effects: modeCompartment.reconfigure(modeExtension(editorMode)) });
+  }, [editorMode]);
 
   // Contenido cambiado desde fuera (otra nota, propiedades...): estado nuevo, historial limpio
   useEffect(() => {

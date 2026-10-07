@@ -31,6 +31,18 @@ interface AppStore {
   setDefaultEditMode: (mode: boolean) => void;
   theme: Theme;
   setTheme: (theme: Theme) => void;
+  fontSize: number;
+  setFontSize: (size: number) => void;
+  quickFontSize: boolean;
+  setQuickFontSize: (enabled: boolean) => void;
+  editorMode: EditorMode;
+  setEditorMode: (mode: EditorMode) => void;
+  showTabHeader: boolean;
+  setShowTabHeader: (show: boolean) => void;
+  showRibbon: boolean;
+  setShowRibbon: (show: boolean) => void;
+  settingsOpen: boolean;
+  setSettingsOpen: (open: boolean) => void;
   expandedFolders: Set<string>;
   toggleFolder: (path: string) => void;
   collapseAll: () => void;
@@ -44,6 +56,17 @@ interface AppStore {
 }
 
 export type SidebarView = 'files' | 'search';
+
+// 'preview': vista previa en vivo (oculta la sintaxis fuera de la línea activa); 'source': markdown tal cual
+export type EditorMode = 'preview' | 'source';
+const EDITOR_MODE_KEY = 'editorMode';
+const initialEditorMode = ((): EditorMode => {
+  try {
+    return localStorage.getItem(EDITOR_MODE_KEY) === 'source' ? 'source' : 'preview';
+  } catch {
+    return 'preview';
+  }
+})();
 
 // true si `path` es `base` o está dentro de la carpeta `base`
 export const isUnder = (path: string, base: string) => path === base || path.startsWith(base + '/');
@@ -80,6 +103,56 @@ const applyTheme = (theme: Theme) => {
 applyTheme(initialTheme);
 // En modo "sistema", seguir los cambios del sistema operativo en caliente
 systemDark.addEventListener('change', () => applyTheme(useStore.getState().theme));
+
+// Tamaño de la fuente del editor y la vista de lectura (px); se aplica con la variable CSS --font-text-size
+export const DEFAULT_FONT_SIZE = 15;
+export const MIN_FONT_SIZE = 10;
+export const MAX_FONT_SIZE = 30;
+const FONT_SIZE_KEY = 'fontSize';
+const clampFontSize = (size: number) =>
+  Math.min(MAX_FONT_SIZE, Math.max(MIN_FONT_SIZE, Math.round(size)));
+const initialFontSize = (() => {
+  try {
+    const value = Number(localStorage.getItem(FONT_SIZE_KEY));
+    return value ? clampFontSize(value) : DEFAULT_FONT_SIZE;
+  } catch {
+    return DEFAULT_FONT_SIZE;
+  }
+})();
+
+const applyFontSize = (size: number) =>
+  document.documentElement.style.setProperty('--font-text-size', `${size}px`);
+
+applyFontSize(initialFontSize);
+
+// Ctrl + rueda del ratón (o pellizcar en el trackpad) sobre la nota cambia el tamaño de fuente
+const QUICK_FONT_SIZE_KEY = 'quickFontSize';
+const initialQuickFontSize = (() => {
+  try {
+    return localStorage.getItem(QUICK_FONT_SIZE_KEY) === 'true';
+  } catch {
+    return false;
+  }
+})();
+
+// Preferencias de interfaz de sí/no, guardadas como 'true'/'false'
+const SHOW_TAB_HEADER_KEY = 'showTabHeader';
+const SHOW_RIBBON_KEY = 'showRibbon';
+const readBool = (key: string, fallback: boolean) => {
+  try {
+    const value = localStorage.getItem(key);
+    return value === null ? fallback : value === 'true';
+  } catch {
+    return fallback;
+  }
+};
+const saveBool = (key: string, value: boolean) => {
+  try {
+    localStorage.setItem(key, String(value));
+  } catch {
+    // almacenamiento no disponible: la preferencia solo dura la sesión
+  }
+};
 
 const HIDDEN_KEY = 'hiddenFolders';
 const initialHiddenFolders = (() => {
@@ -182,6 +255,47 @@ export const useStore =create<AppStore>((set) => ({
     applyTheme(theme);
     set({ theme });
   },
+  fontSize: initialFontSize,
+  setFontSize: (size) => {
+    const value = clampFontSize(size);
+    try {
+      localStorage.setItem(FONT_SIZE_KEY, String(value));
+    } catch {
+      // almacenamiento no disponible: la preferencia solo dura la sesión
+    }
+    applyFontSize(value);
+    set({ fontSize: value });
+  },
+  quickFontSize: initialQuickFontSize,
+  setQuickFontSize: (enabled) => {
+    try {
+      localStorage.setItem(QUICK_FONT_SIZE_KEY, String(enabled));
+    } catch {
+      // almacenamiento no disponible: la preferencia solo dura la sesión
+    }
+    set({ quickFontSize: enabled });
+  },
+  editorMode: initialEditorMode,
+  setEditorMode: (mode) => {
+    try {
+      localStorage.setItem(EDITOR_MODE_KEY, mode);
+    } catch {
+      // almacenamiento no disponible: la preferencia solo dura la sesión
+    }
+    set({ editorMode: mode });
+  },
+  showTabHeader: readBool(SHOW_TAB_HEADER_KEY, true),
+  setShowTabHeader: (show) => {
+    saveBool(SHOW_TAB_HEADER_KEY, show);
+    set({ showTabHeader: show });
+  },
+  showRibbon: readBool(SHOW_RIBBON_KEY, true),
+  setShowRibbon: (show) => {
+    saveBool(SHOW_RIBBON_KEY, show);
+    set({ showRibbon: show });
+  },
+  settingsOpen: false,
+  setSettingsOpen: (open) => set({ settingsOpen: open }),
   expandedFolders: new Set(),
   collapseAll: () => set({ expandedFolders: new Set() }),
   sidebarOpen: true,

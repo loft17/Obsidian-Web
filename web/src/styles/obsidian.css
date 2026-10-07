@@ -224,6 +224,22 @@ a:hover {
   padding: 8px 8px 4px;
 }
 
+.sidebar-footer {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 8px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.sidebar-footer-spacer {
+  flex: 1;
+}
+
+.sidebar-footer .icon-btn.active {
+  color: var(--text-accent);
+}
+
 .file-explorer {
   flex: 1;
   overflow-y: auto;
@@ -431,6 +447,11 @@ a:hover {
   padding: 2px;
 }
 
+.tabs-sidebar-toggle {
+  flex-shrink: 0;
+  margin-bottom: 4px;
+}
+
 .tab-new {
   padding: 4px;
   margin-left: 4px;
@@ -494,7 +515,7 @@ a:hover {
 
 .cm-editor {
   flex: 1;
-  font-size: 15px;
+  font-size: var(--font-text-size, 15px);
   line-height: 1.7;
   color: var(--text-normal);
   background-color: var(--background-primary);
@@ -542,7 +563,7 @@ a:hover {
 .cm-lp-codeblock {
   background-color: var(--background-secondary);
   font-family: 'Consolas', 'Menlo', monospace;
-  font-size: 13px;
+  font-size: 0.87em;
   padding-left: 14px !important;
 }
 
@@ -735,6 +756,7 @@ a:hover {
 .reading-view {
   flex: 1;
   overflow-y: auto;
+  font-size: var(--font-text-size, 15px);
   line-height: 1.7;
 }
 
@@ -745,7 +767,7 @@ a:hover {
 }
 
 .reading-view-title {
-  font-size: 28px;
+  font-size: 1.85em;
   font-weight: 700;
   margin-bottom: 20px;
   line-height: 1.3;
@@ -1067,7 +1089,7 @@ a:hover {
 }
 
 .reading-view h1 {
-  font-size: 28px;
+  font-size: 1.85em;
   margin-top: 24px;
   margin-bottom: 16px;
   font-weight: 700;
@@ -1075,14 +1097,14 @@ a:hover {
 }
 
 .reading-view h2 {
-  font-size: 22px;
+  font-size: 1.5em;
   margin-top: 28px;
   margin-bottom: 12px;
   font-weight: 700;
 }
 
 .reading-view h3 {
-  font-size: 18px;
+  font-size: 1.25em;
   margin-top: 20px;
   margin-bottom: 10px;
   font-weight: 700;
@@ -1106,7 +1128,7 @@ a:hover {
   padding: 2px 4px;
   border-radius: 3px;
   font-family: 'Consolas', 'Menlo', monospace;
-  font-size: 12px;
+  font-size: 0.85em;
 }
 
 .reading-view pre {
@@ -1691,6 +1713,105 @@ a:hover {
 .setting-item select option {
   background-color: var(--background-secondary);
   color: var(--text-normal);
+}
+
+.setting-slider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.setting-slider .icon-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.setting-slider-value {
+  min-width: 2ch;
+  text-align: right;
+  color: var(--text-normal);
+}
+
+.setting-slider input[type="range"] {
+  appearance: none;
+  width: 100px;
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(
+    to right,
+    var(--interactive-accent) var(--slider-fill, 50%),
+    var(--background-modifier-border) var(--slider-fill, 50%)
+  );
+  cursor: pointer;
+}
+
+.setting-slider input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  border: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.setting-slider input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  border: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.setting-toggle {
+  position: relative;
+  flex-shrink: 0;
+  width: 40px;
+  height: 22px;
+  cursor: pointer;
+}
+
+.setting-toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.setting-toggle span {
+  position: absolute;
+  inset: 0;
+  border-radius: 11px;
+  background-color: var(--background-modifier-border);
+  transition: background-color 0.15s;
+}
+
+.setting-toggle span::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  transition: transform 0.15s;
+}
+
+.setting-toggle input:checked + span {
+  background-color: var(--interactive-accent);
+}
+
+.setting-toggle input:checked + span::after {
+  transform: translateX(18px);
+}
+
+.setting-toggle input:focus-visible + span {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
 }
 
 .setting-input {

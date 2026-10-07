@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
-import { useStore, type Theme } from '../store';
+import { useEffect, useState, type CSSProperties } from 'react';
+import { useStore, type EditorMode, type Theme, DEFAULT_FONT_SIZE, MIN_FONT_SIZE, MAX_FONT_SIZE } from '../store';
 import { settingsApi } from '../api';
-import { IconClose, IconEye, IconFolderNew, IconList, IconSearch, IconUserCircle } from './Icons';
+import { IconClose, IconEdit, IconEye, IconFolderNew, IconList, IconReset, IconSearch, IconUserCircle } from './Icons';
 
 interface Props {
   onClose: () => void;
@@ -10,16 +10,24 @@ interface Props {
 const SECTIONS = [
   { id: 'about', label: 'Acerca de', Icon: IconUserCircle },
   { id: 'appearance', label: 'Apariencia', Icon: IconEye },
+  { id: 'editor', label: 'Editor', Icon: IconEdit },
   { id: 'files', label: 'Archivos', Icon: IconFolderNew },
   { id: 'shortcuts', label: 'Atajos', Icon: IconList },
 ];
 
 // Los cambios se guardan automáticamente (el store los persiste en localStorage)
 function AppearanceSection() {
-  const defaultEditMode = useStore((s) => s.defaultEditMode);
-  const setDefaultEditMode = useStore((s) => s.setDefaultEditMode);
   const theme = useStore((s) => s.theme);
   const setTheme = useStore((s) => s.setTheme);
+  const fontSize = useStore((s) => s.fontSize);
+  const setFontSize = useStore((s) => s.setFontSize);
+  const showTabHeader = useStore((s) => s.showTabHeader);
+  const setShowTabHeader = useStore((s) => s.setShowTabHeader);
+  const showRibbon = useStore((s) => s.showRibbon);
+  const setShowRibbon = useStore((s) => s.setShowRibbon);
+  const quickFontSize = useStore((s) => s.quickFontSize);
+  const setQuickFontSize = useStore((s) => s.setQuickFontSize);
+  const fontPercent = ((fontSize - MIN_FONT_SIZE) / (MAX_FONT_SIZE - MIN_FONT_SIZE)) * 100;
   return (
     <div className="settings-group">
       <div className="setting-item">
@@ -35,6 +43,83 @@ function AppearanceSection() {
       </div>
       <div className="setting-item">
         <div className="setting-info">
+          <div className="setting-name">Tamaño de fuente</div>
+          <div className="setting-desc">Tamaño de fuente en píxeles que afecta al editor y la vista previa.</div>
+        </div>
+        <div className="setting-slider">
+          <button
+            className="icon-btn"
+            title="Restablecer valor predeterminado"
+            disabled={fontSize === DEFAULT_FONT_SIZE}
+            onClick={() => setFontSize(DEFAULT_FONT_SIZE)}
+          >
+            <IconReset size={16} />
+          </button>
+          <span className="setting-slider-value">{fontSize}</span>
+          <input
+            type="range"
+            min={MIN_FONT_SIZE}
+            max={MAX_FONT_SIZE}
+            step={1}
+            value={fontSize}
+            style={{ '--slider-fill': `${fontPercent}%` } as CSSProperties}
+            onChange={(e) => setFontSize(Number(e.target.value))}
+          />
+        </div>
+      </div>
+      <div className="setting-item">
+        <div className="setting-info">
+          <div className="setting-name">Ajuste rápido del tamaño de fuente</div>
+          <div className="setting-desc">
+            Ajuste el tamaño de la fuente usando Ctrl + Rueda del ratón, o usando el gesto de pellizcar y acercar del
+            trackpad.
+          </div>
+        </div>
+        <label className="setting-toggle">
+          <input
+            type="checkbox"
+            checked={quickFontSize}
+            onChange={(e) => setQuickFontSize(e.target.checked)}
+          />
+          <span />
+        </label>
+      </div>
+      <div className="setting-item">
+        <div className="setting-info">
+          <div className="setting-name">Mostrar la barra de título de pestaña</div>
+          <div className="setting-desc">Mostrar el encabezado en la parte superior de todas las pestañas.</div>
+        </div>
+        <label className="setting-toggle">
+          <input type="checkbox" checked={showTabHeader} onChange={(e) => setShowTabHeader(e.target.checked)} />
+          <span />
+        </label>
+      </div>
+      <div className="setting-item">
+        <div className="setting-info">
+          <div className="setting-name">Mostrar menú de cinta</div>
+          <div className="setting-desc">
+            Muestra una barra de herramientas vertical en el costado de la ventana. Si se oculta, sus botones
+            pasan al pie de la barra lateral.
+          </div>
+        </div>
+        <label className="setting-toggle">
+          <input type="checkbox" checked={showRibbon} onChange={(e) => setShowRibbon(e.target.checked)} />
+          <span />
+        </label>
+      </div>
+    </div>
+  );
+}
+
+function EditorSection() {
+  const defaultEditMode = useStore((s) => s.defaultEditMode);
+  const setDefaultEditMode = useStore((s) => s.setDefaultEditMode);
+  const editorMode = useStore((s) => s.editorMode);
+  const setEditorMode = useStore((s) => s.setEditorMode);
+  return (
+    <div className="settings-group">
+      <div className="setting-item">
+        <div className="setting-info">
           <div className="setting-name">Modo por defecto de las notas</div>
           <div className="setting-desc">Cómo se abren las notas al seleccionarlas</div>
         </div>
@@ -44,6 +129,19 @@ function AppearanceSection() {
         >
           <option value="view">Modo visor</option>
           <option value="edit">Modo edición</option>
+        </select>
+      </div>
+      <div className="setting-item">
+        <div className="setting-info">
+          <div className="setting-name">Modo de edición predeterminado</div>
+          <div className="setting-desc">
+            Vista previa: oculta la sintaxis de markdown salvo en la línea que editas. Fuente: muestra el markdown tal
+            cual.
+          </div>
+        </div>
+        <select value={editorMode} onChange={(e) => setEditorMode(e.target.value as EditorMode)}>
+          <option value="preview">Modo vista previa</option>
+          <option value="source">Modo fuente</option>
         </select>
       </div>
     </div>
@@ -351,6 +449,7 @@ export default function SettingsModal({ onClose }: Props) {
           <div className="settings-content">
             {section === 'about' && <AboutSection />}
             {section === 'appearance' && <AppearanceSection />}
+            {section === 'editor' && <EditorSection />}
             {section === 'files' && <FilesSection />}
             {section === 'shortcuts' && <ShortcutsSection />}
           </div>

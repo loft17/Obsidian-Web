@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useStore } from '../store';
 import { filesApi } from '../api';
-import Ribbon from './Ribbon';
+import Ribbon, { SidebarFooter } from './Ribbon';
+import SettingsModal from './SettingsModal';
 import FileExplorer from './FileExplorer';
 import SearchPanel from './SearchPanel';
 import Tabs from './Tabs';
@@ -26,6 +27,10 @@ export default function MainLayout() {
   const tree = useStore((s) => s.tree);
   const openFile = useStore((s) => s.openFile);
   const activeIsImage = !!activeTab && isImage(activeTab);
+  const showRibbon = useStore((s) => s.showRibbon);
+  const showTabHeader = useStore((s) => s.showTabHeader);
+  const settingsOpen = useStore((s) => s.settingsOpen);
+  const setSettingsOpen = useStore((s) => s.setSettingsOpen);
 
   // Atajos globales: Ctrl/Cmd+P abrir nota, +S guardar, +E editar/leer, +B barra lateral, +Shift+F buscar
   useEffect(() => {
@@ -63,6 +68,25 @@ export default function MainLayout() {
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
+  // Ajuste rápido del tamaño de fuente: Ctrl/Cmd + rueda sobre la nota. Los navegadores también envían
+  // el gesto de pellizcar del trackpad como rueda con ctrlKey. Fuera de la nota se mantiene el zoom del navegador
+  useEffect(() => {
+    let accumulated = 0;
+    const onWheel = (e: WheelEvent) => {
+      const { quickFontSize, fontSize, setFontSize } = useStore.getState();
+      if (!quickFontSize || !(e.ctrlKey || e.metaKey)) return;
+      if (!(e.target as Element).closest?.('.cm-editor, .reading-view')) return;
+      e.preventDefault();
+      // El trackpad manda muchos deltas pequeños: acumularlos para que el gesto no vaya demasiado rápido
+      accumulated += e.deltaY;
+      if (Math.abs(accumulated) < 20) return;
+      setFontSize(fontSize + (accumulated < 0 ? 1 : -1));
+      accumulated = 0;
+    };
+    document.addEventListener('wheel', onWheel, { passive: false });
+    return () => document.removeEventListener('wheel', onWheel);
+  }, []);
+
   useEffect(() => {
     if (!activeTab) return;
     // Las imágenes las carga el visor; leerlas como texto las corrompería al autoguardar
@@ -88,15 +112,18 @@ export default function MainLayout() {
 
   return (
     <div className="app-container">
-      <Ribbon />
+      {showRibbon && <Ribbon />}
       <div className="main-content">
         {sidebarOpen && (
-          <aside className="sidebar-left">{sidebarView === 'search' ? <SearchPanel /> : <FileExplorer />}</aside>
+          <aside className="sidebar-left">
+            {sidebarView === 'search' ? <SearchPanel /> : <FileExplorer />}
+            {!showRibbon && <SidebarFooter />}
+          </aside>
         )}
 
         <div className="editor-container">
           <Tabs />
-          {activeTab && (
+          {activeTab && showTabHeader && (
             <div className="breadcrumb">
               <div className="breadcrumb-path">
                 {activeTab.replace(/\.md$/i, '').split('/').map((part, i, arr) => (
@@ -142,6 +169,7 @@ export default function MainLayout() {
           {!activeIsImage && <StatusBar content={fileContent} />}
         </div>
       </div>
+      {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
       {quickOpen && (
         <QuickOpenDialog
           files={tree.filter((i) => i.type === 'file' && /\.md$/i.test(i.path))}

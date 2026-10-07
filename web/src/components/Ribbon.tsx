@@ -1,20 +1,18 @@
-import { useState } from 'react';
 import { useStore } from '../store';
-import SettingsModal from './SettingsModal';
 import { authApi } from '../api';
 import { IconSidebar, IconFolderOpen, IconSearch, IconBookmark, IconSettings, IconLogout } from './Icons';
 
+export const logout = async () => {
+  await authApi.logout();
+  window.location.reload();
+};
+
 export default function Ribbon() {
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const sidebarOpen = useStore((s) => s.sidebarOpen);
   const toggleSidebar = useStore((s) => s.toggleSidebar);
   const sidebarView = useStore((s) => s.sidebarView);
   const showSidebarView = useStore((s) => s.showSidebarView);
-
-  const handleLogout = async () => {
-    await authApi.logout();
-    window.location.reload();
-  };
+  const setSettingsOpen = useStore((s) => s.setSettingsOpen);
 
   return (
     <div className="ribbon">
@@ -45,11 +43,43 @@ export default function Ribbon() {
         <div className="ribbon-item" title="Configuración" onClick={() => setSettingsOpen(true)}>
           <IconSettings />
         </div>
-        <div className="ribbon-item" title="Salir" onClick={handleLogout}>
+        <div className="ribbon-item" title="Salir" onClick={logout}>
           <IconLogout />
         </div>
       </div>
-      {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
+    </div>
+  );
+}
+
+// Con la cinta oculta, sus botones pasan al pie de la barra lateral
+export function SidebarFooter() {
+  const sidebarView = useStore((s) => s.sidebarView);
+  const showSidebarView = useStore((s) => s.showSidebarView);
+  const setSettingsOpen = useStore((s) => s.setSettingsOpen);
+
+  return (
+    <div className="sidebar-footer">
+      <button
+        className={`icon-btn ${sidebarView === 'files' ? 'active' : ''}`}
+        title="Archivos"
+        onClick={() => showSidebarView('files')}
+      >
+        <IconFolderOpen size={16} />
+      </button>
+      <button
+        className={`icon-btn ${sidebarView === 'search' ? 'active' : ''}`}
+        title="Búsqueda (Ctrl+Shift+F)"
+        onClick={() => showSidebarView('search')}
+      >
+        <IconSearch size={16} />
+      </button>
+      <span className="sidebar-footer-spacer" />
+      <button className="icon-btn" title="Configuración" onClick={() => setSettingsOpen(true)}>
+        <IconSettings size={16} />
+      </button>
+      <button className="icon-btn" title="Salir" onClick={logout}>
+        <IconLogout size={16} />
+      </button>
     </div>
   );
 }
