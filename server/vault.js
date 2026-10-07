@@ -1,11 +1,34 @@
-import { readFileSync, writeFileSync, readdirSync, statSync, mkdirSync, renameSync, existsSync, copyFileSync, cpSync } from 'fs';
+import { readFileSync, writeFileSync, readdirSync, statSync, lstatSync, realpathSync, mkdirSync, renameSync, existsSync, copyFileSync, cpSync } from 'fs';
 import { join, resolve, relative, dirname, basename, extname, isAbsolute, sep } from 'path';
+
+// Como existsSync, pero también cuenta los enlaces simbólicos rotos
+const entryExists = (p) => {
+  try {
+    lstatSync(p);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const isInside = (root, target) => {
+  const rel = relative(root, target);
+  return !rel.startsWith('..') && !isAbsolute(rel);
+};
 
 const guardPath = (vaultPath, userPath) => {
   const root = resolve(vaultPath);
   const resolved = resolve(root, userPath);
   const rel = relative(root, resolved);
   if (!rel || rel.startsWith('..') || isAbsolute(rel)) {
+    throw new Error('Path traversal attempt');
+  }
+  // Los enlaces simbólicos no pueden sacar la ruta fuera de la bóveda: se resuelve
+  // el ancestro más cercano que exista (la ruta final puede no existir aún al crear).
+  // Un enlace roto hace fallar realpathSync, así que tampoco se puede escribir a través de él
+  let existing = resolved;
+  while (!entryExists(existing) && dirname(existing) !== existing) existing = dirname(existing);
+  if (!isInside(realpathSync(root), realpathSync(existing))) {
     throw new Error('Path traversal attempt');
   }
   return resolved;
@@ -136,6 +159,8 @@ export const listTree = (vaultPath) => {
     for (const item of items) {
       if (item === '.trash' || item.startsWith('.')) continue;
       const fullPath = join(dir, item);
+      // Los enlaces simbólicos no se muestran: podrían apuntar fuera de la bóveda o crear ciclos
+      if (lstatSync(fullPath).isSymbolicLink()) continue;
       const stat = statSync(fullPath);
       const path = parentPath ? `${parentPath}/${item}` : item;
       if (stat.isDirectory()) {

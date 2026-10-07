@@ -56,6 +56,19 @@ PORT=8080 npm start
 >
 > El servidor no carga `.env` automáticamente: `.env.example` sirve solo como referencia, así que define las variables en el entorno (shell, systemd, pm2…).
 
+## Enlaces simbólicos (symlinks) en la bóveda
+
+Por seguridad, la web **no sigue los enlaces simbólicos** que haya dentro de la bóveda. La aplicación solo puede leer y escribir archivos que estén físicamente dentro de la carpeta de la bóveda. Si un symlink apuntara a otra parte del servidor (por ejemplo a `/etc` o a la carpeta `data/` con la contraseña), cualquiera con acceso a la web podría leer o modificar esos archivos.
+
+En la práctica:
+
+- Los symlinks **no aparecen** en el explorador de archivos ni en las búsquedas.
+- Cualquier intento de abrir, crear o guardar un archivo a través de un symlink que lleve fuera de la bóveda se rechaza, igual que una ruta con `../`.
+
+**Consecuencia:** si usas symlinks a propósito para enlazar otra carpeta dentro de la bóveda (por ejemplo `mi-vault/Proyectos → /home/usuario/proyectos`), esa carpeta no se verá en la web. Para que aparezca, **copia o mueve la carpeta dentro de la bóveda**.
+
+> Esto solo afecta a los enlaces que están *dentro* de la bóveda. La ruta de la bóveda en sí sí puede ser un symlink (por ejemplo `/root/vault → /mnt/disco/vault`): funciona con normalidad.
+
 ## Desarrollo
 
 ```bash
