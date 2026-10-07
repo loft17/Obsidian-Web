@@ -138,7 +138,7 @@ la propia web.
 
 | Necesitas | Detalle |
 | :--- | :--- |
-| 🟢 **Node.js** | **20 o superior** (20.6+ si quieres usar `--env-file`) y el `npm` que trae. |
+| 🟢 **Node.js** | **20 o superior** (20.12+ para que se cargue el `.env`) y el `npm` que trae. |
 | 📁 **Un vault** | Una carpeta del servidor: un vault existente o una carpeta vacía (si no existe, se crea). |
 | 🔐 **En producción** | Un dominio y un proxy inverso con HTTPS (Caddy o nginx). Muy recomendado. |
 
@@ -197,12 +197,14 @@ Por seguridad, se rechazan:
 
 ## 🧩 Variables de entorno
 
-El servidor **no carga archivos `.env` por sí solo**. Defínelas en la shell, en la unidad de systemd o en PM2, o usa la opción nativa de Node 20.6+:
+Al arrancar, el servidor carga el archivo **`.env`** de la carpeta de la app si existe (requiere Node 20.12+). Tras editarlo, reinicia el servidor:
 
 ```bash
 cp .env.example .env && nano .env
-node --env-file=.env server/index.js
+npm start
 ```
+
+También puedes definirlas en la shell, en la unidad de systemd o en PM2: **esas tienen prioridad** sobre las del `.env`.
 
 | Variable | Por defecto | Para qué sirve |
 | :--- | :--- | :--- |
