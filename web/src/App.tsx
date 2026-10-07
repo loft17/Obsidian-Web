@@ -19,7 +19,14 @@ export default function App() {
         const status = await setupApi.checkStatus();
         console.log('Setup status:', status);
         if (status.configured) {
-          setAppState('login');
+          // Si la cookie de sesión sigue siendo válida (p. ej. al recargar), entrar directamente
+          try {
+            const tree = await filesApi.getTree();
+            setTree(tree);
+            setAppState('main');
+          } catch {
+            setAppState('login');
+          }
         } else {
           setAppState('setup');
         }

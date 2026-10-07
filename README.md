@@ -1,138 +1,158 @@
-# Obsidian Web
+<div align="center">
 
+# 💎 Obsidian Web
 
-Visor y editor web para un vault de Obsidian local. Con él puedes leer y editar tus notas Markdown desde el navegador (por ejemplo, alojado en un VPS), con una interfaz inspirada en el tema oscuro de Obsidian.
+**Visor y editor web ultraligero para tu vault de Obsidian local.**  
+Accede y edita tus notas Markdown desde cualquier navegador (ideal para tu VPS), con una interfaz fiel al tema oscuro de Obsidian.
+
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D%2020.0.0-brightgreen.svg)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/typescript-%5E5.0-blue.svg)](https://www.typescriptlang.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+</div>
 
 ---
 
+## ✨ Características
 
-## Características
+- 📂 **Explorador de archivos** con carpetas colapsables e intuitivas.
+- 🗂️ **Sistema de pestañas**: clic para abrir en la pestaña activa, o clic derecho / botón central para *"Abrir en pestaña nueva"*.
+- 👁️ **Modos duales**: edición fluida y modo lectura con renderizado completo de Markdown.
+- 🔗 **Wikilinks avanzados**: soporte para `[[nota]]`, `[[nota|alias]]` y `[[nota#encabezado]]`. Si la nota no existe, se muestra atenuada y se crea automáticamente en la raíz al pulsarla.
+- 🖼️ **Gestión multimedia**: arrastra y suelta o pega imágenes desde el portapapeles. La ruta de destino se sincroniza con `.obsidian/app.json`.
+- ⚡ **Autoguardado inteligente** con *debounce* mientras escribes.
+- 🛠️ **Menú contextual completo**: duplica, mueve, renombra o borra notas (enviándolas de forma segura a `.trash`).
+- 📊 **Esquema de encabezados** en la barra lateral derecha y contador en tiempo real de palabras, caracteres y líneas.
+- 🔒 **Seguridad robusta**: acceso protegido mediante hash con `scrypt` y cookies firmadas.
 
-- **Explorador de archivos** con carpetas colapsables
-- **Pestañas**: clic abre la nota en la pestaña activa; clic derecho → "Abrir en pestaña nueva"
-- **Modos de edición y lectura**: el modo lectura renderiza el Markdown
-- **Wikilinks navegables**: `[[nota]]`, `[[nota|alias]]` y `[[nota#encabezado]]`. Clic para abrir (Ctrl/Cmd+clic o botón central → pestaña nueva); si la nota no existe se muestra atenuada y se crea en la raíz del vault al pulsarla
-- **Imágenes**: arrastra y suelta o pega desde el portapapeles para subirlas a la nota. La carpeta destino se elige en *Preferencias → Archivos* y se guarda en `.obsidian/app.json`, compartida con Obsidian de escritorio
-- **Autoguardado** con debounce mientras escribes
-- **Gestión de notas** desde el menú contextual: duplicar, mover a otra carpeta, renombrar y borrar (se mueven a `.trash`)
-- **Esquema** de encabezados en la barra lateral derecha
-- **Contador** de palabras, caracteres y líneas
-- **Acceso protegido por contraseña** (hash con scrypt y cookie firmada)
+---
 
-## Requisitos
+## 📋 Requisitos
 
-- Node.js **20 o superior**
-- Un vault de Obsidian accesible en el sistema de archivos del servidor
+- **Node.js**: Versión **20 o superior**.
+- **Vault**: Una bóveda de Obsidian accesible desde el sistema de archivos del servidor.
 
-## Instalación
+---
+
+## 🚀 Instalación y Puesta en Marcha
+
+Clona el repositorio e instala las dependencias (el script `postinstall` compilará automáticamente el frontend):
 
 ```bash
 git clone <repo-url>
 cd ObiWEB
-npm install   # instala dependencias y compila el frontend (postinstall)
+npm install
 npm start
 ```
 
-La aplicación queda disponible en `http://localhost:3000`.
+La aplicación estará disponible en **`http://localhost:3000`**.
 
-### Primer inicio
+### 🛠️ Primer inicio
 
-1. Abre `http://localhost:3000` en el navegador.
-2. Indica la ruta absoluta del vault (p. ej. `/home/usuario/mi-vault`).
-3. Define una contraseña (mínimo 6 caracteres).
-4. Pulsa **Configurar** y empieza a editar.
+1. Abre `http://localhost:3000` en tu navegador.
+2. Introduce la **ruta absoluta** de tu vault (ej. `/home/usuario/mi-vault`).
+3. Define una contraseña de acceso (mínimo 6 caracteres).
+4. Haz clic en **Configurar** ¡y listo para editar!
 
-La configuración se guarda en `data/config.json` y el secreto de las cookies en `data/.secret`. Ambos se generan automáticamente y están excluidos de git. Para volver a configurar desde cero, borra `data/config.json`.
+> 💡 **Nota:** La configuración se almacena en `data/config.json` y el secreto de las cookies en `data/.secret` (ambos excluidos de Git). Para reiniciar la configuración desde cero, simplemente borra `data/config.json`.
 
-## Configuración
+---
 
-El puerto se puede cambiar con la variable de entorno `PORT` (por defecto `3000`):
+## ⚙️ Configuración Avanzada
+
+Puedes cambiar el puerto por defecto mediante la variable de entorno `PORT`:
 
 ```bash
 PORT=8080 npm start
 ```
 
-> Si `data/config.json` define un `port`, este tiene prioridad sobre `PORT`.
->
-> El servidor no carga `.env` automáticamente: `.env.example` sirve solo como referencia, así que define las variables en el entorno (shell, systemd, pm2…).
+> **Notas importantes:**
+> - Si `data/config.json` define un puerto explícito, este tendrá prioridad sobre la variable `PORT`.
+> - El servidor no carga archivos `.env` automáticamente; define tus variables directamente en el entorno de tu shell, systemd o PM2.
 
-## Enlaces simbólicos (symlinks) en la bóveda
+---
 
-Por seguridad, la web **no sigue los enlaces simbólicos** que haya dentro de la bóveda. La aplicación solo puede leer y escribir archivos que estén físicamente dentro de la carpeta de la bóveda. Si un symlink apuntara a otra parte del servidor (por ejemplo a `/etc` o a la carpeta `data/` con la contraseña), cualquiera con acceso a la web podría leer o modificar esos archivos.
+## 🛡️ Consideraciones sobre Enlaces Simbólicos (Symlinks)
 
-En la práctica:
+Por motivos de seguridad, la aplicación **no sigue enlaces simbólicos** ubicados dentro de la bóveda para evitar exposiciones accidentales de archivos del sistema (como `/etc` o archivos de configuración).
 
-- Los symlinks **no aparecen** en el explorador de archivos ni en las búsquedas.
-- Cualquier intento de abrir, crear o guardar un archivo a través de un symlink que lleve fuera de la bóveda se rechaza, igual que una ruta con `../`.
+- Los symlinks **no aparecerán** en el explorador ni en las búsquedas.
+- Cualquier intento de acceder a ellos será rechazado del mismo modo que una ruta con `../`.
 
-**Consecuencia:** si usas symlinks a propósito para enlazar otra carpeta dentro de la bóveda (por ejemplo `mi-vault/Proyectos → /home/usuario/proyectos`), esa carpeta no se verá en la web. Para que aparezca, **copia o mueve la carpeta dentro de la bóveda**.
+> 📌 **Alternativa:** Si necesitas estructurar carpetas externas dentro de tu bóveda, **cópialas o muévelas físicamente**. *(Nota: la ruta raíz de la bóveda sí puede ser un symlink, por ejemplo `/root/vault → /mnt/disco/vault`, y funcionará sin problemas).*
 
-> Esto solo afecta a los enlaces que están *dentro* de la bóveda. La ruta de la bóveda en sí sí puede ser un symlink (por ejemplo `/root/vault → /mnt/disco/vault`): funciona con normalidad.
+---
 
-## Desarrollo
+## 💻 Desarrollo
+
+Si deseas contribuir o modificar la aplicación, arranca el entorno de desarrollo:
 
 ```bash
 npm run dev
 ```
 
-Arranca a la vez dos procesos:
+Esto levantará simultáneamente:
+1. **Vite** (`http://localhost:5173`): Frontend con *hot-reload* instantáneo.
+2. **Express** con `--watch` (`http://localhost:3000`): API backend con autoreinicio ante cambios en `server/`.
 
-- **Vite** en `http://localhost:5173`: sirve el frontend directamente desde `web/src` con hot-reload (los cambios se ven al instante, sin compilar).
-- **Express** con `--watch` en `http://localhost:3000`: la API, que se reinicia sola al cambiar archivos de `server/`.
+> ⚠️ **Durante el desarrollo, abre siempre `http://localhost:5173`** (no el puerto 3000). Vite redirige las peticiones a `/api` automáticamente mediante proxy, evitando problemas de CORS y cookies.
 
-**Durante el desarrollo abre `http://localhost:5173`**, no el 3000. Vite reenvía todas las peticiones a `/api` hacia Express (ver `server.proxy` en [web/vite.config.ts](web/vite.config.ts)), así que no hay problemas de CORS ni de cookies.
+### 📜 Scripts disponibles
 
-> Esto solo aplica en desarrollo. En producción (`npm start`) no existe el puerto 5173: Express sirve el frontend ya compilado desde `web/dist` en su propio puerto.
+| Script | Descripción |
+| :--- | :--- |
+| `npm start` | Arranca el servidor en modo producción |
+| `npm run web:build` | Compila el frontend estático en `web/dist` |
+| `npm run web:dev` | Ejecuta únicamente el entorno frontend (Vite) |
+| `npm run server:dev` | Ejecuta únicamente la API con recarga automática |
 
-Ten en cuenta que:
+---
 
-- **El proxy apunta siempre al puerto 3000.** Si cambias el puerto de la API (con `PORT` o con `port` en `data/config.json`), actualiza también la URL del proxy en `web/vite.config.ts`, o las llamadas a `/api` fallarán en desarrollo.
-- **Vite solo escucha en `localhost`.** Si el proyecto corre en un servidor remoto y quieres abrirlo desde otro equipo, arranca Vite con `npm run web:dev -- --host` (o añade `host: true` en `server` dentro de `web/vite.config.ts`). Otra opción es un túnel SSH: `ssh -L 5173:localhost:5173 usuario@servidor`.
+## 🗂️ Estructura del Proyecto
 
-Otros scripts útiles:
-
-| Script              | Qué hace                                  |
-| ------------------- | ----------------------------------------- |
-| `npm start`         | Arranca el servidor en modo producción    |
-| `npm run web:build` | Compila el frontend en `web/dist`         |
-| `npm run web:dev`   | Solo el frontend (Vite)                   |
-| `npm run server:dev`| Solo la API, con recarga automática       |
-
-## Estructura del proyecto
-
-```
+```text
 ObiWEB/
-├── server/          # Backend Node.js + Express (API y estáticos)
+├── server/          # Backend Node.js + Express (API y archivos estáticos)
 │   ├── index.js     # Punto de entrada y middleware de autenticación
-│   ├── vault.js     # Acceso al sistema de archivos del vault
-│   └── routes/      # setup, auth, files, search
+│   ├── vault.js     # Lógica de acceso al sistema de archivos
+│   └── routes/      # Rutas de configuración, autenticación, archivos y búsqueda
 ├── web/             # Frontend React + Vite + TypeScript
-│   └── src/         # Componentes, store (Zustand) y cliente de la API
-├── data/            # Configuración y secretos (generado, en .gitignore)
-└── 00_INFO-APP/     # Documentación técnica y diagnóstico
+│   └── src/         # Componentes, store (Zustand) y cliente de API
+├── data/            # Configuración y secretos (autogenerado, en .gitignore)
+└── 00_INFO-APP/     # Documentación técnica y scripts de diagnóstico
 ```
 
-Más detalle sobre el flujo de datos y la API en [ARQUITECTURA.md](00_INFO-APP/ARQUITECTURA.md).
+Para profundizar en el flujo de datos, consulta [ARQUITECTURA.md](00_INFO-APP/ARQUITECTURA.md).
 
-## Tecnología
+---
 
-- **Backend:** Node.js + Express
-- **Frontend:** React 18 + Vite + TypeScript
-- **Estado:** Zustand
-- **Estilos:** CSS propio inspirado en Obsidian
-- **Editor:** CodeMirror 6 con vista previa en vivo y barra de formato
+## 🧰 Tech Stack
 
-## Solución de problemas
+- **Backend:** Node.js, Express
+- **Frontend:** React 18, Vite, TypeScript
+- **Estado Global:** Zustand
+- **Estilos:** CSS personalizado inspirado en la estética de Obsidian
+- **Editor:** CodeMirror 6 (con vista en vivo y barra de herramientas)
 
-Consulta [TROUBLESHOOTING.md](utils/TROUBLESHOOTING.md). Para un diagnóstico rápido en el servidor:
+---
+
+## 🛠️ Solución de Problemas
+
+Si experimentas incidencias, revisa la guía en [TROUBLESHOOTING.md](utils/TROUBLESHOOTING.md) o ejecuta el script de diagnóstico rápido en tu servidor:
 
 ```bash
 chmod +x 00_INFO-APP/diagnose.sh
 ./utils/diagnose.sh
 ```
 
-## Hoja de ruta
-- sincronización con Dropbox / GitHub
+---
 
-## Licencia
-MIT
+## 🗺️ Hoja de Ruta (Roadmap)
+
+- [ ] Sincronización en la nube (Dropbox / GitHub)
+
+---
+
+## 📄 Licencia
+
+Distribuido bajo la licencia [MIT](https://opensource.org/licenses/MIT).
