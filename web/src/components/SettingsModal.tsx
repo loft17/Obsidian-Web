@@ -1,6 +1,6 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { useStore, type EditorMode, type Theme, DEFAULT_FONT_SIZE, MIN_FONT_SIZE, MAX_FONT_SIZE } from '../store';
-import { filesApi, settingsApi, syncApi, type SyncConfig, type SyncConfigUpdate, type SyncProvider } from '../api';
+import { filesApi, settingsApi, syncApi, type ServerLimits, type SyncConfig, type SyncConfigUpdate, type SyncProvider } from '../api';
 import { IconClose, IconEdit, IconEye, IconFolderNew, IconList, IconLock, IconReset, IconSearch, IconSync, IconUserCircle } from './Icons';
 
 interface Props {
@@ -648,9 +648,18 @@ function SyncSection() {
   );
 }
 
-const MIN_PASSWORD_LENGTH = 12;
+// Límites del servidor (variables de entorno); null mientras se cargan o si falla la petición
+function useServerLimits() {
+  const [limits, setLimits] = useState<ServerLimits | null>(null);
+  useEffect(() => {
+    settingsApi.getLimits().then(setLimits).catch(() => {});
+  }, []);
+  return limits;
+}
 
 function SecuritySection() {
+  const limits = useServerLimits();
+  const MIN_PASSWORD_LENGTH = limits?.minPasswordLength ?? 12;
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -747,8 +756,8 @@ function SecuritySection() {
           <div className="setting-info">
             <div className="setting-name">Cerrar todas las sesiones</div>
             <div className="setting-desc">
-              Cierra la sesión en todos los dispositivos, también en este. Las sesiones caducan solas a los 30 días
-              o tras 7 días sin usarse.
+              Cierra la sesión en todos los dispositivos, también en este. Las sesiones caducan solas a los{' '}
+              {limits?.sessionMaxDays ?? 30} días o tras {limits?.sessionIdleDays ?? 7} días sin usarse.
             </div>
           </div>
           {confirmRevoke ? (
@@ -838,15 +847,53 @@ function ShortcutsSection() {
 }
 
 function AboutSection() {
+  const limits = useServerLimits();
+  const rows: [string, string, string][] = limits
+    ? [
+        ['Tamaño máximo de una nota', `${limits.maxNoteMB} MB`, 'MAX_NOTE_MB'],
+        ['Tamaño máximo de un adjunto', `${limits.maxUploadMB} MB`, 'MAX_UPLOAD_MB'],
+        ['Longitud mínima de la contraseña', `${limits.minPasswordLength} caracteres`, 'MIN_PASSWORD_LENGTH'],
+        ['Longitud máxima de una búsqueda', `${limits.searchMaxQueryLength} caracteres`, 'SEARCH_MAX_QUERY_LENGTH'],
+        ['Notas omitidas en la búsqueda', `más de ${limits.searchMaxFileMB} MB`, 'SEARCH_MAX_FILE_MB'],
+        ['Datos leídos por búsqueda', `${limits.searchMaxScannedMB} MB`, 'SEARCH_MAX_SCANNED_MB'],
+        ['Búsquedas por minuto', `${limits.searchRateMax}`, 'SEARCH_RATE_MAX'],
+        ['Resultados de búsqueda', `${limits.searchMaxResults} archivos`, 'SEARCH_MAX_RESULTS'],
+        ['Coincidencias por archivo', `${limits.searchMaxMatchesPerFile}`, 'SEARCH_MAX_MATCHES_PER_FILE'],
+        ['Duración máxima de la sesión', `${limits.sessionMaxDays} días`, 'SESSION_MAX_DAYS'],
+        ['Caducidad por inactividad', `${limits.sessionIdleDays} días`, 'SESSION_IDLE_DAYS'],
+      ]
+    : [];
+
   return (
-    <div className="settings-group">
-      <div className="setting-item">
-        <div className="setting-info">
-          <div className="setting-name">Versión {__APP_VERSION__}</div>
-          <div className="setting-desc">Obsidian Web</div>
+    <>
+      <div className="settings-group">
+        <div className="setting-item">
+          <div className="setting-info">
+            <div className="setting-name">Versión {__APP_VERSION__}</div>
+            <div className="setting-desc">Obsidian Web</div>
+          </div>
         </div>
       </div>
-    </div>
+      {limits && (
+        <div className="settings-group">
+          <div className="settings-nav-title">Límites del servidor</div>
+          <div className="setting-desc" style={{ marginBottom: 8 }}>
+            Se cambian con variables de entorno en el servidor (ver <code>.env.example</code>) y requieren reiniciarlo.
+          </div>
+          {rows.map(([name, value, env]) => (
+            <div className="setting-item" key={env}>
+              <div className="setting-info">
+                <div className="setting-name">{name}</div>
+                <div className="setting-desc">
+                  <code>{env}</code>
+                </div>
+              </div>
+              <div>{value}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
   );
 }
 

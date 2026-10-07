@@ -2,8 +2,9 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import crypto from 'crypto';
 
-export const SESSION_MAX_AGE = 30 * 24 * 60 * 60 * 1000; // 30 días como máximo
-export const SESSION_IDLE = 7 * 24 * 60 * 60 * 1000; // caduca tras 7 días sin usarse
+import { SESSION_MAX_AGE, SESSION_IDLE } from './limits.js';
+
+export { SESSION_MAX_AGE, SESSION_IDLE }; // 30 días como máximo / 7 sin usarse (configurables)
 const TOUCH_EVERY = 60 * 60 * 1000; // la última actividad se guarda en disco como mucho cada hora
 
 // Opciones de la cookie de sesión. `secure` cuando la petición llega por HTTPS

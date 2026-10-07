@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { setupApi } from '../api';
 
 interface Props {
@@ -12,6 +12,14 @@ export default function Setup({ onComplete }: Props) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [port, setPort] = useState('3000');
   const [error, setError] = useState('');
+  const [minPasswordLength, setMinPasswordLength] = useState(12);
+
+  useEffect(() => {
+    setupApi
+      .checkStatus()
+      .then((s) => s.minPasswordLength && setMinPasswordLength(s.minPasswordLength))
+      .catch(() => {});
+  }, []);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -26,8 +34,8 @@ export default function Setup({ onComplete }: Props) {
       setError('La ruta del vault es requerida');
       return;
     }
-    if (!password || password.length < 12) {
-      setError('La contraseña debe tener al menos 12 caracteres');
+    if (!password || password.length < minPasswordLength) {
+      setError(`La contraseña debe tener al menos ${minPasswordLength} caracteres`);
       return;
     }
     if (password !== confirmPassword) {
@@ -97,7 +105,7 @@ export default function Setup({ onComplete }: Props) {
             <label>Contraseña</label>
             <input
               type="password"
-              placeholder="Mínimo 12 caracteres"
+              placeholder={`Mínimo ${minPasswordLength} caracteres`}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}

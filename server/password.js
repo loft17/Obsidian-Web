@@ -3,7 +3,7 @@ import { promisify } from 'util';
 
 const scryptAsync = promisify(crypto.scrypt);
 
-export const MIN_PASSWORD_LENGTH = 12;
+export { MIN_PASSWORD_LENGTH } from './limits.js';
 
 // Hash con scrypt: sal (16 bytes) + hash (32 bytes), en hexadecimal
 export const hashPassword = async (password) => {

@@ -5,6 +5,7 @@ import * as vault from '../vault.js';
 import { publicError } from '../security.js';
 import { verifyPassword, hashPassword, MIN_PASSWORD_LENGTH } from '../password.js';
 import { sessionCookie } from '../sessions.js';
+import * as limits from '../limits.js';
 
 export default (dataDir, getConfig, limiter, sessions) => {
   const router = Router();
@@ -12,6 +13,25 @@ export default (dataDir, getConfig, limiter, sessions) => {
 
   router.get('/vault', (req, res) => {
     res.json({ vaultPath: getConfig()?.vaultPath || '' });
+  });
+
+  // Límites del servidor (variables de entorno): solo lectura, se muestran en Preferencias
+  router.get('/limits', (req, res) => {
+    const MB = 1024 * 1024;
+    const DAY = 24 * 60 * 60 * 1000;
+    res.json({
+      maxNoteMB: limits.MAX_NOTE_MB,
+      maxUploadMB: limits.MAX_UPLOAD_MB,
+      minPasswordLength: limits.MIN_PASSWORD_LENGTH,
+      searchMaxQueryLength: limits.SEARCH_MAX_QUERY_LENGTH,
+      searchMaxFileMB: limits.SEARCH_MAX_FILE_BYTES / MB,
+      searchMaxScannedMB: limits.SEARCH_MAX_SCANNED_BYTES / MB,
+      searchRateMax: limits.SEARCH_RATE_MAX,
+      searchMaxResults: limits.SEARCH_MAX_RESULTS,
+      searchMaxMatchesPerFile: limits.SEARCH_MAX_MATCHES_PER_FILE,
+      sessionMaxDays: limits.SESSION_MAX_AGE / DAY,
+      sessionIdleDays: limits.SESSION_IDLE / DAY,
+    });
   });
 
   // getConfig relee config.json en cada petición, así que el cambio se aplica al instante.

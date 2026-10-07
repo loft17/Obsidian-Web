@@ -13,6 +13,7 @@ import syncRoutes from './routes/sync.js';
 import { createSyncManager } from './sync.js';
 import { createSessionStore, createLoginLimiter } from './sessions.js';
 import { securityHeaders, csrfGuard } from './security.js';
+import { MAX_NOTE_MB, MAX_UPLOAD_MB } from './limits.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -55,7 +56,7 @@ app.disable('x-powered-by');
 app.use(securityHeaders(distPath));
 app.use('/api', csrfGuard);
 // Las notas se guardan como JSON: el límite por defecto (100 KB) se queda corto
-app.use(express.json({ limit: '20mb' }));
+app.use(express.json({ limit: MAX_NOTE_MB * 1024 * 1024 }));
 app.use(cookieParser(cookieSecret));
 
 // Check if configured
@@ -109,6 +110,10 @@ app.use((err, req, res, next) => {
   if (res.headersSent) return next(err);
   const status = err.status || err.statusCode || 500;
   if (status >= 500) console.error('[Error]', err);
+  if (status === 413) {
+    const max = req.originalUrl.startsWith('/api/files/upload') ? MAX_UPLOAD_MB : MAX_NOTE_MB;
+    return res.status(413).json({ error: `Demasiado grande (máximo ${max} MB)` });
+  }
   res.status(status).json({ error: status >= 500 ? 'Error interno' : 'Petición no válida' });
 });
 

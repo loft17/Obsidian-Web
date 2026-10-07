@@ -40,11 +40,8 @@ export default (dataDir, sessions) => {
 
   router.get('/status', (req, res) => {
     ensureSetupToken();
-    if (existsSync(configPath)) {
-      res.json({ configured: true });
-    } else {
-      res.json({ configured: false });
-    }
+    // minPasswordLength: el formulario de la web valida con el mismo mínimo que el servidor
+    res.json({ configured: existsSync(configPath), minPasswordLength: MIN_PASSWORD_LENGTH });
   });
 
   router.post('/init', async (req, res) => {

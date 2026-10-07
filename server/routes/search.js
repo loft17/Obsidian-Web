@@ -1,17 +1,19 @@
 import { Router } from 'express';
 import * as vault from '../vault.js';
 import { publicError } from '../security.js';
+import {
+  SEARCH_MAX_RESULTS as MAX_RESULTS,
+  SEARCH_MAX_MATCHES_PER_FILE as MAX_MATCHES_PER_FILE,
+  SEARCH_MAX_QUERY_LENGTH as MAX_QUERY_LENGTH,
+  SEARCH_MAX_FILE_BYTES as MAX_FILE_SIZE,
+  SEARCH_MAX_SCANNED_BYTES as MAX_SCANNED_BYTES,
+  SEARCH_RATE_MAX as RATE_MAX,
+} from '../limits.js';
 
-const MAX_RESULTS = 200;
-const MAX_MATCHES_PER_FILE = 5;
 const SNIPPET_RADIUS = 60;
 
-// Límites para que las búsquedas no saturen el servidor (cada una recorre el vault)
-const MAX_QUERY_LENGTH = 200;
-const MAX_FILE_SIZE = 2 * 1024 * 1024; // las notas más grandes no se leen
-const MAX_SCANNED_BYTES = 200 * 1024 * 1024; // total leído por búsqueda
+// Los límites (en limits.js) evitan que las búsquedas saturen el servidor: cada una recorre el vault
 const RATE_WINDOW = 60 * 1000;
-const RATE_MAX = 60; // búsquedas por IP y minuto
 
 const recent = new Map(); // ip → marcas de tiempo de sus búsquedas en la última ventana
 setInterval(() => {

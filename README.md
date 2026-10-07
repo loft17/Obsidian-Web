@@ -7,6 +7,16 @@
 Visor y editor web **ultraligero** y **autoalojado** para tus notas Markdown.<br>
 Instálalo en tu VPS y accede a tu vault desde cualquier dispositivo, con una interfaz fiel a la de Obsidian.
 
+Obsidian Web trabaja directamente sobre la carpeta de tu vault: tus notas siguen siendo archivos `.md`
+normales, sin bases de datos ni formatos propios, y puedes seguir abriéndolas con Obsidian de escritorio.
+Desde el navegador del portátil del trabajo, una tablet o el móvil puedes escribir con vista previa en vivo,
+navegar por tus wikilinks, buscar en todo el vault, editar propiedades y pegar imágenes, y tus cambios se
+guardan solos.
+
+Tus notas se quedan en tu servidor, protegidas con contraseña, sesiones revocables y una configuración
+segura por defecto. Y si quieres llevarlas a otros dispositivos, puedes sincronizarlas con GitHub desde
+la propia web.
+
 <br>
 
 [![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A520-5FA04E?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
@@ -135,7 +145,7 @@ Instálalo en tu VPS y accede a tu vault desde cualquier dispositivo, con una in
 ```bash
 git clone https://github.com/loft17/Obsidian-Web.git
 cd Obsidian-Web
-npm install      # instala dependencias y compila el frontend
+npm install
 npm start
 ```
 
@@ -201,6 +211,7 @@ node --env-file=.env server/index.js
 | `VAULTS_ROOT` | sin límite | El vault solo podrá estar dentro de esta carpeta, también al cambiarlo desde *Preferencias*. Ej.: `/srv/vaults`. |
 | `PORT` | `3000` | Solo se usa si `data/config.json` no define un puerto, es decir, antes de la configuración inicial. |
 | `REMOTE_IMAGES` | desactivada | Con `1` se cargan imágenes `https:` externas en las notas. Ver [Seguridad](#-seguridad). |
+| `MAX_UPLOAD_MB`, `MIN_PASSWORD_LENGTH`… | ver [Límites](#-límites) | Tamaño de notas y adjuntos, contraseña, búsqueda y sesiones. |
 
 > [!NOTE]
 > `.env.example` incluye también `COOKIE_SECRET` y `NODE_ENV`, pero **el servidor no los usa**: el secreto de las cookies se genera solo en `data/.secret`.
@@ -560,16 +571,27 @@ flowchart LR
 
 ## 📏 Límites
 
-| Límite | Valor |
-| :--- | :--- |
-| Petición JSON (guardar nota, etc.) | 20 MB |
-| Adjunto subido | 50 MB |
-| Contraseña | mínimo 12 caracteres |
-| Búsquedas | 60 por minuto y por IP (después, `429`) |
-| Longitud de una búsqueda | 200 caracteres |
-| Notas leídas por búsqueda | se omiten las de más de 2 MB; máximo 200 MB por búsqueda |
-| Resultados de búsqueda | 200 archivos, 5 coincidencias por archivo |
-| Sesiones | 30 días como máximo, 7 días de inactividad |
+Todos se cambian con [variables de entorno](#-variables-de-entorno) y requieren reiniciar el servidor. Los valores actuales se ven en *Preferencias → Acerca de*. Un valor no válido (texto, cero o negativo) se ignora con un aviso en la consola.
+
+| Límite | Por defecto | Variable |
+| :--- | :--- | :--- |
+| Petición JSON (guardar nota, etc.) | 20 MB | `MAX_NOTE_MB` |
+| Adjunto subido | 50 MB | `MAX_UPLOAD_MB` |
+| Contraseña | mínimo 12 caracteres | `MIN_PASSWORD_LENGTH` |
+| Búsquedas | 60 por minuto y por IP (después, `429`) | `SEARCH_RATE_MAX` |
+| Longitud de una búsqueda | 200 caracteres | `SEARCH_MAX_QUERY_LENGTH` |
+| Notas leídas por búsqueda | se omiten las de más de 2 MB | `SEARCH_MAX_FILE_MB` |
+| Total leído por búsqueda | 200 MB | `SEARCH_MAX_SCANNED_MB` |
+| Resultados de búsqueda | 200 archivos | `SEARCH_MAX_RESULTS` |
+| Coincidencias por archivo | 5 | `SEARCH_MAX_MATCHES_PER_FILE` |
+| Duración máxima de una sesión | 30 días | `SESSION_MAX_DAYS` |
+| Caducidad por inactividad | 7 días | `SESSION_IDLE_DAYS` |
+
+> [!IMPORTANT]
+> Si subes `MAX_UPLOAD_MB` o `MAX_NOTE_MB` y usas nginx, sube también `client_max_body_size` al mayor de los dos; si no, nginx responderá `413` antes de llegar a la app.
+
+> [!NOTE]
+> Cambiar el mínimo de contraseña no afecta a la contraseña actual: solo se aplica al crearla o cambiarla.
 
 ---
 

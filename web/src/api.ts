@@ -1,7 +1,22 @@
 const API_URL = '/api';
 
+export interface ServerLimits {
+  maxNoteMB: number;
+  maxUploadMB: number;
+  minPasswordLength: number;
+  searchMaxQueryLength: number;
+  searchMaxFileMB: number;
+  searchMaxScannedMB: number;
+  searchRateMax: number;
+  searchMaxResults: number;
+  searchMaxMatchesPerFile: number;
+  sessionMaxDays: number;
+  sessionIdleDays: number;
+}
+
 export const setupApi = {
-  checkStatus: async () => {
+  // minPasswordLength: mínimo que exige el servidor (configurable con MIN_PASSWORD_LENGTH)
+  checkStatus: async (): Promise<{ configured: boolean; minPasswordLength?: number }> => {
     const res = await fetch(`${API_URL}/setup/status`);
     return res.json();
   },
@@ -111,6 +126,11 @@ export const filesApi = {
 };
 
 export const settingsApi = {
+  getLimits: async (): Promise<ServerLimits> => {
+    const res = await fetch(`${API_URL}/settings/limits`);
+    if (!res.ok) throw new Error((await res.json()).error);
+    return res.json();
+  },
   getVault: async (): Promise<{ vaultPath: string }> => {
     const res = await fetch(`${API_URL}/settings/vault`);
     if (!res.ok) throw new Error((await res.json()).error);

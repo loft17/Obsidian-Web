@@ -2,6 +2,7 @@ import express, { Router } from 'express';
 import MarkdownIt from 'markdown-it';
 import * as vault from '../vault.js';
 import { publicError, scriptHash } from '../security.js';
+import { MAX_UPLOAD_MB } from '../limits.js';
 
 const md = new MarkdownIt({ html: false, linkify: true, breaks: true });
 
@@ -92,7 +93,7 @@ ${md.render(body)}
   // Sube un adjunto de la nota `note` (cuerpo binario); la carpeta destino sale de los ajustes
   router.post(
     '/upload',
-    express.raw({ type: () => true, limit: '50mb' }),
+    express.raw({ type: () => true, limit: MAX_UPLOAD_MB * 1024 * 1024 }),
     withVault((cfg, req, res) => {
       const note = String(req.query.note || '');
       const name = String(req.query.name || '');
