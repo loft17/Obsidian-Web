@@ -101,6 +101,10 @@ Todas las rutas API exceptuando `/api/setup` y `/api/auth/login` requieren cooki
 | GET | `/api/files/read/:path` | Leer archivo |
 | POST | `/api/files/write/:path` | Guardar archivo |
 | DELETE | `/api/files/:path` | Mover a .trash |
+| GET | `/api/files/trash` | Listar la papelera |
+| POST | `/api/files/trash/restore` | Restaurar a la ruta original |
+| POST | `/api/files/trash/delete` | Borrar definitivamente |
+| POST | `/api/files/trash/empty` | Vaciar la papelera |
 | POST | `/api/files/rename` | Renombrar |
 | GET | `/api/search?q=` | Búsqueda full-text simple |
 

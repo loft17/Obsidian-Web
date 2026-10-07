@@ -139,6 +139,36 @@ export const filesApi = {
   },
 };
 
+export interface TrashItem {
+  id: string; // nombre dentro de .trash
+  path: string; // ruta original en el vault
+  name: string;
+  isFolder: boolean;
+  deletedAt: number;
+}
+
+const postJson = async (url: string, body?: unknown) => {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body ?? {}),
+  });
+  if (!res.ok) throw new Error((await res.json()).error);
+  return res.json();
+};
+
+export const trashApi = {
+  list: async (): Promise<TrashItem[]> => {
+    const res = await fetch(`${API_URL}/files/trash`);
+    if (!res.ok) throw new Error((await res.json()).error);
+    return res.json();
+  },
+  // Devuelve la ruta donde ha quedado (otro nombre si la original ya estaba ocupada)
+  restore: (id: string): Promise<{ path: string }> => postJson(`${API_URL}/files/trash/restore`, { id }),
+  purge: (id: string) => postJson(`${API_URL}/files/trash/delete`, { id }),
+  empty: () => postJson(`${API_URL}/files/trash/empty`),
+};
+
 export const settingsApi = {
   getLimits: async (): Promise<ServerLimits> => {
     const res = await fetch(`${API_URL}/settings/limits`);

@@ -289,6 +289,33 @@ a:hover {
   white-space: nowrap;
 }
 
+/* Trash panel */
+.trash-item {
+  cursor: default;
+}
+
+.trash-item-actions {
+  display: none;
+  gap: 2px;
+}
+
+.trash-item:hover .trash-item-actions,
+.trash-item:focus-within .trash-item-actions {
+  display: inline-flex;
+}
+
+/* Pantallas táctiles: sin hover, los botones siempre visibles */
+@media (hover: none) {
+  .trash-item-actions {
+    display: inline-flex;
+  }
+}
+
+.trash-item-actions .icon-btn {
+  width: 22px;
+  height: 22px;
+}
+
 /* Search panel */
 .search-input-wrapper {
   position: relative;

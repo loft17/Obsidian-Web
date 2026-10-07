@@ -113,6 +113,24 @@ ${md.render(body)}
     })
   );
 
+  // Papelera: listar, restaurar a la ruta original, borrar definitivamente y vaciar.
+  // Van por POST para no chocar con DELETE /:filePath (una nota llamada "trash")
+  router.get('/trash', withVault((cfg, req, res) => res.json(vault.listTrash(cfg.vaultPath))));
+
+  router.post('/trash/restore', withVault((cfg, req, res) => {
+    res.json({ success: true, path: vault.restoreFromTrash(cfg.vaultPath, req.body.id) });
+  }));
+
+  router.post('/trash/delete', withVault((cfg, req, res) => {
+    vault.purgeFromTrash(cfg.vaultPath, req.body.id);
+    res.json({ success: true });
+  }));
+
+  router.post('/trash/empty', withVault((cfg, req, res) => {
+    vault.emptyTrash(cfg.vaultPath);
+    res.json({ success: true });
+  }));
+
   router.delete('/:filePath', withVault((cfg, req, res) => {
     vault.deleteFile(cfg.vaultPath, req.params.filePath);
     res.json({ success: true });

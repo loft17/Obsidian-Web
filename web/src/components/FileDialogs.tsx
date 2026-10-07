@@ -249,6 +249,8 @@ export function ConfirmDialog({
   confirmLabel,
   onConfirm,
   onClose,
+  disabled,
+  children,
 }: {
   title: string;
   message: React.ReactNode;

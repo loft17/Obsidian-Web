@@ -1,6 +1,6 @@
 import { useStore } from '../store';
 import { authApi } from '../api';
-import { IconSidebar, IconFolderOpen, IconSearch, IconTag, IconBookmark, IconSettings, IconLogout } from './Icons';
+import { IconSidebar, IconFolderOpen, IconSearch, IconTag, IconBookmark, IconTrash, IconSettings, IconLogout } from './Icons';
 
 export const logout = async () => {
   await authApi.logout();
@@ -40,6 +40,13 @@ export default function Ribbon() {
           onClick={() => showSidebarView('tags')}
         >
           <IconTag />
+        </div>
+        <div
+          className={`ribbon-item ${sidebarOpen && sidebarView === 'trash' ? 'active' : ''}`}
+          title="Papelera"
+          onClick={() => showSidebarView('trash')}
+        >
+          <IconTrash />
         </div>
         <div className="ribbon-item" title="Marcadores">
           <IconBookmark />
@@ -86,6 +93,13 @@ export function SidebarFooter() {
         onClick={() => showSidebarView('tags')}
       >
         <IconTag size={16} />
+      </button>
+      <button
+        className={`icon-btn ${sidebarView === 'trash' ? 'active' : ''}`}
+        title="Papelera"
+        onClick={() => showSidebarView('trash')}
+      >
+        <IconTrash size={16} />
       </button>
       <span className="sidebar-footer-spacer" />
       <button className="icon-btn" title="Configuración" onClick={() => setSettingsOpen(true)}>

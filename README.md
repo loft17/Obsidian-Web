@@ -110,7 +110,7 @@ la propia web.
 ### 📂 Organiza tu vault
 - **Explorador** con carpetas colapsables y menú contextual.
 - **Pestañas**: `Ctrl`/`Cmd` + clic o botón central para abrir en una nueva.
-- Duplica, mueve, renombra (los **enlaces se actualizan** solos) y borra (a la **papelera** `.trash`, nunca de forma definitiva).
+- Duplica, mueve, renombra (los **enlaces se actualizan** solos) y borra (a la **papelera** `.trash`, que puedes revisar y **restaurar** desde la barra lateral).
 - **Adjuntos**: arrastra o pega imágenes; se guardan donde lo hace Obsidian de escritorio.
 
 </td>
@@ -414,7 +414,7 @@ pm2 logs obsidian-web
 | **`Ctrl`/`Cmd` + clic**, **botón central** o **clic derecho → Abrir en pestaña nueva** | La abre en otra pestaña. |
 | **Clic derecho** sobre archivos o carpetas | Nueva nota, nueva carpeta, duplicar, mover, renombrar, borrar. |
 
-Borrar mueve el archivo a `.trash/` dentro del vault. Para recuperarlo, renómbralo en el servidor quitando el sufijo `.<timestamp>.deleted`.
+Borrar mueve el archivo a `.trash/` dentro del vault. Desde el icono de la **papelera** (cinta izquierda o pie de la barra lateral) puedes ver lo borrado, **restaurarlo** a su ruta original (si ya hay algo con ese nombre se restaura como `Nombre 1.md`, y la carpeta se vuelve a crear si no existe), borrarlo definitivamente o vaciar la papelera. Lo que se borró antes de esta versión, o desde Obsidian de escritorio, no guarda su carpeta original y se restaura en la raíz.
 
 ### 🔗 Wikilinks
 
@@ -612,7 +612,7 @@ Dentro del vault, la app solo usa:
 
 | Ruta | Uso |
 | :--- | :--- |
-| `.trash/` | Papelera: lo borrado se mueve aquí como `nombre.ext.<timestamp>.deleted`. |
+| `.trash/` | Papelera: lo borrado se mueve aquí como `nombre.ext.<timestamp>.deleted`; `.trash/.index.json` guarda la ruta original de cada elemento para restaurarlo. |
 | `.obsidian/app.json` | Solo la clave `attachmentFolderPath` (carpeta de adjuntos). |
 | `.git/` | Solo con la sincronización con GitHub: el repositorio local (se crea si no existe). |
 
@@ -750,6 +750,10 @@ Todas las rutas cuelgan de `/api`. Salvo `setup` y `auth`, exigen una sesión v�
 | `POST` | `/api/files/write/:filePath` | Guarda una nota (`content`, `baseVersion` opcional). `409` con la versión actual si ha cambiado desde `baseVersion` |
 | `POST` | `/api/files/upload?note=…&name=…` | Sube un adjunto (cuerpo binario) |
 | `DELETE` | `/api/files/:filePath` | Mueve a `.trash/` |
+| `GET` | `/api/files/trash` | Contenido de la papelera (`id`, `path` original, `isFolder`, `deletedAt`) |
+| `POST` | `/api/files/trash/restore` | Restaura un elemento (`id`) a su ruta original; devuelve dónde ha quedado (`path`) |
+| `POST` | `/api/files/trash/delete` | Borra definitivamente un elemento (`id`) |
+| `POST` | `/api/files/trash/empty` | Vacía la papelera |
 | `POST` | `/api/files/rename` | Renombra o mueve (`oldPath`, `newPath`) y actualiza los enlaces; devuelve las notas modificadas (`updated`) |
 | `POST` | `/api/files/copy` | Duplica (`path`) |
 | `POST` | `/api/files/create-note` | Crea una nota (`path`) |
@@ -800,7 +804,6 @@ chmod +x utils/diagnose.sh
 
 - Notas diarias y plantillas.
 - No he comprobado si el modo lectura renderiza fórmulas LaTeX, Mermaid y resaltado de sintaxis en bloques de código. No hay ninguna librería para ello entre las dependencias, así que seguramente no.
-- Recuperar la papelera desde la web: los archivos borrados van a .trash, pero no hay forma de restaurarlos desde la interfaz.
 
 ---
 

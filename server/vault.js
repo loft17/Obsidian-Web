@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, readdirSync, statSync, lstatSync, realpathSync, mkdirSync, renameSync, existsSync, copyFileSync, cpSync } from 'fs';
+import { readFileSync, writeFileSync, readdirSync, statSync, lstatSync, realpathSync, mkdirSync, renameSync, existsSync, copyFileSync, cpSync, rmSync } from 'fs';
 import { join, resolve, relative, dirname, basename, extname, isAbsolute, sep } from 'path';
 import { createHash } from 'crypto';
 
@@ -122,14 +122,124 @@ export const writeFile = (vaultPath, filePath, content, baseVersion) => {
   return contentVersion(content);
 };
 
+// Papelera: lo borrado se mueve a .trash/ como "nombre.ext.<timestamp>.deleted".
+// La ruta original de cada elemento se apunta en .trash/.index.json para poder restaurarlo
+const TRASH_INDEX = '.index.json';
+const DELETED_SUFFIX = /\.(\d+)\.deleted$/;
+
+// Carpeta .trash, comprobando que no es un enlace simbólico que saque las operaciones fuera del vault
+const trashDir = (vaultPath, create = false) => {
+  const root = resolve(vaultPath);
+  const dir = join(root, '.trash');
+  if (create) mkdirSync(dir, { recursive: true });
+  if (!entryExists(dir)) return null;
+  if (lstatSync(dir).isSymbolicLink() || !lstatSync(dir).isDirectory()) throw new Error('Papelera no válida');
+  return dir;
+};
+
+const readTrashIndex = (dir) => {
+  try {
+    const index = JSON.parse(readFileSync(join(dir, TRASH_INDEX), 'utf8'));
+    return index && typeof index === 'object' && !Array.isArray(index) ? index : {};
+  } catch {
+    return {};
+  }
+};
+
+const writeTrashIndex = (dir, index) => writeFileSync(join(dir, TRASH_INDEX), JSON.stringify(index, null, 2), 'utf8');
+
+// Elemento de la papelera a partir de su nombre (sin barras ni ocultos: no puede salir de .trash)
+const trashEntry = (dir, id) => {
+  const name = String(id ?? '');
+  if (!name || name.startsWith('.') || /[\\/]/.test(name)) throw new Error('Elemento no válido');
+  const full = join(dir, name);
+  if (!entryExists(full)) throw new Error('El elemento ya no está en la papelera');
+  if (lstatSync(full).isSymbolicLink()) throw new Error('Elemento no válido');
+  return full;
+};
+
 export const deleteFile = (vaultPath, filePath) => {
   const fullPath = guardPath(vaultPath, filePath);
-  const trashPath = join(vaultPath, '.trash');
-  mkdirSync(trashPath, { recursive: true });
-  const fileName = basename(fullPath);
-  const timestamp = Date.now();
-  const trashFile = join(trashPath, `${fileName}.${timestamp}.deleted`);
-  renameSync(fullPath, trashFile);
+  if (!entryExists(fullPath)) throw new Error('El archivo no existe');
+  const dir = trashDir(vaultPath, true);
+  const deletedAt = Date.now();
+  let id = `${basename(fullPath)}.${deletedAt}.deleted`;
+  for (let n = 1; entryExists(join(dir, id)); n++) id = `${basename(fullPath)}.${deletedAt}-${n}.deleted`;
+  renameSync(fullPath, join(dir, id));
+  const index = readTrashIndex(dir);
+  index[id] = { path: toVaultPath(vaultPath, fullPath), deletedAt };
+  writeTrashIndex(dir, index);
+};
+
+// Contenido de la papelera, lo más reciente primero. Lo borrado antes de existir el índice
+// (o desde Obsidian de escritorio) no tiene ruta original: se restaura en la raíz
+export const listTrash = (vaultPath) => {
+  const dir = trashDir(vaultPath);
+  if (!dir) return [];
+  const index = readTrashIndex(dir);
+  const items = [];
+  for (const id of readdirSync(dir)) {
+    if (id.startsWith('.')) continue;
+    const full = join(dir, id);
+    const lstat = lstatSync(full);
+    if (lstat.isSymbolicLink()) continue;
+    const meta = index[id];
+    const suffix = id.match(DELETED_SUFFIX);
+    const path = typeof meta?.path === 'string' ? meta.path : suffix ? id.slice(0, suffix.index) : id;
+    items.push({
+      id,
+      path,
+      name: path.split('/').pop(),
+      isFolder: lstat.isDirectory(),
+      deletedAt: Number(meta?.deletedAt) || (suffix ? Number(suffix[1]) : lstat.mtimeMs),
+    });
+  }
+  return items.sort((a, b) => b.deletedAt - a.deletedAt);
+};
+
+// Devuelve a su ruta original; si ya hay algo ahí, como "Nombre 1.md", "Nombre 2.md"...
+// Si la carpeta original ya no existe se vuelve a crear
+export const restoreFromTrash = (vaultPath, id) => {
+  const dir = trashDir(vaultPath);
+  if (!dir) throw new Error('La papelera está vacía');
+  const src = trashEntry(dir, id);
+  const item = listTrash(vaultPath).find((i) => i.id === id);
+  let dest;
+  try {
+    dest = guardPath(vaultPath, item.path);
+  } catch {
+    // Ruta original no válida (o protegida): a la raíz del vault
+    dest = guardPath(vaultPath, basename(item.path));
+  }
+  const ext = item.isFolder ? '' : extname(dest);
+  const base = basename(dest, ext);
+  for (let n = 1; entryExists(dest); n++) dest = join(dirname(dest), `${base} ${n}${ext}`);
+  mkdirSync(dirname(dest), { recursive: true });
+  renameSync(src, dest);
+  const index = readTrashIndex(dir);
+  delete index[id];
+  writeTrashIndex(dir, index);
+  return toVaultPath(vaultPath, dest);
+};
+
+// Borrado definitivo de un elemento de la papelera
+export const purgeFromTrash = (vaultPath, id) => {
+  const dir = trashDir(vaultPath);
+  if (!dir) throw new Error('La papelera está vacía');
+  rmSync(trashEntry(dir, id), { recursive: true, force: true });
+  const index = readTrashIndex(dir);
+  delete index[id];
+  writeTrashIndex(dir, index);
+};
+
+// Vacía la papelera (los archivos ocultos de .trash no se tocan)
+export const emptyTrash = (vaultPath) => {
+  const dir = trashDir(vaultPath);
+  if (!dir) return;
+  for (const id of readdirSync(dir)) {
+    if (!id.startsWith('.')) rmSync(join(dir, id), { recursive: true, force: true });
+  }
+  writeTrashIndex(dir, {});
 };
 
 export const renameFile = (vaultPath, oldPath, newPath) => {

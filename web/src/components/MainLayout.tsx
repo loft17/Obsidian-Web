@@ -6,6 +6,7 @@ import SettingsModal from './SettingsModal';
 import FileExplorer from './FileExplorer';
 import SearchPanel from './SearchPanel';
 import TagsPanel from './TagsPanel';
+import TrashPanel from './TrashPanel';
 import Tabs from './Tabs';
 import Editor, { flushPendingSave, cancelPendingSave, hasPendingSave, noteVersions, saveNote, NOTES_CHANGED } from './Editor';
 import { QuickOpenDialog, ConflictDialog } from './FileDialogs';
@@ -183,7 +184,15 @@ export default function MainLayout() {
       <div className="main-content">
         {sidebarOpen && (
           <aside className="sidebar-left">
-            {sidebarView === 'search' ? <SearchPanel /> : sidebarView === 'tags' ? <TagsPanel /> : <FileExplorer />}
+            {sidebarView === 'search' ? (
+              <SearchPanel />
+            ) : sidebarView === 'tags' ? (
+              <TagsPanel />
+            ) : sidebarView === 'trash' ? (
+              <TrashPanel />
+            ) : (
+              <FileExplorer />
+            )}
             {!showRibbon && <SidebarFooter />}
           </aside>
         )}
