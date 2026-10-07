@@ -41,7 +41,27 @@ export const IconSearch = make(
     <path d="m21 21-4.3-4.3" />
   </>
 );
-export const IconBookmark = make(<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z" />);
+export const IconCalendarDays = make(
+  <>
+    <rect x="3" y="4" width="18" height="18" rx="2" />
+    <path d="M16 2v4" />
+    <path d="M8 2v4" />
+    <path d="M3 10h18" />
+    <path d="M8 14h.01" />
+    <path d="M12 14h.01" />
+    <path d="M16 14h.01" />
+    <path d="M8 18h.01" />
+    <path d="M12 18h.01" />
+    <path d="M16 18h.01" />
+  </>
+);
+export const IconTemplate = make(
+  <>
+    <path d="M20 7h-3a2 2 0 0 1-2-2V2" />
+    <path d="M9 18a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h7l4 4v10a2 2 0 0 1-2 2Z" />
+    <path d="M3 7.6v12.8A1.6 1.6 0 0 0 4.6 22h9.8" />
+  </>
+);
 export const IconEdit = make(
   <>
     <path d="M12 20h9" />

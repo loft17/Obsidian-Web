@@ -149,7 +149,9 @@ ${md.render(body)}
   }));
 
   router.post('/create-note', withVault((cfg, req, res) => {
-    vault.createNote(cfg.vaultPath, req.body.path);
+    const { path, content = '' } = req.body;
+    if (typeof content !== 'string') throw new Error('Contenido no válido');
+    vault.createNote(cfg.vaultPath, path, content);
     res.json({ success: true });
   }));
 

@@ -94,6 +94,17 @@ export async function changeNotePath(oldPath: string, newPath: string) {
   if (updated.length) window.dispatchEvent(new Event(NOTES_CHANGED));
 }
 
+// Insertar plantilla: el editor montado registra aquí su manejador. En modo lectura no hay
+// editor, así que se pasa a edición y el texto queda pendiente hasta que se monte
+let insertHandler: ((text: string) => void) | null = null;
+let pendingInsert: string | null = null;
+
+export function insertIntoNote(text: string) {
+  if (insertHandler) return insertHandler(text);
+  pendingInsert = text;
+  useStore.getState().setEditMode(true);
+}
+
 // Cambios que llegan de fuera (la nota ha cambiado en el servidor): no son ediciones
 // del usuario, así que no se autoguardan ni entran en el historial de deshacer
 const externalChange = Annotation.define<boolean>();
@@ -158,6 +169,20 @@ export default function Editor({ filePath, content, onContentChange }: Props) {
     };
   }, []);
 
+  const insertRef = useRef<(text: string) => void>(() => {});
+  insertRef.current = (text) => handleInsert(text);
+  useEffect(() => {
+    insertHandler = (text) => insertRef.current(text);
+    if (pendingInsert !== null) {
+      const text = pendingInsert;
+      pendingInsert = null;
+      insertRef.current(text);
+    }
+    return () => {
+      insertHandler = null;
+    };
+  }, []);
+
   useEffect(() => {
     viewRef.current?.dispatch({ effects: modeCompartment.reconfigure(modeExtension(editorMode)) });
   }, [editorMode]);
@@ -200,6 +225,32 @@ export default function Editor({ filePath, content, onContentChange }: Props) {
   const handleBodyChange = (newBody: string) => {
     if (!note.valid) commit(newBody);
     else commit(note.head !== null ? note.head + newBody : composeNote(note.data, newBody));
+  };
+
+  // Inserta el texto en el cursor. Si trae propiedades (frontmatter), se añaden a las de la nota
+  // sin cambiar las que ya tiene, como hace Obsidian con las plantillas
+  const handleInsert = (text: string) => {
+    const view = viewRef.current;
+    if (!view) return;
+    const template = parseNote(text);
+    const newKeys = template.valid ? Object.keys(template.data).filter((k) => !(k in note.data)) : [];
+    const insert = template.valid && note.valid ? template.body : text;
+    const { from, to } = view.state.selection.main;
+    if (!newKeys.length || !note.valid) {
+      view.dispatch({ changes: { from, to, insert }, selection: { anchor: from + insert.length }, scrollIntoView: true });
+    } else {
+      // El cuerpo y las propiedades se guardan juntos, no como dos cambios por separado
+      view.dispatch({
+        changes: { from, to, insert },
+        selection: { anchor: from + insert.length },
+        scrollIntoView: true,
+        annotations: externalChange.of(true),
+      });
+      const data = { ...note.data };
+      for (const key of newKeys) data[key] = template.data[key];
+      commit(composeNote(data, view.state.doc.toString()));
+    }
+    view.focus();
   };
 
   const handlePropertiesChange = (data: FrontmatterData) => commit(composeNote(data, body));

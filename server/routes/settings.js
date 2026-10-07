@@ -133,5 +133,61 @@ export default (dataDir, getConfig, limiter, sessions) => {
     }
   });
 
+  // Notas diarias y plantillas, en los mismos archivos que sus plugins en Obsidian de escritorio
+  // (.obsidian/daily-notes.json y .obsidian/templates.json). Las claves ausentes usan el valor por defecto
+  const readNotesConfig = (vaultPath) => {
+    const daily = vault.readObsidianConfig(vaultPath, 'daily-notes.json');
+    const templates = vault.readObsidianConfig(vaultPath, 'templates.json');
+    const str = (v) => (typeof v === 'string' ? v : '');
+    return {
+      dailyNotes: { folder: str(daily.folder), format: str(daily.format), template: str(daily.template) },
+      templates: { folder: str(templates.folder), dateFormat: str(templates.dateFormat), timeFormat: str(templates.timeFormat) },
+    };
+  };
+
+  // Ruta dentro del vault: sin "..", ni .obsidian/.git; sin barras al principio ni al final
+  const cleanVaultPath = (value) => {
+    const path = String(value ?? '').trim().replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
+    const parts = path.split('/');
+    if (parts.includes('..') || parts.some((p) => ['.obsidian', '.git'].includes(p.toLowerCase()))) {
+      throw new Error('Ruta no válida');
+    }
+    return path;
+  };
+
+  // Formato de fecha (moment.js); puede incluir "/" para crear subcarpetas, pero no ".."
+  const cleanFormat = (value) => {
+    const format = String(value ?? '').trim();
+    if (format.split('/').includes('..') || format.length > 100) throw new Error('Formato no válido');
+    return format;
+  };
+
+  router.get('/notes', (req, res) => {
+    const cfg = getConfig();
+    if (!cfg) return res.status(400).json({ error: 'Not configured' });
+    res.json(readNotesConfig(cfg.vaultPath));
+  });
+
+  router.post('/notes', (req, res) => {
+    const cfg = getConfig();
+    if (!cfg) return res.status(400).json({ error: 'Not configured' });
+    const { dailyNotes, templates } = req.body ?? {};
+    try {
+      const daily = {};
+      if (dailyNotes?.folder !== undefined) daily.folder = cleanVaultPath(dailyNotes.folder);
+      if (dailyNotes?.format !== undefined) daily.format = cleanFormat(dailyNotes.format);
+      if (dailyNotes?.template !== undefined) daily.template = cleanVaultPath(dailyNotes.template).replace(/\.md$/i, '');
+      const tpl = {};
+      if (templates?.folder !== undefined) tpl.folder = cleanVaultPath(templates.folder);
+      if (templates?.dateFormat !== undefined) tpl.dateFormat = cleanFormat(templates.dateFormat);
+      if (templates?.timeFormat !== undefined) tpl.timeFormat = cleanFormat(templates.timeFormat);
+      if (Object.keys(daily).length) vault.updateObsidianConfig(cfg.vaultPath, 'daily-notes.json', daily);
+      if (Object.keys(tpl).length) vault.updateObsidianConfig(cfg.vaultPath, 'templates.json', tpl);
+      res.json(readNotesConfig(cfg.vaultPath));
+    } catch (err) {
+      res.status(400).json({ error: publicError(err, 'No se pudo guardar') });
+    }
+  });
+
   return router;
 };

@@ -277,22 +277,33 @@ export const copyFile = (vaultPath, filePath) => {
   return toVaultPath(vaultPath, destFull);
 };
 
-// Ajustes de Obsidian (.obsidian/app.json) compartidos con la app de escritorio
-const appConfigPath = (vaultPath) => join(resolve(vaultPath), '.obsidian', 'app.json');
+// Ajustes de Obsidian compartidos con la app de escritorio. Solo se tocan estos archivos de .obsidian/:
+// app.json (carpeta de adjuntos), daily-notes.json (notas diarias) y templates.json (plantillas)
+const OBSIDIAN_CONFIGS = ['app.json', 'daily-notes.json', 'templates.json'];
 
-export const readAppConfig = (vaultPath) => {
+const obsidianConfigPath = (vaultPath, file) => {
+  if (!OBSIDIAN_CONFIGS.includes(file)) throw new Error('Ajuste no válido');
+  return join(resolve(vaultPath), '.obsidian', file);
+};
+
+export const readObsidianConfig = (vaultPath, file) => {
   try {
-    return JSON.parse(readFileSync(appConfigPath(vaultPath), 'utf8'));
+    const data = JSON.parse(readFileSync(obsidianConfigPath(vaultPath, file), 'utf8'));
+    return data && typeof data === 'object' && !Array.isArray(data) ? data : {};
   } catch {
     return {};
   }
 };
 
-export const updateAppConfig = (vaultPath, changes) => {
-  const path = appConfigPath(vaultPath);
+export const updateObsidianConfig = (vaultPath, file, changes) => {
+  const path = obsidianConfigPath(vaultPath, file);
   mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, JSON.stringify({ ...readAppConfig(vaultPath), ...changes }, null, 2), 'utf8');
+  writeFileSync(path, JSON.stringify({ ...readObsidianConfig(vaultPath, file), ...changes }, null, 2), 'utf8');
 };
+
+export const readAppConfig = (vaultPath) => readObsidianConfig(vaultPath, 'app.json');
+
+export const updateAppConfig = (vaultPath, changes) => updateObsidianConfig(vaultPath, 'app.json', changes);
 
 // Carpeta (ruta dentro del vault) donde se guardan los adjuntos de `notePath`,
 // según `attachmentFolderPath` de Obsidian:
@@ -322,11 +333,12 @@ export const saveAttachment = (vaultPath, folder, fileName, data) => {
   return toVaultPath(vaultPath, fullPath);
 };
 
-export const createNote = (vaultPath, filePath) => {
+// `content`: contenido inicial (p. ej. una plantilla); vacía por defecto
+export const createNote = (vaultPath, filePath, content = '') => {
   const fullPath = guardPath(vaultPath, filePath);
   if (existsSync(fullPath)) throw new Error('Ya existe un archivo con ese nombre');
   mkdirSync(dirname(fullPath), { recursive: true });
-  writeFileSync(fullPath, '', 'utf8');
+  writeFileSync(fullPath, content, 'utf8');
 };
 
 export const createFolder = (vaultPath, folderPath) => {

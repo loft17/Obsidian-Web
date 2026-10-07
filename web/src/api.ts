@@ -108,11 +108,12 @@ export const filesApi = {
     if (!res.ok) throw new Error((await res.json()).error);
     return res.json();
   },
-  createNote: async (path: string) => {
+  // `content`: contenido inicial (vacía si se omite)
+  createNote: async (path: string, content?: string) => {
     const res = await fetch(`${API_URL}/files/create-note`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path }),
+      body: JSON.stringify({ path, content }),
     });
     if (!res.ok) throw new Error((await res.json()).error);
     return res.json();
@@ -169,7 +170,24 @@ export const trashApi = {
   empty: () => postJson(`${API_URL}/files/trash/empty`),
 };
 
+// Ajustes de los plugins de notas diarias y plantillas de Obsidian ('' = valor por defecto)
+export interface NotesConfig {
+  dailyNotes: { folder: string; format: string; template: string };
+  templates: { folder: string; dateFormat: string; timeFormat: string };
+}
+
+export interface NotesConfigUpdate {
+  dailyNotes?: Partial<NotesConfig['dailyNotes']>;
+  templates?: Partial<NotesConfig['templates']>;
+}
+
 export const settingsApi = {
+  getNotes: async (): Promise<NotesConfig> => {
+    const res = await fetch(`${API_URL}/settings/notes`);
+    if (!res.ok) throw new Error((await res.json()).error);
+    return res.json();
+  },
+  setNotes: (changes: NotesConfigUpdate): Promise<NotesConfig> => postJson(`${API_URL}/settings/notes`, changes),
   getLimits: async (): Promise<ServerLimits> => {
     const res = await fetch(`${API_URL}/settings/limits`);
     if (!res.ok) throw new Error((await res.json()).error);

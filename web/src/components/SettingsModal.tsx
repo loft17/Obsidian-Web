@@ -1,6 +1,7 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { useStore, type EditorMode, type Theme, DEFAULT_FONT_SIZE, MIN_FONT_SIZE, MAX_FONT_SIZE } from '../store';
-import { filesApi, settingsApi, syncApi, type ServerLimits, type SyncConfig, type SyncConfigUpdate, type SyncProvider } from '../api';
+import { filesApi, settingsApi, syncApi, type NotesConfig, type NotesConfigUpdate, type ServerLimits, type SyncConfig, type SyncConfigUpdate, type SyncProvider } from '../api';
+import { formatDate as formatMoment, DEFAULT_DAILY_FORMAT, DEFAULT_DATE_FORMAT, DEFAULT_TIME_FORMAT } from '../templates';
 import { IconClose, IconEdit, IconEye, IconFolderNew, IconList, IconLock, IconReset, IconSearch, IconSync, IconUserCircle } from './Icons';
 
 interface Props {
@@ -299,6 +300,138 @@ function AttachmentsSetting() {
   );
 }
 
+type NotesGroup = keyof NotesConfig;
+
+// Campo de texto que se guarda al salir de él o al pulsar Intro
+function NotesField({
+  name,
+  desc,
+  placeholder,
+  value,
+  disabled,
+  onSave,
+}: {
+  name: string;
+  desc: React.ReactNode;
+  placeholder?: string;
+  value: string;
+  disabled: boolean;
+  onSave: (value: string) => void;
+}) {
+  const [text, setText] = useState(value);
+  useEffect(() => setText(value), [value]);
+  const save = () => text.trim() !== value && onSave(text.trim());
+  return (
+    <div className="setting-item">
+      <div className="setting-info">
+        <div className="setting-name">{name}</div>
+        <div className="setting-desc">{desc}</div>
+      </div>
+      <input
+        className="setting-input"
+        type="text"
+        placeholder={placeholder}
+        value={text}
+        disabled={disabled}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={save}
+        onKeyDown={(e) => e.key === 'Enter' && save()}
+      />
+    </div>
+  );
+}
+
+// Notas diarias y plantillas: se guardan en .obsidian/daily-notes.json y templates.json,
+// compartidos con los plugins de Obsidian de escritorio
+function NotesSettings() {
+  const [config, setConfig] = useState<NotesConfig | null>(null);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    settingsApi
+      .getNotes()
+      .then(setConfig)
+      .catch((err) => setError(err.message));
+  }, []);
+
+  const save = async <G extends NotesGroup>(group: G, key: keyof NotesConfig[G], value: string) => {
+    setError('');
+    try {
+      setConfig(await settingsApi.setNotes({ [group]: { [key]: value } } as NotesConfigUpdate));
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+
+  const now = new Date();
+  const preview = (format: string, fallback: string) => (
+    <>
+      Formato de fecha de moment.js, p. ej. <code>{fallback}</code>. Vista previa:{' '}
+      <strong>{formatMoment(now, format || fallback)}</strong>
+    </>
+  );
+  const disabled = !config;
+  const daily = config?.dailyNotes ?? { folder: '', format: '', template: '' };
+  const templates = config?.templates ?? { folder: '', dateFormat: '', timeFormat: '' };
+
+  return (
+    <>
+      <h3 className="settings-heading">Notas diarias</h3>
+      {error && <div className="setting-desc" style={{ color: 'var(--text-error, #e5484d)' }}>{error}</div>}
+      <NotesField
+        name="Formato de fecha"
+        desc={<>{preview(daily.format, DEFAULT_DAILY_FORMAT)}. Usa / para crear subcarpetas: <code>YYYY/MM/YYYY-MM-DD</code>.</>}
+        placeholder={DEFAULT_DAILY_FORMAT}
+        value={daily.format}
+        disabled={disabled}
+        onSave={(v) => save('dailyNotes', 'format', v)}
+      />
+      <NotesField
+        name="Ubicación del archivo nuevo"
+        desc="Carpeta donde se crean las notas diarias. Vacío: la raíz de la bóveda."
+        placeholder="Diario"
+        value={daily.folder}
+        disabled={disabled}
+        onSave={(v) => save('dailyNotes', 'folder', v)}
+      />
+      <NotesField
+        name="Plantilla"
+        desc="Ruta de la plantilla para las notas diarias nuevas, p. ej. Plantillas/Diario. Vacío: nota en blanco."
+        placeholder="Plantillas/Diario"
+        value={daily.template}
+        disabled={disabled}
+        onSave={(v) => save('dailyNotes', 'template', v)}
+      />
+
+      <h3 className="settings-heading">Plantillas</h3>
+      <NotesField
+        name="Carpeta de plantillas"
+        desc="Las notas de esta carpeta se ofrecen al insertar una plantilla."
+        placeholder="Plantillas"
+        value={templates.folder}
+        disabled={disabled}
+        onSave={(v) => save('templates', 'folder', v)}
+      />
+      <NotesField
+        name="Formato de fecha"
+        desc={<>{preview(templates.dateFormat, DEFAULT_DATE_FORMAT)}. Se usa en <code>{'{{date}}'}</code>.</>}
+        placeholder={DEFAULT_DATE_FORMAT}
+        value={templates.dateFormat}
+        disabled={disabled}
+        onSave={(v) => save('templates', 'dateFormat', v)}
+      />
+      <NotesField
+        name="Formato de hora"
+        desc={<>{preview(templates.timeFormat, DEFAULT_TIME_FORMAT)}. Se usa en <code>{'{{time}}'}</code>.</>}
+        placeholder={DEFAULT_TIME_FORMAT}
+        value={templates.timeFormat}
+        disabled={disabled}
+        onSave={(v) => save('templates', 'timeFormat', v)}
+      />
+    </>
+  );
+}
+
 function FilesSection() {
   const hiddenFolders = useStore((s) => s.hiddenFolders);
   const setHiddenFolders = useStore((s) => s.setHiddenFolders);
@@ -386,6 +519,7 @@ function FilesSection() {
         value={hiddenFolders}
         onChange={(e) => setHiddenFolders(e.target.value)}
       />
+      <NotesSettings />
     </div>
   );
 }

@@ -110,8 +110,9 @@ la propia web.
 ### 📂 Organiza tu vault
 - **Explorador** con carpetas colapsables y menú contextual.
 - **Pestañas**: `Ctrl`/`Cmd` + clic o botón central para abrir en una nueva.
-- Duplica, mueve, renombra (los **enlaces se actualizan** solos) y borra (a la **papelera** `.trash`, que puedes revisar y **restaurar** desde la barra lateral).
+- Duplica, mueve, renombra (los **enlaces se actualizan** solos) y borra (a la **papelera** `.trash`, nunca de forma definitiva).
 - **Adjuntos**: arrastra o pega imágenes; se guardan donde lo hace Obsidian de escritorio.
+- **Notas diarias y plantillas** desde la cinta, con la misma configuración que Obsidian de escritorio.
 
 </td>
 <td valign="top">
@@ -414,7 +415,7 @@ pm2 logs obsidian-web
 | **`Ctrl`/`Cmd` + clic**, **botón central** o **clic derecho → Abrir en pestaña nueva** | La abre en otra pestaña. |
 | **Clic derecho** sobre archivos o carpetas | Nueva nota, nueva carpeta, duplicar, mover, renombrar, borrar. |
 
-Borrar mueve el archivo a `.trash/` dentro del vault. Desde el icono de la **papelera** (cinta izquierda o pie de la barra lateral) puedes ver lo borrado, **restaurarlo** a su ruta original (si ya hay algo con ese nombre se restaura como `Nombre 1.md`, y la carpeta se vuelve a crear si no existe), borrarlo definitivamente o vaciar la papelera. Lo que se borró antes de esta versión, o desde Obsidian de escritorio, no guarda su carpeta original y se restaura en la raíz.
+Borrar mueve el archivo a `.trash/` dentro del vault. Para recuperarlo, renómbralo en el servidor quitando el sufijo `.<timestamp>.deleted`.
 
 ### 🔗 Wikilinks
 
@@ -434,6 +435,14 @@ Un enlace a una nota que no existe se muestra atenuado y, al pulsarlo, se crea l
 ### 🖼️ Adjuntos
 
 Arrastra o pega una imagen en el editor. Se guarda en la carpeta de *Preferencias → Archivos* y se inserta el enlace en la nota. Esa carpeta se guarda en `.obsidian/app.json` como `attachmentFolderPath`, igual que en Obsidian de escritorio.
+
+### 📅 Notas diarias y plantillas
+
+Funcionan como los plugins del mismo nombre de Obsidian de escritorio y comparten su configuración, que se cambia en *Preferencias → Archivos* y se guarda en `.obsidian/daily-notes.json` y `.obsidian/templates.json`.
+
+- **Nota diaria** (icono de calendario en la cinta): abre la nota de hoy y, si no existe, la crea en la carpeta configurada con la plantilla elegida. El nombre sale del formato de fecha (sintaxis de moment.js, por defecto `YYYY-MM-DD`); una `/` en el formato crea subcarpetas, por ejemplo `YYYY/MM/YYYY-MM-DD`.
+- **Insertar plantilla** (icono de documentos): elige una nota de la carpeta de plantillas y se inserta en el cursor de la nota abierta. Si la plantilla tiene propiedades, se añaden a las de la nota sin cambiar las que ya tenía.
+- **Variables**: `{{title}}` (nombre de la nota), `{{date}}` y `{{time}}` (con los formatos configurados), y `{{date:FORMATO}}` / `{{time:FORMATO}}` con un formato propio, por ejemplo `{{date:dddd, D [de] MMMM}}`.
 
 ### 🖨️ Exportar a PDF
 
@@ -468,7 +477,7 @@ Se abren desde el icono ⚙️ de engranaje. Las de interfaz se guardan **en el 
 | :--- | :--- | :---: |
 | 👁️ **Apariencia** | Tema (oscuro / claro / sistema), tamaño de fuente, ajuste rápido con <kbd>Ctrl</kbd>+rueda, barra de título de pestaña, cinta lateral | 🌐 Navegador |
 | ✏️ **Editor** | Modo por defecto (visor / edición), modo de edición (vista previa / fuente), título en línea, longitud de línea legible, números de línea | 🌐 Navegador |
-| 📂 **Archivos** | Carpeta de adjuntos, ruta del vault (exige la contraseña), carpetas ocultas en el explorador (un patrón por línea, `*` como comodín; esta opción se guarda en el navegador) | 🖥️ Servidor |
+| 📂 **Archivos** | Carpeta de adjuntos, ruta del vault (exige la contraseña), carpetas ocultas en el explorador (un patrón por línea, `*` como comodín; esta opción se guarda en el navegador), notas diarias (formato, carpeta, plantilla) y plantillas (carpeta, formatos de fecha y hora) | 🖥️ Servidor |
 | 🔄 **Sincronización** | GitHub: repositorio, rama, token, frecuencia, *Sincronizar ahora* | 🖥️ Servidor |
 | 🔒 **Seguridad** | Cambiar la contraseña, cerrar todas las sesiones | 🖥️ Servidor |
 | ⌨️ **Atajos** | Lista de atajos | — |
@@ -550,7 +559,7 @@ flowchart LR
 #### 📁 Vault
 - **Aislamiento**: no se admiten rutas con `../` ni que salgan del vault.
 - **Enlaces simbólicos**: no se siguen dentro del vault (no aparecen ni en el explorador ni en la búsqueda). La *raíz* del vault sí puede ser un symlink.
-- **`.obsidian/` protegida**: no se puede leer ni modificar desde la web, así nadie puede colar un plugin que se ejecute en tu ordenador al sincronizar.
+- **`.obsidian/` protegida**: no se puede leer ni modificar desde la web, así nadie puede colar un plugin que se ejecute en tu ordenador al sincronizar. Solo se tocan, desde Preferencias, unas pocas claves de `app.json`, `daily-notes.json` y `templates.json`.
 - **`.git/` protegida**: sus hooks y su configuración ejecutarían código en el servidor al sincronizar.
 
 </td>
@@ -612,8 +621,10 @@ Dentro del vault, la app solo usa:
 
 | Ruta | Uso |
 | :--- | :--- |
-| `.trash/` | Papelera: lo borrado se mueve aquí como `nombre.ext.<timestamp>.deleted`; `.trash/.index.json` guarda la ruta original de cada elemento para restaurarlo. |
+| `.trash/` | Papelera: lo borrado se mueve aquí como `nombre.ext.<timestamp>.deleted`. |
 | `.obsidian/app.json` | Solo la clave `attachmentFolderPath` (carpeta de adjuntos). |
+| `.obsidian/daily-notes.json` | Claves `folder`, `format` y `template` (notas diarias). |
+| `.obsidian/templates.json` | Claves `folder`, `dateFormat` y `timeFormat` (plantillas). |
 | `.git/` | Solo con la sincronización con GitHub: el repositorio local (se crea si no existe). |
 
 ---
@@ -750,19 +761,16 @@ Todas las rutas cuelgan de `/api`. Salvo `setup` y `auth`, exigen una sesión v�
 | `POST` | `/api/files/write/:filePath` | Guarda una nota (`content`, `baseVersion` opcional). `409` con la versión actual si ha cambiado desde `baseVersion` |
 | `POST` | `/api/files/upload?note=…&name=…` | Sube un adjunto (cuerpo binario) |
 | `DELETE` | `/api/files/:filePath` | Mueve a `.trash/` |
-| `GET` | `/api/files/trash` | Contenido de la papelera (`id`, `path` original, `isFolder`, `deletedAt`) |
-| `POST` | `/api/files/trash/restore` | Restaura un elemento (`id`) a su ruta original; devuelve dónde ha quedado (`path`) |
-| `POST` | `/api/files/trash/delete` | Borra definitivamente un elemento (`id`) |
-| `POST` | `/api/files/trash/empty` | Vacía la papelera |
 | `POST` | `/api/files/rename` | Renombra o mueve (`oldPath`, `newPath`) y actualiza los enlaces; devuelve las notas modificadas (`updated`) |
 | `POST` | `/api/files/copy` | Duplica (`path`) |
-| `POST` | `/api/files/create-note` | Crea una nota (`path`) |
+| `POST` | `/api/files/create-note` | Crea una nota (`path`, `content` opcional) |
 | `POST` | `/api/files/create-folder` | Crea una carpeta (`path`) |
 | `GET` | `/api/search?q=…` | Búsqueda de texto o `tag:` |
 | `GET` `POST` | `/api/settings/vault` | Lee / cambia la ruta del vault (`vaultPath`, `password`) |
 | `POST` | `/api/settings/password` | Cambia la contraseña (`currentPassword`, `newPassword`) |
 | `POST` | `/api/settings/sessions/revoke` | Cierra todas las sesiones |
 | `GET` `POST` | `/api/settings/attachments` | Lee / cambia `attachmentFolderPath` |
+| `GET` `POST` | `/api/settings/notes` | Lee / cambia la configuración de notas diarias (`dailyNotes`) y plantillas (`templates`) |
 | `GET` | `/api/sync` | Configuración y estado de la sincronización (sin el token: solo `hasToken`) |
 | `POST` | `/api/sync/config` | Cambia la configuración (`provider`, `interval`, `github`; `github.token: null` lo borra) |
 | `POST` | `/api/sync/run` | Sincroniza ahora y devuelve el estado al terminar |
@@ -802,7 +810,6 @@ chmod +x utils/diagnose.sh
 
 ## 🧭 Hoja de ruta
 
-- Notas diarias y plantillas.
 - No he comprobado si el modo lectura renderiza fórmulas LaTeX, Mermaid y resaltado de sintaxis en bloques de código. No hay ninguna librería para ello entre las dependencias, así que seguramente no.
 
 ---

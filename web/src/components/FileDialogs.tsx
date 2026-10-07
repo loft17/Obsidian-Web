@@ -178,20 +178,29 @@ export function MoveDialog({
   );
 }
 
+// Selector de notas con filtro; también sirve para elegir plantilla (`label` acorta lo que se muestra)
 export function QuickOpenDialog({
   files,
   onSelect,
   onClose,
+  title = 'Abrir nota',
+  placeholder = 'Buscar nota...',
+  emptyText = 'No hay notas que coincidan',
+  label = (path) => path.replace(/\.md$/i, ''),
 }: {
   files: { path: string; name: string }[];
   onSelect: (path: string, name: string) => void;
   onClose: () => void;
+  title?: string;
+  placeholder?: string;
+  emptyText?: string;
+  label?: (path: string) => string;
 }) {
   const [filter, setFilter] = useState('');
   const [selected, setSelected] = useState(0);
 
   const needle = filter.toLowerCase();
-  const options = files.filter((f) => f.path.toLowerCase().includes(needle)).slice(0, 50);
+  const options = files.filter((f) => label(f.path).toLowerCase().includes(needle)).slice(0, 50);
   const current = Math.min(selected, Math.max(options.length - 1, 0));
 
   const choose = (i: number) => {
@@ -202,11 +211,11 @@ export function QuickOpenDialog({
   };
 
   return (
-    <DialogShell title="Abrir nota" onClose={onClose}>
+    <DialogShell title={title} onClose={onClose}>
       <input
         autoFocus
         className="file-dialog-input"
-        placeholder="Buscar nota..."
+        placeholder={placeholder}
         value={filter}
         onChange={(e) => {
           setFilter(e.target.value);
@@ -226,7 +235,7 @@ export function QuickOpenDialog({
         }}
       />
       <div className="file-dialog-list">
-        {options.length === 0 && <div className="dropdown-empty">No hay notas que coincidan</div>}
+        {options.length === 0 && <div className="dropdown-empty">{emptyText}</div>}
         {options.map((f, i) => (
           <div
             key={f.path}
@@ -235,7 +244,7 @@ export function QuickOpenDialog({
             style={i === current ? { background: 'var(--interactive-hover)' } : undefined}
             onClick={() => choose(i)}
           >
-            {f.path.replace(/\.md$/i, '')}
+            {label(f.path)}
           </div>
         ))}
       </div>
