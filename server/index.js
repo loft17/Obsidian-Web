@@ -9,7 +9,7 @@ import authRoutes from './routes/auth.js';
 import filesRoutes from './routes/files.js';
 import searchRoutes from './routes/search.js';
 import settingsRoutes from './routes/settings.js';
-import { createSessionStore } from './sessions.js';
+import { createSessionStore, createLoginLimiter } from './sessions.js';
 import { securityHeaders, csrfGuard } from './security.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -36,6 +36,8 @@ if (existsSync(secretPath)) {
 }
 
 const sessions = createSessionStore(dataDir);
+// Compartido por el login y por las acciones que piden la contraseña (cambiar el vault)
+const loginLimiter = createLoginLimiter();
 
 // Detrás de un proxy inverso (nginx, Caddy...) define TRUST_PROXY=1 para que req.ip
 // sea la IP real del cliente (la usa el límite de intentos de login)
@@ -48,7 +50,8 @@ const distPath = join(__dirname, '..', 'web', 'dist');
 app.disable('x-powered-by');
 app.use(securityHeaders(distPath));
 app.use('/api', csrfGuard);
-app.use(express.json());
+// Las notas se guardan como JSON: el límite por defecto (100 KB) se queda corto
+app.use(express.json({ limit: '20mb' }));
 app.use(cookieParser(cookieSecret));
 
 // Check if configured
@@ -72,7 +75,7 @@ if (existsSync(distPath)) {
 
 // Routes
 app.use('/api/setup', setupRoutes(dataDir, sessions));
-app.use('/api/auth', authRoutes(dataDir, sessions));
+app.use('/api/auth', authRoutes(dataDir, sessions, loginLimiter));
 
 // Protected routes (require login if configured)
 // Montado en '/api' (Express no distingue mayúsculas, así que también cubre '/API/...').
@@ -85,7 +88,7 @@ app.use('/api', (req, res, next) => {
   next();
 });
 
-app.use('/api/settings', settingsRoutes(dataDir, getConfig));
+app.use('/api/settings', settingsRoutes(dataDir, getConfig, loginLimiter, sessions));
 app.use('/api/files', filesRoutes(dataDir, getConfig));
 app.use('/api/search', searchRoutes(dataDir, getConfig));
 
@@ -104,7 +107,12 @@ app.use((err, req, res, next) => {
   res.status(status).json({ error: status >= 500 ? 'Error interno' : 'Petición no válida' });
 });
 
-const port = (getConfig()?.port) || process.env.PORT || 3000;
+// Solo números de puerto válidos: un texto se interpretaría como un socket de Unix
+const validPort = (p) => {
+  const n = Number(p);
+  return p !== '' && p != null && Number.isInteger(n) && n >= 1 && n <= 65535 ? n : null;
+};
+const port = validPort(getConfig()?.port) ?? validPort(process.env.PORT) ?? 3000;
 // HOST=127.0.0.1 para escuchar solo en local (detrás de un proxy inverso con HTTPS);
 // sin definir, escucha en todas las interfaces
 const host = process.env.HOST || undefined;
@@ -115,5 +123,12 @@ app.listen(port, host, () => {
     console.log(`Vault: ${cfg.vaultPath}`);
   } else {
     console.log('Setup required');
+  }
+  // Avisos de despliegue inseguro
+  if (process.getuid?.() === 0) {
+    console.warn('[Security] La app se está ejecutando como root: si alguien consigue entrar, controla todo el servidor. Usa un usuario sin privilegios.');
+  }
+  if (!host) {
+    console.warn('[Security] Escuchando en todas las interfaces por HTTP (sin cifrar). Define HOST=127.0.0.1 y pon delante un proxy con HTTPS (Caddy, nginx).');
   }
 });

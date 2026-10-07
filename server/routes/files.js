@@ -1,10 +1,12 @@
 import express, { Router } from 'express';
-import matter from 'gray-matter';
 import MarkdownIt from 'markdown-it';
 import * as vault from '../vault.js';
 import { publicError, scriptHash } from '../security.js';
 
 const md = new MarkdownIt({ html: false, linkify: true, breaks: true });
+
+// Frontmatter YAML al inicio de la nota (se omite en la exportación)
+const FRONTMATTER = /^---[ \t]*\r?\n(?:[\s\S]*?\r?\n)?---[ \t]*(?:\r?\n|$)/;
 
 const PRINT_STYLES = `
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; line-height: 1.6; color: #222; max-width: 900px; margin: 0 auto; padding: 32px; }
@@ -64,12 +66,7 @@ export default (dataDir, getConfig) => {
 
   router.get('/export-pdf/:filePath',withVault((cfg, req, res) => {
     const raw = vault.readFile(cfg.vaultPath, req.params.filePath);
-    let body = raw;
-    try {
-      body = matter(raw).content;
-    } catch {
-      // frontmatter inválido: se exporta el texto completo
-    }
+    const body = raw.replace(FRONTMATTER, '');
     const title = escapeHtml(req.params.filePath.split('/').pop().replace(/\.md$/i, ''));
     res.set('Content-Security-Policy', PRINT_CSP);
     res.type('html').send(`<!DOCTYPE html>

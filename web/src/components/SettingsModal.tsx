@@ -1,7 +1,7 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { useStore, type EditorMode, type Theme, DEFAULT_FONT_SIZE, MIN_FONT_SIZE, MAX_FONT_SIZE } from '../store';
 import { settingsApi } from '../api';
-import { IconClose, IconEdit, IconEye, IconFolderNew, IconList, IconReset, IconSearch, IconUserCircle } from './Icons';
+import { IconClose, IconEdit, IconEye, IconFolderNew, IconList, IconLock, IconReset, IconSearch, IconUserCircle } from './Icons';
 
 interface Props {
   onClose: () => void;
@@ -12,6 +12,7 @@ const SECTIONS = [
   { id: 'appearance', label: 'Apariencia', Icon: IconEye },
   { id: 'editor', label: 'Editor', Icon: IconEdit },
   { id: 'files', label: 'Archivos', Icon: IconFolderNew },
+  { id: 'security', label: 'Seguridad', Icon: IconLock },
   { id: 'shortcuts', label: 'Atajos', Icon: IconList },
 ];
 
@@ -302,6 +303,7 @@ function FilesSection() {
   const setHiddenFolders = useStore((s) => s.setHiddenFolders);
   const [vaultPath, setVaultPath] = useState('');
   const [savedPath, setSavedPath] = useState('');
+  const [vaultPassword, setVaultPassword] = useState('');
   const [vaultError, setVaultError] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -319,7 +321,7 @@ function FilesSection() {
     setVaultError('');
     setSaving(true);
     try {
-      await settingsApi.setVault(vaultPath.trim());
+      await settingsApi.setVault(vaultPath.trim(), vaultPassword);
       // Recargar para descartar pestañas y árbol de la bóveda anterior
       window.location.reload();
     } catch (err) {
@@ -334,7 +336,8 @@ function FilesSection() {
         <div className="setting-info">
           <div className="setting-name">Ruta de la bóveda</div>
           <div className="setting-desc">
-            Ruta absoluta en el servidor. Se creará si no existe. Al cambiarla se recargará la aplicación.
+            Ruta absoluta en el servidor. Se creará si no existe. Para cambiarla hace falta la contraseña;
+            al guardar se recargará la aplicación.
           </div>
           {vaultError && <div className="setting-desc" style={{ color: 'var(--text-error, #e5484d)' }}>{vaultError}</div>}
         </div>
@@ -347,10 +350,24 @@ function FilesSection() {
           onChange={(e) => setVaultPath(e.target.value)}
           disabled={saving}
         />
-        <button onClick={saveVault} disabled={saving || !vaultPath.trim() || vaultPath.trim() === savedPath}>
-          Guardar
-        </button>
       </div>
+      {vaultPath.trim() !== savedPath && (
+        <div className="setting-item">
+          <input
+            className="setting-input"
+            type="password"
+            placeholder="Contraseña actual"
+            autoComplete="current-password"
+            value={vaultPassword}
+            onChange={(e) => setVaultPassword(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && vaultPath.trim() && vaultPassword && saveVault()}
+            disabled={saving}
+          />
+          <button onClick={saveVault} disabled={saving || !vaultPath.trim() || !vaultPassword}>
+            Guardar
+          </button>
+        </div>
+      )}
       <AttachmentsSetting />
       <div className="setting-item">
         <div className="setting-info">
@@ -369,6 +386,127 @@ function FilesSection() {
         onChange={(e) => setHiddenFolders(e.target.value)}
       />
     </div>
+  );
+}
+
+const MIN_PASSWORD_LENGTH = 12;
+
+function SecuritySection() {
+  const [current, setCurrent] = useState('');
+  const [next, setNext] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [message, setMessage] = useState<{ error: boolean; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [confirmRevoke, setConfirmRevoke] = useState(false);
+
+  const mismatch = confirm !== '' && next !== confirm;
+  const canSave = !busy && current && next.length >= MIN_PASSWORD_LENGTH && next === confirm;
+
+  const changePassword = async () => {
+    setMessage(null);
+    setBusy(true);
+    try {
+      await settingsApi.changePassword(current, next);
+      setCurrent('');
+      setNext('');
+      setConfirm('');
+      setMessage({ error: false, text: 'Contraseña cambiada. Se han cerrado las demás sesiones.' });
+    } catch (err) {
+      setMessage({ error: true, text: (err as Error).message });
+    }
+    setBusy(false);
+  };
+
+  const revokeSessions = async () => {
+    setBusy(true);
+    try {
+      await settingsApi.revokeSessions();
+      window.location.reload();
+    } catch (err) {
+      setMessage({ error: true, text: (err as Error).message });
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="settings-group">
+        <div className="setting-item">
+          <div className="setting-info">
+            <div className="setting-name">Cambiar la contraseña</div>
+            <div className="setting-desc">
+              Mínimo {MIN_PASSWORD_LENGTH} caracteres. Se cerrarán las sesiones abiertas en otros dispositivos.
+            </div>
+            {message && (
+              <div className="setting-desc" style={message.error ? { color: 'var(--text-error, #e5484d)' } : undefined}>
+                {message.text}
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="setting-item">
+          <input
+            className="setting-input"
+            type="password"
+            placeholder="Contraseña actual"
+            autoComplete="current-password"
+            value={current}
+            onChange={(e) => setCurrent(e.target.value)}
+            disabled={busy}
+          />
+        </div>
+        <div className="setting-item">
+          <input
+            className="setting-input"
+            type="password"
+            placeholder="Contraseña nueva"
+            autoComplete="new-password"
+            value={next}
+            onChange={(e) => setNext(e.target.value)}
+            disabled={busy}
+          />
+        </div>
+        <div className="setting-item">
+          <input
+            className="setting-input"
+            type="password"
+            placeholder={mismatch ? 'Las contraseñas no coinciden' : 'Repite la contraseña nueva'}
+            autoComplete="new-password"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && canSave && changePassword()}
+            disabled={busy}
+            style={mismatch ? { borderColor: 'var(--text-error, #e5484d)' } : undefined}
+          />
+          <button onClick={changePassword} disabled={!canSave}>
+            Cambiar
+          </button>
+        </div>
+      </div>
+      <div className="settings-group">
+        <div className="setting-item">
+          <div className="setting-info">
+            <div className="setting-name">Cerrar todas las sesiones</div>
+            <div className="setting-desc">
+              Cierra la sesión en todos los dispositivos, también en este. Las sesiones caducan solas a los 30 días
+              o tras 7 días sin usarse.
+            </div>
+          </div>
+          {confirmRevoke ? (
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setConfirmRevoke(false)} disabled={busy}>
+                Cancelar
+              </button>
+              <button onClick={revokeSessions} disabled={busy}>
+                Confirmar
+              </button>
+            </div>
+          ) : (
+            <button onClick={() => setConfirmRevoke(true)}>Cerrar todas</button>
+          )}
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -501,6 +639,7 @@ export default function SettingsModal({ onClose }: Props) {
             {section === 'appearance' && <AppearanceSection />}
             {section === 'editor' && <EditorSection />}
             {section === 'files' && <FilesSection />}
+            {section === 'security' && <SecuritySection />}
             {section === 'shortcuts' && <ShortcutsSection />}
           </div>
         </div>

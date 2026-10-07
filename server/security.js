@@ -22,8 +22,9 @@ export const securityHeaders = (distPath) => {
     `script-src 'self' ${inlineScriptHashes(distPath).join(' ')}`.trim(),
     // React (atributos style) y CodeMirror inyectan estilos en línea
     "style-src 'self' 'unsafe-inline'",
-    // Las notas pueden incrustar imágenes externas
-    "img-src 'self' data: blob: https:",
+    // Las imágenes externas revelan tu IP a su servidor (píxeles de rastreo), así que
+    // se bloquean salvo con REMOTE_IMAGES=1
+    `img-src 'self' data: blob:${process.env.REMOTE_IMAGES === '1' ? ' https:' : ''}`,
     "font-src 'self' data:",
     "connect-src 'self'",
     "object-src 'none'",
@@ -41,6 +42,8 @@ export const securityHeaders = (distPath) => {
       'Cross-Origin-Opener-Policy': 'same-origin',
       'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
     });
+    // HSTS solo por HTTPS (detrás de un proxy, req.secure requiere TRUST_PROXY)
+    if (req.secure) res.set('Strict-Transport-Security', 'max-age=31536000');
     next();
   };
 };
@@ -55,16 +58,20 @@ export const csrfGuard = (req, res, next) => {
   if (req.get('Sec-Fetch-Site') === 'cross-site') {
     return res.status(403).json({ error: 'Origen no permitido' });
   }
-  // req.hostname respeta X-Forwarded-Host con TRUST_PROXY (detrás de un proxy inverso)
+  // Origin debe coincidir en esquema, nombre y puerto: otra web del mismo servidor en otro
+  // puerto es otro origen. Detrás de un proxy, req.protocol y el host salen de
+  // X-Forwarded-Proto y X-Forwarded-Host con TRUST_PROXY
   const origin = req.get('Origin');
   if (origin) {
-    let host;
+    const trusted = req.app.get('trust proxy fn')(req.socket.remoteAddress, 0);
+    const host = (trusted && req.get('X-Forwarded-Host')?.split(',')[0].trim()) || req.get('Host');
+    let expected;
     try {
-      host = new URL(origin).hostname;
+      expected = new URL(`${req.protocol}://${host}`).origin;
     } catch {
-      host = null;
+      expected = null;
     }
-    if (host !== req.hostname) {
+    if (origin !== expected) {
       return res.status(403).json({ error: 'Origen no permitido' });
     }
   }

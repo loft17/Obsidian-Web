@@ -51,7 +51,7 @@ La aplicación estará disponible en **`http://localhost:3000`**.
 
 1. Abre `http://localhost:3000` en tu navegador.
 2. Introduce la **ruta absoluta** de tu vault (ej. `/home/usuario/mi-vault`).
-3. Define una contraseña de acceso (mínimo 6 caracteres).
+3. Define una contraseña de acceso (mínimo 12 caracteres).
 4. Haz clic en **Configurar** ¡y listo para editar!
 
 > 💡 **Nota:** La configuración se almacena en `data/config.json` y el secreto de las cookies en `data/.secret` (ambos excluidos de Git). Para reiniciar la configuración desde cero, simplemente borra `data/config.json`.
@@ -80,6 +80,18 @@ Por motivos de seguridad, la aplicación **no sigue enlaces simbólicos** ubicad
 - Cualquier intento de acceder a ellos será rechazado del mismo modo que una ruta con `../`.
 
 > 📌 **Alternativa:** Si necesitas estructurar carpetas externas dentro de tu bóveda, **cópialas o muévelas físicamente**. *(Nota: la ruta raíz de la bóveda sí puede ser un symlink, por ejemplo `/root/vault → /mnt/disco/vault`, y funcionará sin problemas).*
+
+---
+
+## 🔐 Despliegue Seguro
+
+- **Usa HTTPS.** Arranca con `HOST=127.0.0.1` y pon delante un proxy inverso con TLS (Caddy, nginx) con `TRUST_PROXY=1`. Así la cookie de sesión se marca como `Secure` y se envía la cabecera HSTS. Sin HTTPS, la contraseña y la cookie viajan sin cifrar.
+- **No la ejecutes como root.** Crea un usuario propio para la app con acceso solo al vault y a la carpeta de la app. El servidor avisa al arrancar si se ejecuta como root o escucha en todas las interfaces.
+- **Limita dónde puede estar el vault** con `VAULTS_ROOT=/srv/vaults`. Cambiar la ruta del vault desde *Preferencias* exige la contraseña. Nunca se aceptan carpetas del sistema, carpetas ocultas (`~/.ssh`, `~/.config`…) ni la carpeta de la propia app.
+- **Detrás de un proxy, `TRUST_PROXY=1` es obligatorio.** Las peticiones que modifican algo se rechazan si su origen (esquema, dominio y puerto) no coincide con el de la web, y detrás de un proxy el origen real sale de `X-Forwarded-Proto` y `X-Forwarded-Host` (Caddy las envía siempre; en nginx añade `proxy_set_header Host $host;` y `proxy_set_header X-Forwarded-Proto $scheme;`).
+- **Sesiones.** Caducan a los 30 días o tras 7 días sin usarse. En *Preferencias → Seguridad* puedes cambiar la contraseña (cierra las demás sesiones) y cerrar todas las sesiones.
+- **Imágenes externas bloqueadas.** Una imagen de otra web en una nota revela tu IP a ese servidor al abrirla (píxeles de rastreo), así que solo se cargan imágenes del vault. Arranca con `REMOTE_IMAGES=1` para permitirlas.
+- **`.obsidian/` está protegida.** Desde la web no se puede leer ni modificar (plugins, sus datos y ajustes de Obsidian de escritorio). Así nadie puede colar un plugin que se ejecute en tu ordenador al sincronizar. La carpeta de adjuntos se sigue guardando en `.obsidian/app.json`.
 
 ---
 
@@ -152,6 +164,20 @@ chmod +x 00_INFO-APP/diagnose.sh
 - [ ] Sincronización en la nube (Dropbox / GitHub)
 
 ---
+
+
+Antes de desplegar: si usas un proxy inverso, ahora TRUST_PROXY=1 es obligatorio. Sin él, todo lo que guarda o modifica algo devuelve 403 "Origen no permitido". Caddy ya envía las cabeceras necesarias; en nginx hay que añadir proxy_set_header Host $host; y proxy_set_header X-Forwarded-Proto $scheme;. Lo he puesto en el README.
+
+Problema	Solución
+Puerto sin validar	El setup ya lo validaba en tu copia de trabajo. He añadido la misma comprobación al arrancar en index.js: si el config.json o PORT traen algo que no es un puerto válido, usa el 3000.
+CSRF sin puerto ni esquema	security.js compara ahora el origen completo: esquema, dominio y puerto. Otra app en el mismo host y otro puerto queda bloqueada.
+Sesiones	Siguen durando 30 días como máximo, pero ahora caducan también tras 7 días sin usarse. Las sesiones ya abiertas siguen valiendo y cuentan desde ahora. En Preferencias → Seguridad hay dos opciones nuevas: cambiar la contraseña (pide la actual y cierra las demás sesiones) y cerrar todas las sesiones, también la actual.
+Búsqueda sin límites	Máximo 60 búsquedas por minuto y por IP (después responde 429) y consultas de hasta 200 caracteres. Las notas de más de 2 MB no se leen, y cada búsqueda lee como mucho 200 MB en total.
+Imágenes externas	La CSP ya no permite https:, así que solo se cargan imágenes del vault. Para volver a permitirlas, arranca con REMOTE_IMAGES=1.
+Límite de JSON	Sube a 20 MB, así que las notas de más de 100 KB ya se pueden guardar.
+Imágenes externas: sin REMOTE_IMAGES=1 salen como imagen rota, sin ningún aviso en la nota.
+Errores de TypeScript: hay errores en FileDialogs.tsx que ya estaban antes; no he tocado ese archivo.
+No he hecho commit.
 
 ## 📄 Licencia
 

@@ -2,8 +2,8 @@ import { Router } from 'express';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join } from 'path';
 import crypto from 'crypto';
-import { promisify } from 'util';
 import { checkVaultPath } from '../vault.js';
+import { hashPassword, MIN_PASSWORD_LENGTH } from '../password.js';
 import { publicError } from '../security.js';
 
 export default (dataDir, sessions) => {
@@ -60,8 +60,12 @@ export default (dataDir, sessions) => {
     if (!req.body.vaultPath || !password) {
       return res.status(400).json({ error: 'Missing fields: vaultPath and password required' });
     }
-    if (typeof password !== 'string' || password.length < 6) {
-      return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+    if (typeof password !== 'string' || password.length < MIN_PASSWORD_LENGTH) {
+      return res.status(400).json({ error: `La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres` });
+    }
+    const portNumber = port === undefined || port === null || port === '' ? 3000 : Number(port);
+    if (!Number.isInteger(portNumber) || portNumber < 1 || portNumber > 65535) {
+      return res.status(400).json({ error: 'Puerto no válido' });
     }
     let vaultPath;
     try {
@@ -78,10 +82,7 @@ export default (dataDir, sessions) => {
 
       // Hash password with scrypt
       console.log(`[Setup] Hashing password...`);
-      const scryptAsync = promisify(crypto.scrypt);
-      const salt = crypto.randomBytes(16);
-      const hash = await scryptAsync(password, salt, 32);
-      const passwordHash = Buffer.concat([salt, hash]).toString('hex');
+      const passwordHash = await hashPassword(password);
       console.log(`[Setup] Password hashed successfully`);
 
       // Create config
@@ -91,7 +92,7 @@ export default (dataDir, sessions) => {
       const config = {
         vaultPath,
         passwordHash,
-        port: port || 3000,
+        port: portNumber,
         createdAt: new Date().toISOString(),
       };
 

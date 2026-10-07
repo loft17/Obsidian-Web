@@ -26,8 +26,8 @@ export default function Setup({ onComplete }: Props) {
       setError('La ruta del vault es requerida');
       return;
     }
-    if (!password || password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres');
+    if (!password || password.length < 12) {
+      setError('La contraseña debe tener al menos 12 caracteres');
       return;
     }
     if (password !== confirmPassword) {
@@ -97,7 +97,7 @@ export default function Setup({ onComplete }: Props) {
             <label>Contraseña</label>
             <input
               type="password"
-              placeholder="Mínimo 6 caracteres"
+              placeholder="Mínimo 12 caracteres"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}

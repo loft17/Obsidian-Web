@@ -116,12 +116,29 @@ export const settingsApi = {
     if (!res.ok) throw new Error((await res.json()).error);
     return res.json();
   },
-  setVault: async (vaultPath: string): Promise<{ vaultPath: string }> => {
+  // Exige la contraseña actual además de la sesión
+  setVault: async (vaultPath: string, password: string): Promise<{ vaultPath: string }> => {
     const res = await fetch(`${API_URL}/settings/vault`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ vaultPath }),
+      body: JSON.stringify({ vaultPath, password }),
     });
+    if (!res.ok) throw new Error((await res.json()).error);
+    return res.json();
+  },
+  // Cierra las demás sesiones; la actual recibe una cookie nueva
+  changePassword: async (currentPassword: string, newPassword: string) => {
+    const res = await fetch(`${API_URL}/settings/password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error);
+    return res.json();
+  },
+  // Cierra todas las sesiones, también la actual
+  revokeSessions: async () => {
+    const res = await fetch(`${API_URL}/settings/sessions/revoke`, { method: 'POST' });
     if (!res.ok) throw new Error((await res.json()).error);
     return res.json();
   },

@@ -57,7 +57,7 @@ md.inline.ruler.before('emphasis', 'tag', (state, silent) => {
 
 // Enlace interno: muestra el alias y marca las notas que aún no existen
 function pushWikilink(state: typeof md.inline.State.prototype, inner: string) {
-  const notePath: string = state.env.notePath ?? '';
+  const notePath = String(state.env.notePath ?? '');
   const open = state.push('wikilink_open', 'a', 1);
   open.attrSet('href', '#');
   open.attrSet('class', isResolved(inner, notePath) ? 'wikilink' : 'wikilink is-unresolved');
@@ -104,14 +104,14 @@ md.inline.ruler.before('image', 'embed', (state, silent) => {
 });
 
 // Imágenes: rutas del vault resueltas desde la nota y tamaño "alt|300"
-md.renderer.rules.image = (tokens, idx, _options, env: { notePath?: string }) => {
+md.renderer.rules.image = (tokens, idx, _options, env) => {
   const token = tokens[idx];
   const { text, width, height } = parseSize(token.content);
-  const src = attachmentUrl(token.attrGet('src') ?? '', env.notePath ?? '');
+  const src = attachmentUrl(String(token.attrGet('src') ?? ''), String(env?.notePath ?? ''));
   const title = token.attrGet('title');
   return (
     `<img src="${md.utils.escapeHtml(src)}" alt="${md.utils.escapeHtml(text)}"` +
-    (title ? ` title="${md.utils.escapeHtml(title)}"` : '') +
+    (title ? ` title="${md.utils.escapeHtml(String(title))}"` : '') +
     (width ? ` width="${width}"` : '') +
     (height ? ` height="${height}"` : '') +
     ' loading="lazy">'
@@ -181,7 +181,7 @@ md.core.ruler.before('inline', 'callout', (state) => {
 });
 
 md.renderer.rules.blockquote_open = (tokens, idx, options, env, self) => {
-  const callout = tokens[idx].meta?.callout;
+  const callout = (tokens[idx].meta as { callout?: { type: string; title: string } } | null)?.callout;
   if (!callout) return self.renderToken(tokens, idx, options);
   const icon = CALLOUT_ICONS[callout.type] ?? CALLOUT_ICONS.note;
   return (

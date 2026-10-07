@@ -6,6 +6,44 @@ const MAX_RESULTS = 200;
 const MAX_MATCHES_PER_FILE = 5;
 const SNIPPET_RADIUS = 60;
 
+// Límites para que las búsquedas no saturen el servidor (cada una recorre el vault)
+const MAX_QUERY_LENGTH = 200;
+const MAX_FILE_SIZE = 2 * 1024 * 1024; // las notas más grandes no se leen
+const MAX_SCANNED_BYTES = 200 * 1024 * 1024; // total leído por búsqueda
+const RATE_WINDOW = 60 * 1000;
+const RATE_MAX = 60; // búsquedas por IP y minuto
+
+const recent = new Map(); // ip → marcas de tiempo de sus búsquedas en la última ventana
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, times] of recent) {
+    if (!times.some((t) => now - t < RATE_WINDOW)) recent.delete(ip);
+  }
+}, RATE_WINDOW).unref();
+
+const rateLimited = (ip) => {
+  const now = Date.now();
+  const times = (recent.get(ip) ?? []).filter((t) => now - t < RATE_WINDOW);
+  const limited = times.length >= RATE_MAX;
+  if (!limited) times.push(now);
+  recent.set(ip, times);
+  return limited;
+};
+
+// Lee las notas del vault respetando los límites de tamaño
+const readNotes = (cfg) => {
+  let scanned = 0;
+  return (file) => {
+    if (file.type !== 'file' || file.size > MAX_FILE_SIZE || scanned + file.size > MAX_SCANNED_BYTES) return null;
+    scanned += file.size;
+    try {
+      return vault.readFile(cfg.vaultPath, file.path).split(/\r?\n/);
+    } catch (e) {
+      return null; // Skip unreadable files
+    }
+  };
+};
+
 // Fragmento de la línea centrado en la coincidencia
 const snippet = (line, idx, len) => {
   const start = Math.max(0, idx - SNIPPET_RADIUS);
@@ -63,14 +101,10 @@ function findTags(lines) {
 function searchTag(cfg, tag) {
   const needle = tag.toLowerCase();
   const results = [];
+  const read = readNotes(cfg);
   for (const file of vault.listTree(cfg.vaultPath)) {
-    if (file.type !== 'file') continue;
-    let lines;
-    try {
-      lines = vault.readFile(cfg.vaultPath, file.path).split(/\r?\n/);
-    } catch (e) {
-      continue;
-    }
+    const lines = read(file);
+    if (!lines) continue;
     // Coincide la etiqueta exacta y sus subetiquetas (proyecto → proyecto/web)
     const hits = findTags(lines).filter(({ text }) => {
       const t = text.replace(/^#/, '').toLowerCase();
@@ -96,6 +130,11 @@ export default (dataDir, getConfig) => {
 
       const q = String(req.query.q || '').trim();
       if (!q) return res.json([]);
+      if (q.length > MAX_QUERY_LENGTH) return res.status(400).json({ error: 'Búsqueda demasiado larga' });
+      if (rateLimited(req.ip)) {
+        res.set('Retry-After', String(RATE_WINDOW / 1000));
+        return res.status(429).json({ error: 'Demasiadas búsquedas. Espera un momento' });
+      }
 
       // Operador de etiqueta, como en Obsidian: tag:proyecto o tag:#proyecto
       const tagQuery = /^tag:\s*#?(\S+)$/i.exec(q);
@@ -105,6 +144,7 @@ export default (dataDir, getConfig) => {
 
       const files = vault.listTree(cfg.vaultPath).filter((f) => f.type !== 'folder');
       const results = [];
+      const read = readNotes(cfg);
 
       for (const file of files) {
         const nameMatch = file.name.toLowerCase().includes(needle);
@@ -112,24 +152,18 @@ export default (dataDir, getConfig) => {
         let total = 0;
 
         // Solo se busca dentro de las notas markdown
-        if (file.type === 'file') {
-          try {
-            const lines = vault.readFile(cfg.vaultPath, file.path).split(/\r?\n/);
-            lines.forEach((line, i) => {
-              const lower = line.toLowerCase();
-              let idx = lower.indexOf(needle);
-              while (idx >= 0) {
-                total++;
-                if (matches.length < MAX_MATCHES_PER_FILE) {
-                  matches.push({ line: i + 1, ...snippet(line, idx, needle.length) });
-                }
-                idx = lower.indexOf(needle, idx + needle.length);
-              }
-            });
-          } catch (e) {
-            // Skip unreadable files
+        const lines = read(file);
+        lines?.forEach((line, i) => {
+          const lower = line.toLowerCase();
+          let idx = lower.indexOf(needle);
+          while (idx >= 0) {
+            total++;
+            if (matches.length < MAX_MATCHES_PER_FILE) {
+              matches.push({ line: i + 1, ...snippet(line, idx, needle.length) });
+            }
+            idx = lower.indexOf(needle, idx + needle.length);
           }
-        }
+        });
 
         if (nameMatch || total > 0) {
           results.push({ path: file.path, name: file.name, nameMatch, total, matches });

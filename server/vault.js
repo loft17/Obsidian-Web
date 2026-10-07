@@ -23,6 +23,12 @@ const guardPath = (vaultPath, userPath) => {
   if (!rel || rel.startsWith('..') || isAbsolute(rel)) {
     throw new Error('Path traversal attempt');
   }
+  // .obsidian/ guarda los plugins de Obsidian de escritorio (código que se ejecuta en tu PC
+  // al sincronizar) y sus datos (a veces tokens): no se puede leer ni modificar desde la web.
+  // Los ajustes que sí necesita la web (app.json) se leen y escriben aparte, en readAppConfig/updateAppConfig
+  if (rel.split(sep)[0].toLowerCase() === '.obsidian') {
+    throw new Error('Ruta protegida');
+  }
   // Los enlaces simbólicos no pueden sacar la ruta fuera de la bóveda: se resuelve
   // el ancestro más cercano que exista (la ruta final puede no existir aún al crear).
   // Un enlace roto hace fallar realpathSync, así que tampoco se puede escribir a través de él
@@ -39,8 +45,8 @@ const SYSTEM_DIRS = ['/bin', '/boot', '/dev', '/etc', '/lib', '/lib32', '/lib64'
 
 // Valida la ruta de un vault nuevo y devuelve la ruta absoluta. Evita que desde la web
 // se apunte el vault a "/", a carpetas del sistema, a una carpeta personal entera o a la
-// carpeta data/ de la app (contraseña, secreto de cookies, sesiones), lo que daría acceso
-// de lectura/escritura a todo eso. Con VAULTS_ROOT definido, el vault debe estar dentro.
+// carpeta de la app o a su data/ (código, contraseña, secreto de cookies, sesiones), o a una
+// carpeta oculta (~/.ssh...), lo que daría acceso de lectura/escritura a todo eso. Con VAULTS_ROOT definido, el vault debe estar dentro.
 export const checkVaultPath = (vaultPath, dataDir) => {
   const input = String(vaultPath ?? '').trim();
   if (!input || !isAbsolute(input)) throw new Error('La ruta debe ser absoluta');
@@ -61,8 +67,15 @@ export const checkVaultPath = (vaultPath, dataDir) => {
   }
   // Carpetas personales completas (sí se permiten subcarpetas: /root/MiVault)
   if (full === '/root' || full === '/home' || dirname(full) === '/home') throw forbidden();
+  // Ni la carpeta de la app (código del servidor: escribir en ella sería ejecutar código)
+  // ni su carpeta data/ (contraseña, secreto de cookies, sesiones)
   const data = resolve(dataDir);
+  const appDir = dirname(data);
   if (full === data || isInside(full, data) || isInside(data, full)) throw forbidden();
+  if (full === appDir || isInside(full, appDir) || isInside(appDir, full)) throw forbidden();
+  // Carpetas ocultas (~/.ssh, ~/.config, ~/.local...): guardan claves y configuración
+  // que se ejecuta (authorized_keys, servicios de systemd, autostart...)
+  if (full.split(sep).some((part) => part.startsWith('.'))) throw forbidden();
 
   const allowedRoot = process.env.VAULTS_ROOT;
   if (allowedRoot && !isInside(resolve(allowedRoot), full)) {
@@ -204,7 +217,7 @@ export const listTree = (vaultPath) => {
         tree.push({ type: 'folder', path, name: item });
         walk(fullPath, path);
       } else if (item.endsWith('.md')) {
-        tree.push({ type: 'file', path, name: item });
+        tree.push({ type: 'file', path, name: item, size: stat.size });
       } else {
         tree.push({ type: 'other', path, name: item });
       }
