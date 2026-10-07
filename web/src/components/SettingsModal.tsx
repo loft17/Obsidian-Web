@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useStore } from '../store';
+import { useStore, type Theme } from '../store';
 import { settingsApi } from '../api';
 import { IconClose, IconEye, IconFolderNew, IconList, IconSearch, IconUserCircle } from './Icons';
 
@@ -18,8 +18,21 @@ const SECTIONS = [
 function AppearanceSection() {
   const defaultEditMode = useStore((s) => s.defaultEditMode);
   const setDefaultEditMode = useStore((s) => s.setDefaultEditMode);
+  const theme = useStore((s) => s.theme);
+  const setTheme = useStore((s) => s.setTheme);
   return (
     <div className="settings-group">
+      <div className="setting-item">
+        <div className="setting-info">
+          <div className="setting-name">Tema</div>
+          <div className="setting-desc">Esquema de colores de la aplicación</div>
+        </div>
+        <select value={theme} onChange={(e) => setTheme(e.target.value as Theme)}>
+          <option value="dark">Oscuro</option>
+          <option value="light">Claro</option>
+          <option value="system">Según el sistema</option>
+        </select>
+      </div>
       <div className="setting-item">
         <div className="setting-info">
           <div className="setting-name">Modo por defecto de las notas</div>

@@ -106,11 +106,7 @@ chmod +x 00_INFO-APP/diagnose.sh
 ```
 
 ## Hoja de ruta
-
-- ~~**Fase 2:** editor CodeMirror 6 y wikilinks navegables~~ ✔
-- **Fase 3:** sincronización con Dropbox / GitHub
-- **Fase 4:** vista de grafo, búsqueda full-text en la interfaz y backlinks
+- sincronización con Dropbox / GitHub
 
 ## Licencia
-
 MIT

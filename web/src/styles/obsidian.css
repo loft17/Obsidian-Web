@@ -12,12 +12,41 @@
   --interactive-hover: #3e3e42;
   --interactive-accent: #8b7fd8;
   --interactive-accent-rgb: 139, 127, 216;
+  --interactive-accent-hover: #8976d9;
+  --interactive-accent-active: #6b5fc9;
   --color-red: #f48771;
   --color-orange: #ddb852;
   --color-green: #7ec699;
   --color-blue: #5ba3cc;
   --scrollbar-bg: #1e1e1e;
   --scrollbar-thumb: #464647;
+  color-scheme: dark;
+}
+
+/* Tema claro: se activa con data-theme="light" en <html> (ver applyTheme en store.ts) */
+:root[data-theme="light"] {
+  --background-primary: #ffffff;
+  --background-secondary: #f6f6f6;
+  --background-secondary-alt: #ececec;
+  --background-tertiary: #e3e3e3;
+  --background-modifier-border: #dcdcdc;
+  --text-normal: #222222;
+  --text-muted: #5c5c5c;
+  --text-faint: #8a8a8a;
+  --text-accent: #6a5acd;
+  --interactive-normal: #f2f2f2;
+  --interactive-hover: #e4e4e4;
+  --interactive-accent: #7b6cd9;
+  --interactive-accent-rgb: 123, 108, 217;
+  --interactive-accent-hover: #6c5dd3;
+  --interactive-accent-active: #5a4bc2;
+  --color-red: #d6453a;
+  --color-orange: #b7851a;
+  --color-green: #2f9e5b;
+  --color-blue: #2c7cb5;
+  --scrollbar-bg: #f6f6f6;
+  --scrollbar-thumb: #c8c8c8;
+  color-scheme: light;
 }
 
 * {
@@ -89,11 +118,11 @@ button {
 }
 
 button:hover {
-  background-color: #8976d9;
+  background-color: var(--interactive-accent-hover);
 }
 
 button:active {
-  background-color: #6b5fc9;
+  background-color: var(--interactive-accent-active);
 }
 
 a {
@@ -855,7 +884,7 @@ a:hover {
 .chip-pill {
   padding: 0 4px 0 9px;
   border-radius: 14px;
-  background-color: rgba(139, 127, 216, 0.2);
+  background-color: rgba(var(--interactive-accent-rgb), 0.2);
   color: var(--text-accent);
   line-height: 22px;
 }
@@ -867,14 +896,14 @@ a:hover {
 
 .chip-pill.clickable:hover,
 .reading-view-content a.tag:hover {
-  background-color: rgba(139, 127, 216, 0.3);
+  background-color: rgba(var(--interactive-accent-rgb), 0.3);
 }
 
 /* Etiquetas en línea (#etiqueta) en modo lectura */
 .reading-view-content a.tag {
   padding: 1px 8px;
   border-radius: 14px;
-  background-color: rgba(139, 127, 216, 0.2);
+  background-color: rgba(var(--interactive-accent-rgb), 0.2);
   color: var(--text-accent);
   font-size: 0.9em;
   text-decoration: none;

@@ -29,6 +29,8 @@ interface AppStore {
   setEditMode: (mode: boolean) => void;
   defaultEditMode: boolean;
   setDefaultEditMode: (mode: boolean) => void;
+  theme: Theme;
+  setTheme: (theme: Theme) => void;
   expandedFolders: Set<string>;
   toggleFolder: (path: string) => void;
   collapseAll: () => void;
@@ -54,6 +56,30 @@ const initialDefaultEditMode = (() => {
     return true;
   }
 })();
+
+export type Theme = 'dark' | 'light' | 'system';
+
+// Debe coincidir con el script en línea de index.html, que aplica el tema antes de pintar
+const THEME_KEY = 'theme';
+const initialTheme = ((): Theme => {
+  try {
+    const value = localStorage.getItem(THEME_KEY);
+    return value === 'light' || value === 'system' ? value : 'dark';
+  } catch {
+    return 'dark';
+  }
+})();
+
+const systemDark = window.matchMedia('(prefers-color-scheme: dark)');
+
+const applyTheme = (theme: Theme) => {
+  const resolved = theme === 'system' ? (systemDark.matches ? 'dark' : 'light') : theme;
+  document.documentElement.dataset.theme = resolved;
+};
+
+applyTheme(initialTheme);
+// En modo "sistema", seguir los cambios del sistema operativo en caliente
+systemDark.addEventListener('change', () => applyTheme(useStore.getState().theme));
 
 const HIDDEN_KEY = 'hiddenFolders';
 const initialHiddenFolders = (() => {
@@ -145,6 +171,16 @@ export const useStore =create<AppStore>((set) => ({
       // almacenamiento no disponible: la preferencia solo dura la sesión
     }
     set({ defaultEditMode: mode });
+  },
+  theme: initialTheme,
+  setTheme: (theme) => {
+    try {
+      localStorage.setItem(THEME_KEY, theme);
+    } catch {
+      // almacenamiento no disponible: la preferencia solo dura la sesión
+    }
+    applyTheme(theme);
+    set({ theme });
   },
   expandedFolders: new Set(),
   collapseAll: () => set({ expandedFolders: new Set() }),
