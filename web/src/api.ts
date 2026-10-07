@@ -252,9 +252,20 @@ export interface SearchResult {
   matches: SearchMatch[];
 }
 
+export interface VaultTag {
+  tag: string;
+  paths: string[];
+}
+
 export const searchApi = {
   search: async (q: string, signal?: AbortSignal): Promise<SearchResult[]> => {
     const res = await fetch(`${API_URL}/search?q=${encodeURIComponent(q)}`, { signal });
+    if (!res.ok) throw new Error((await res.json()).error);
+    return res.json();
+  },
+  // Etiquetas del vault y notas en las que aparece cada una
+  tags: async (): Promise<VaultTag[]> => {
+    const res = await fetch(`${API_URL}/search/tags`);
     if (!res.ok) throw new Error((await res.json()).error);
     return res.json();
   },

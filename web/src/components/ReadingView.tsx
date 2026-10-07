@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, type MouseEvent } from 'react';
+import { useEffect, useMemo, useRef, useSyncExternalStore, type MouseEvent } from 'react';
 import markdownIt from 'markdown-it';
 import { parseNote } from '../frontmatter';
 import Properties from './Properties';
@@ -8,6 +8,8 @@ import { attachmentUrl, isImage, parseSize } from '../attachments';
 import {
   followWikilink, isResolved, parseWikilink, resolveWikilink, scrollToHeading, takePendingHeading, wikilinkLabel,
 } from '../wikilinks';
+import { embedSection, getEmbedContent, getEmbedsVersion, refreshEmbeds, subscribeEmbeds } from '../noteEmbeds';
+import { NOTES_CHANGED } from './Editor';
 
 const md = markdownIt({
   html: false,
@@ -95,13 +97,81 @@ md.inline.ruler.before('image', 'embed', (state, silent) => {
       token.content = inner.includes('|') ? inner : target.trim().split('/').pop()!;
       token.children = [];
     } else {
-      // Notas incrustadas: de momento, un enlace interno
-      pushWikilink(state, inner);
+      // Nota incrustada: se pinta como bloque si ocupa su propio párrafo (ver note_embed_block)
+      state.push('note_embed', '', 0).meta = { inner };
     }
   }
   state.pos = end + 2;
   return true;
 });
+
+const embedTarget = (meta: unknown) => String((meta as { inner?: string } | null)?.inner ?? '');
+
+// Una nota incrustada dentro de una línea de texto se queda en enlace
+md.renderer.rules.note_embed = (tokens, idx, _options, env) =>
+  renderWikilink(embedTarget(tokens[idx].meta), String(env?.notePath ?? ''));
+
+const renderWikilink = (inner: string, notePath: string) =>
+  `<a href="#" class="${isResolved(inner, notePath) ? 'wikilink' : 'wikilink is-unresolved'}"` +
+  ` data-href="${md.utils.escapeHtml(inner)}">${md.utils.escapeHtml(wikilinkLabel(inner))}</a>`;
+
+// Párrafos formados solo por ![[nota]] (uno por línea): cada uno pasa a ser un bloque
+md.core.ruler.after('inline', 'note_embed_block', (state) => {
+  const tokens = state.tokens;
+  for (let i = tokens.length - 3; i >= 0; i--) {
+    if (tokens[i].type !== 'paragraph_open' || tokens[i + 2]?.type !== 'paragraph_close') continue;
+    const children = tokens[i + 1].children ?? [];
+    const embeds = children.filter((t) => t.type === 'note_embed');
+    const onlyEmbeds = children.every(
+      (t) => t.type === 'note_embed' || t.type === 'softbreak' || (t.type === 'text' && !t.content.trim())
+    );
+    if (!embeds.length || !onlyEmbeds) continue;
+    tokens.splice(
+      i,
+      3,
+      ...embeds.map((t) => {
+        const block = new state.Token('note_embed_block', 'div', 0);
+        block.block = true;
+        block.meta = t.meta;
+        return block;
+      })
+    );
+  }
+});
+
+// Límite de incrustaciones anidadas (y protección contra notas que se incrustan entre sí)
+const MAX_EMBED_DEPTH = 4;
+
+md.renderer.rules.note_embed_block = (tokens, idx, _options, env) => {
+  const inner = embedTarget(tokens[idx].meta);
+  const notePath = String(env?.notePath ?? '');
+  const stack: string[] = Array.isArray(env?.embedStack) ? env.embedStack : [notePath];
+  const { target, heading } = parseWikilink(inner);
+  const path = resolveWikilink(target, notePath);
+  const link = renderWikilink(inner, notePath);
+  // Otros adjuntos (PDF, audio...) y notas inexistentes: enlace
+  if (!path || !/\.md$/i.test(path)) return `<p>${link}</p>\n`;
+  if ((stack.includes(path) && !heading) || stack.length > MAX_EMBED_DEPTH) return `<p>${link}</p>\n`;
+
+  const title = `<div class="internal-embed-title">${link}</div>`;
+  const content = getEmbedContent(path);
+  let html: string;
+  if (content === undefined) {
+    html = '<div class="internal-embed-status">Cargando…</div>';
+  } else if (content === null) {
+    html = '<div class="internal-embed-status">No se pudo cargar la nota</div>';
+  } else {
+    const section = embedSection(parseNote(content).body, heading);
+    html =
+      section === null
+        ? `<div class="internal-embed-status">No se encuentra «${md.utils.escapeHtml(heading)}» en la nota</div>`
+        : md.render(section, { notePath: path, embedStack: [...stack, path] });
+  }
+  return (
+    `<div class="internal-embed">${title}` +
+    `<div class="internal-embed-content" data-embed-path="${md.utils.escapeHtml(path)}">${html}</div></div>\n`
+  );
+};
 
 // Imágenes: rutas del vault resueltas desde la nota y tamaño "alt|300"
 md.renderer.rules.image = (tokens, idx, _options, env) => {
@@ -238,6 +308,8 @@ function openWikilink(e: MouseEvent<HTMLDivElement>, notePath: string) {
   if (!link) return false;
   e.preventDefault();
   const inner = link.dataset.href ?? '';
+  // Los enlaces de una nota incrustada se resuelven desde esa nota
+  notePath = link.closest<HTMLElement>('[data-embed-path]')?.dataset.embedPath ?? notePath;
   const { target, heading } = parseWikilink(inner);
   if (resolveWikilink(target, notePath) === notePath) {
     if (heading) scrollToHeading(e.currentTarget, heading);
@@ -284,10 +356,26 @@ export default function ReadingView({ content, filePath }: Props) {
   const contentRef = useRef<HTMLDivElement>(null);
   const notePath = filePath ?? '';
 
+  // Las notas incrustadas se cargan aparte: al llegar (o cambiar) se vuelve a pintar
+  const embedsVersion = useSyncExternalStore(subscribeEmbeds, getEmbedsVersion);
+  // Al abrir una nota se releen sus incrustaciones, por si han cambiado mientras tanto
+  useEffect(refreshEmbeds, [notePath]);
+
   const html = useMemo(
     () => md.render(markdownContent, { notePath }),
-    [markdownContent, notePath, tree]
+    [markdownContent, notePath, tree, embedsVersion]
   );
+
+  // También al volver a la pestaña y cuando el servidor reescribe enlaces
+  useEffect(() => {
+    const refresh = () => document.visibilityState === 'visible' && refreshEmbeds();
+    window.addEventListener('focus', refresh);
+    window.addEventListener(NOTES_CHANGED, refresh);
+    return () => {
+      window.removeEventListener('focus', refresh);
+      window.removeEventListener(NOTES_CHANGED, refresh);
+    };
+  }, []);
 
   // Llegada desde [[nota#encabezado]]
   useEffect(() => {

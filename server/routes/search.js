@@ -100,6 +100,25 @@ function findTags(lines) {
   return found;
 }
 
+// Todas las etiquetas del vault con las notas en las que aparecen. Sin distinguir
+// mayúsculas, como Obsidian: se muestra la forma de la primera aparición
+function listTags(cfg) {
+  const tags = new Map(); // minúsculas → { tag, paths }
+  const read = readNotes(cfg);
+  for (const file of vault.listTree(cfg.vaultPath)) {
+    const lines = read(file);
+    if (!lines) continue;
+    for (const { text } of findTags(lines)) {
+      const tag = text.replace(/^#/, '').replace(/\/+$/, '');
+      if (!tag) continue;
+      const key = tag.toLowerCase();
+      if (!tags.has(key)) tags.set(key, { tag, paths: new Set() });
+      tags.get(key).paths.add(file.path);
+    }
+  }
+  return [...tags.values()].map(({ tag, paths }) => ({ tag, paths: [...paths] }));
+}
+
 function searchTag(cfg, tag) {
   const needle = tag.toLowerCase();
   const results = [];
@@ -124,6 +143,21 @@ function searchTag(cfg, tag) {
 
 export default (dataDir, getConfig) => {
   const router = Router();
+
+  router.get('/tags', (req, res) => {
+    try {
+      const cfg = getConfig();
+      if (!cfg) return res.status(400).json({ error: 'Not configured' });
+      // Recorre todo el vault, como una búsqueda: comparte su límite
+      if (rateLimited(req.ip)) {
+        res.set('Retry-After', String(RATE_WINDOW / 1000));
+        return res.status(429).json({ error: 'Demasiadas búsquedas. Espera un momento' });
+      }
+      res.json(listTags(cfg));
+    } catch (err) {
+      res.status(400).json({ error: publicError(err, 'Error al leer las etiquetas') });
+    }
+  });
 
   router.get('/', (req, res) => {
     try {

@@ -13,6 +13,7 @@
     "start": "node server/index.js"
   },
   "dependencies": {
+    "@codemirror/autocomplete": "^6.20.0",
     "@codemirror/commands": "^6.6.0",
     "@codemirror/lang-markdown": "^6.2.5",
     "@codemirror/language": "^6.10.0",

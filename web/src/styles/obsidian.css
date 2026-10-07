@@ -569,6 +569,52 @@ a:hover {
   background-color: rgba(var(--interactive-accent-rgb), 0.3);
 }
 
+/* Sugerencias de [[enlaces]] (wikilinkComplete.ts) */
+.cm-editor .cm-tooltip.cm-tooltip-autocomplete {
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+  padding: 4px;
+}
+
+.cm-editor .cm-tooltip-autocomplete > ul {
+  font-family: inherit;
+  max-height: 16em;
+  min-width: 220px;
+  max-width: min(420px, 90vw);
+}
+
+.cm-editor .cm-tooltip-autocomplete > ul > li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: var(--text-normal);
+}
+
+.cm-editor .cm-tooltip-autocomplete > ul > li[aria-selected] {
+  background-color: var(--interactive-hover);
+  color: var(--text-normal);
+}
+
+.cm-editor .cm-completionMatchedText {
+  text-decoration: none;
+  color: var(--text-accent);
+  font-weight: 600;
+}
+
+.cm-editor .cm-completionDetail {
+  margin-left: auto;
+  font-style: normal;
+  font-size: 0.85em;
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .cm-lp-h1 { font-size: 1.85em; font-weight: 700; line-height: 1.3; padding-top: 0.4em; }
 .cm-lp-h2 { font-size: 1.5em; font-weight: 700; line-height: 1.3; padding-top: 0.35em; }
 .cm-lp-h3 { font-size: 1.25em; font-weight: 700; padding-top: 0.3em; }
@@ -1139,6 +1185,31 @@ a:hover {
   max-width: 100%;
   height: auto;
   border-radius: 4px;
+}
+
+/* Notas incrustadas (![[nota]]) */
+.reading-view .internal-embed {
+  border-left: 2px solid var(--interactive-accent);
+  padding: 2px 0 2px 16px;
+  margin: 0 0 12px;
+}
+
+.reading-view .internal-embed-title {
+  font-size: 0.85em;
+  margin-bottom: 4px;
+}
+
+.reading-view .internal-embed-content > :first-child {
+  margin-top: 0;
+}
+
+.reading-view .internal-embed-content > :last-child {
+  margin-bottom: 0;
+}
+
+.reading-view .internal-embed-status {
+  color: var(--text-faint);
+  font-style: italic;
 }
 
 .reading-view h1 {

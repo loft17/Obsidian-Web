@@ -11,6 +11,8 @@ import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirro
 import { markdown, markdownKeymap, markdownLanguage } from '@codemirror/lang-markdown';
 import { livePreview, sourceMode, HighlightSyntax, notePath } from '../livePreview';
 import { imageUpload } from '../imageUpload';
+import { wikilinkCompletion } from '../wikilinkComplete';
+import { setEmbedContent } from '../noteEmbeds';
 
 interface Props {
   filePath: string;
@@ -62,6 +64,7 @@ export function saveNote(path: string, content: string): Promise<void> {
     try {
       const { version } = await filesApi.writeFile(path, content, noteVersions.get(path));
       noteVersions.set(path, version);
+      setEmbedContent(path, content);
       // Si se ha seguido escribiendo mientras tanto, queda otro guardado pendiente
       if (!pendingSaves.has(path)) setTabDirty(path, false);
       clearConflict(path);
@@ -114,6 +117,7 @@ function createState(doc: string, onChange: (doc: string) => void, getPath: () =
       modeCompartment.of(modeExtension(useStore.getState().editorMode)),
       lineNumbersCompartment.of(lineNumbersExtension(useStore.getState().showLineNumbers)),
       imageUpload(getPath),
+      wikilinkCompletion,
       keymap.of([...markdownKeymap, ...defaultKeymap, ...historyKeymap, indentWithTab]),
       EditorView.updateListener.of((u) => {
         if (u.docChanged && !u.transactions.some((tr) => tr.annotation(externalChange))) {

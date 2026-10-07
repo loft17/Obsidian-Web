@@ -73,7 +73,7 @@ interface AppStore {
   searchTag: (tag: string) => void;
 }
 
-export type SidebarView = 'files' | 'search';
+export type SidebarView = 'files' | 'search' | 'tags';
 
 // 'preview': vista previa en vivo (oculta la sintaxis fuera de la línea activa); 'source': markdown tal cual
 export type EditorMode = 'preview' | 'source';

@@ -119,7 +119,7 @@ la propia web.
 ### ☁️ Pensado para tu servidor
 - **Sincronización con GitHub**, manual o periódica.
 - **Exportación a PDF** desde el navegador.
-- **Panel lateral** con esquema de encabezados y recuento de palabras.
+- **Recuento de palabras** y caracteres en la barra de estado.
 - **Tema** oscuro, claro o del sistema, y tamaño de fuente ajustable.
 
 </td>

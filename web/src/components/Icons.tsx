@@ -112,6 +112,19 @@ export const IconTag = make(
     <circle cx="7.5" cy="7.5" r="1" />
   </>
 );
+// Orden alfabético y por cantidad (panel de etiquetas)
+export const IconSortName = make(
+  <>
+    <path d="m3 16 4 4 4-4M7 20V4" />
+    <path d="M20 8h-5M15 10V6.5a2.5 2.5 0 0 1 5 0V10M15 14h5l-5 6h5" />
+  </>
+);
+export const IconSortCount = make(
+  <>
+    <path d="m3 16 4 4 4-4M7 20V4" />
+    <path d="M11 4h10M11 8h7M11 12h4" />
+  </>
+);
 export const IconCalendar = make(
   <>
     <rect x="3" y="4" width="18" height="18" rx="2" />
