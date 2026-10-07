@@ -1,5 +1,7 @@
 # Obsidian Web
 
+---
+
 Visor y editor web para un vault de Obsidian local. Con él puedes leer y editar tus notas Markdown desde el navegador (por ejemplo, alojado en un VPS), con una interfaz inspirada en el tema oscuro de Obsidian.
 
 ## Características
