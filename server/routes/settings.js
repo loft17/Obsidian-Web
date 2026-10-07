@@ -102,7 +102,7 @@ export default (dataDir, getConfig, limiter, sessions) => {
     if (!cfg) return res.status(400).json({ error: 'Not configured' });
     const value = String(req.body?.attachmentFolderPath ?? '/').trim().replace(/\\/g, '/');
     const parts = value.split('/');
-    if (parts.includes('..') || parts.some((p) => p.toLowerCase() === '.obsidian')) {
+    if (parts.includes('..') || parts.some((p) => ['.obsidian', '.git'].includes(p.toLowerCase()))) {
       return res.status(400).json({ error: 'Ruta no válida' });
     }
     try {

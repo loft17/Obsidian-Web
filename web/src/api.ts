@@ -158,6 +158,51 @@ export const settingsApi = {
   },
 };
 
+export type SyncProvider = 'none' | 'github';
+
+export interface SyncConfig {
+  provider: SyncProvider;
+  interval: number;
+  github: { repo: string; branch: string; authorName: string; authorEmail: string; hasToken: boolean };
+  status: {
+    running: boolean;
+    lastSync: string | null;
+    lastAttempt: string | null;
+    lastError: string | null;
+    lastMessage: string | null;
+  };
+}
+
+// El token se envía solo al cambiarlo (string vacío = no tocar, null = borrar)
+export interface SyncConfigUpdate {
+  provider?: SyncProvider;
+  interval?: number;
+  github?: Partial<{ repo: string; branch: string; authorName: string; authorEmail: string; token: string | null }>;
+}
+
+export const syncApi = {
+  get: async (): Promise<SyncConfig> => {
+    const res = await fetch(`${API_URL}/sync`);
+    if (!res.ok) throw new Error((await res.json()).error);
+    return res.json();
+  },
+  configure: async (changes: SyncConfigUpdate): Promise<SyncConfig> => {
+    const res = await fetch(`${API_URL}/sync/config`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(changes),
+    });
+    if (!res.ok) throw new Error((await res.json()).error);
+    return res.json();
+  },
+  // Espera a que termine; el resultado va en status (lastError / lastMessage)
+  run: async (): Promise<SyncConfig> => {
+    const res = await fetch(`${API_URL}/sync/run`, { method: 'POST' });
+    if (!res.ok) throw new Error((await res.json()).error);
+    return res.json();
+  },
+};
+
 export interface SearchMatch {
   line: number;
   text: string;

@@ -26,7 +26,9 @@ const guardPath = (vaultPath, userPath) => {
   // .obsidian/ guarda los plugins de Obsidian de escritorio (código que se ejecuta en tu PC
   // al sincronizar) y sus datos (a veces tokens): no se puede leer ni modificar desde la web.
   // Los ajustes que sí necesita la web (app.json) se leen y escriben aparte, en readAppConfig/updateAppConfig
-  if (rel.split(sep)[0].toLowerCase() === '.obsidian') {
+  // .git/ igual: sus hooks y su config (core.fsmonitor...) ejecutan código en el servidor
+  // cada vez que la sincronización con GitHub lanza git
+  if (['.obsidian', '.git'].includes(rel.split(sep)[0].toLowerCase())) {
     throw new Error('Ruta protegida');
   }
   // Los enlaces simbólicos no pueden sacar la ruta fuera de la bóveda: se resuelve

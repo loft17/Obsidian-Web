@@ -35,6 +35,7 @@ Accede y edita tus notas Markdown desde cualquier navegador (ideal para un VPS),
 11. [Uso](#-uso)
 12. [Atajos de teclado](#️-atajos-de-teclado)
 13. [Preferencias](#️-preferencias)
+    - [Sincronización](#-sincronización)
 14. [Actualizar, copias de seguridad y recuperación](#-actualizar-copias-de-seguridad-y-recuperación)
 15. [Desarrollo](#-desarrollo)
 16. [Estructura del proyecto](#️-estructura-del-proyecto)
@@ -57,6 +58,7 @@ Accede y edita tus notas Markdown desde cualquier navegador (ideal para un VPS),
 - 🛠️ **Gestión de archivos**: duplicar, mover, renombrar y borrar (a la papelera `.trash` del vault, nunca de forma definitiva).
 - 🖨️ **Exportación a PDF** mediante la impresión del navegador.
 - 📊 **Panel derecho** con el esquema de encabezados y contador de palabras, caracteres y líneas.
+- 🔄 **Sincronización** de la bóveda con un repositorio de **GitHub**, manual o periódica (ver [Sincronización](#-sincronización)).
 - 🎨 **Tema oscuro, claro o según el sistema**, tamaño de fuente ajustable y otras preferencias.
 - 🔒 **Seguridad**: contraseña con `scrypt`, sesiones revocables, límite de intentos, protección CSRF, CSP estricta y aislamiento del vault (ver [Seguridad](#️-seguridad)).
 
@@ -319,6 +321,7 @@ La carpeta `data/` se crea automáticamente, está en `.gitignore` y el servidor
 | `config.json` | `vaultPath`, `passwordHash` (scrypt), `port` y `createdAt`. Se relee en cada petición: los cambios de vault se aplican al instante. |
 | `.secret` | Secreto aleatorio para firmar las cookies. Si se borra, se genera otro y todas las sesiones dejan de valer. |
 | `sessions.json` | Hashes SHA-256 de los tokens de sesión activos, con su caducidad y última actividad (nunca los tokens en claro). |
+| `sync.json` | Configuración de la sincronización con GitHub, su último estado y el token (si lo hay). |
 
 Dentro del vault, la app solo usa:
 
@@ -326,6 +329,7 @@ Dentro del vault, la app solo usa:
 | :--- | :--- |
 | `.trash/` | Papelera. Lo borrado se mueve aquí como `nombre.ext.<timestamp>.deleted`. |
 | `.obsidian/app.json` | Solo se lee/escribe la clave `attachmentFolderPath` (carpeta de adjuntos). |
+| `.git/` | Solo con la sincronización con GitHub: el repositorio local (se crea si no existe). |
 
 ---
 
@@ -342,6 +346,7 @@ Dentro del vault, la app solo usa:
 - **Aislamiento del vault**: no se admiten rutas con `../` ni que salgan del vault.
 - **Enlaces simbólicos**: la app **no sigue symlinks dentro del vault** (para evitar exponer `/etc` u otros archivos del sistema). No aparecen en el explorador ni en la búsqueda, y acceder a ellos se rechaza como un `../`. Si necesitas carpetas externas, cópialas o muévelas al vault. *La raíz del vault sí puede ser un symlink* (p. ej. `/srv/vaults/notas → /mnt/disco/notas`).
 - **`.obsidian/` protegida**: no se puede leer ni modificar desde la web (plugins, sus datos y ajustes de escritorio). Así nadie puede colar un plugin que se ejecute en tu ordenador al sincronizar.
+- **`.git/` protegida** igual: sus hooks y su configuración ejecutarían código en el servidor al sincronizar con GitHub. Además, git se lanza con los hooks y `core.fsmonitor` desactivados, sin shell, y solo contra repositorios `https://github.com/…`.
 - **SVG seguros**: los archivos del vault se sirven con una CSP *sandbox*, así que un SVG no puede ejecutar scripts.
 - **Errores sin filtraciones**: las respuestas de error no incluyen rutas del servidor ni trazas.
 - **Avisos al arrancar** si se ejecuta como root o escucha en todas las interfaces por HTTP.
@@ -427,8 +432,22 @@ Se abren desde el icono de engranaje. **Las preferencias de interfaz se guardan 
 | **Apariencia** | Tema (oscuro / claro / sistema), tamaño de fuente, ajuste rápido con `Ctrl`+rueda, barra de título de pestaña, cinta lateral | Navegador |
 | **Editor** | Modo por defecto (visor / edición), modo de edición (vista previa / fuente), título en línea, longitud de línea legible, números de línea | Navegador |
 | **Archivos** | Carpeta de adjuntos (servidor), ruta del vault (servidor, exige contraseña), carpetas a ocultar en el explorador — un patrón por línea, `*` como comodín (navegador) | Servidor / navegador |
+| **Sincronización** | GitHub: repositorio, rama, token, frecuencia, *Sincronizar ahora* | Servidor |
 | **Seguridad** | Cambiar contraseña, cerrar todas las sesiones | Servidor |
 | **Atajos** | Lista de atajos | — |
+
+### 🔄 Sincronización
+
+En *Preferencias → Sincronización* eliges **GitHub**, el repositorio, la rama, el token y la frecuencia (solo manual, cada 5/15/30 min, cada hora, cada 3 h o una vez al día) y pulsas **Guardar**. **Sincronizar ahora** lanza una sincronización al momento y refresca el explorador. La hace el servidor (necesita `git` 2.31+), así que la automática sigue funcionando con el navegador cerrado.
+
+Cada sincronización hace commit de los cambios → integra los del repositorio (rebase; si una nota cambió en los dos lados, gana la del servidor) → push. Si el repositorio ya tiene notas, la primera vez se adopta su historial sin perder nada local. Si un conflicto no se puede resolver solo, se aborta sin tocar nada y se muestra el error. La papelera `.trash/` no se sube.
+
+**Token**: crea un *fine-grained token* en GitHub → *Settings → Developer settings → Personal access tokens*, limitado al repositorio (mejor privado) y con permiso **Contents: Read and write**. Se guarda en `data/sync.json`, nunca se devuelve al navegador y se pasa a git por variables de entorno: no queda en `.git/config` ni en la URL.
+
+Para sincronizar con Dropbox, Google Drive u otro servidor, configura `rclone`, `rsync` o similar directamente en el servidor (cron o un timer de systemd) sobre la carpeta del vault.
+
+> [!NOTE]
+> Si tienes una nota abierta mientras la sincronización trae una versión nueva, vuelve a abrirla antes de editarla: el autoguardado guardaría la versión que tienes en pantalla.
 
 ---
 
@@ -510,12 +529,14 @@ Obsidian-Web/
 │   ├── sessions.js          # Sesiones revocables y límite de intentos de login
 │   ├── password.js          # Hash y verificación de contraseñas (scrypt)
 │   ├── vault.js             # Acceso al sistema de archivos y validación de rutas
+│   ├── sync.js              # Sincronización con GitHub (git)
 │   └── routes/
 │       ├── setup.js         # Configuración inicial
 │       ├── auth.js          # Login / logout
 │       ├── files.js         # Árbol, lectura, escritura, subida, PDF…
 │       ├── search.js        # Búsqueda de texto y etiquetas
-│       └── settings.js      # Vault, contraseña, sesiones, adjuntos
+│       ├── settings.js      # Vault, contraseña, sesiones, adjuntos
+│       └── sync.js          # Configuración y ejecución de la sincronización
 ├── web/                     # Frontend React + Vite + TypeScript
 │   ├── index.html
 │   ├── vite.config.ts
@@ -565,6 +586,9 @@ Todas las rutas cuelgan de `/api`. Salvo `setup` y `auth`, exigen una sesión v�
 | `POST` | `/api/settings/password` | Cambia la contraseña (`currentPassword`, `newPassword`) |
 | `POST` | `/api/settings/sessions/revoke` | Cierra todas las sesiones |
 | `GET` / `POST` | `/api/settings/attachments` | Lee / cambia `attachmentFolderPath` |
+| `GET` | `/api/sync` | Configuración y estado de la sincronización (sin tokens: solo `hasToken`) |
+| `POST` | `/api/sync/config` | Cambia la configuración (`provider`, `interval`, `github`; `github.token: null` lo borra) |
+| `POST` | `/api/sync/run` | Sincroniza ahora y devuelve el estado al terminar |
 
 ---
 
@@ -598,7 +622,7 @@ chmod +x utils/diagnose.sh
 
 ## 🗺️ Hoja de ruta
 
-- [ ] Sincronización en la nube (Dropbox / GitHub)
+- [x] Sincronización con GitHub
 
 ---
 

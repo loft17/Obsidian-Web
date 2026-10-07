@@ -1,7 +1,7 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { useStore, type EditorMode, type Theme, DEFAULT_FONT_SIZE, MIN_FONT_SIZE, MAX_FONT_SIZE } from '../store';
-import { settingsApi } from '../api';
-import { IconClose, IconEdit, IconEye, IconFolderNew, IconList, IconLock, IconReset, IconSearch, IconUserCircle } from './Icons';
+import { filesApi, settingsApi, syncApi, type SyncConfig, type SyncConfigUpdate, type SyncProvider } from '../api';
+import { IconClose, IconEdit, IconEye, IconFolderNew, IconList, IconLock, IconReset, IconSearch, IconSync, IconUserCircle } from './Icons';
 
 interface Props {
   onClose: () => void;
@@ -12,6 +12,7 @@ const SECTIONS = [
   { id: 'appearance', label: 'Apariencia', Icon: IconEye },
   { id: 'editor', label: 'Editor', Icon: IconEdit },
   { id: 'files', label: 'Archivos', Icon: IconFolderNew },
+  { id: 'sync', label: 'Sincronización', Icon: IconSync },
   { id: 'security', label: 'Seguridad', Icon: IconLock },
   { id: 'shortcuts', label: 'Atajos', Icon: IconList },
 ];
@@ -389,6 +390,264 @@ function FilesSection() {
   );
 }
 
+const INTERVAL_OPTIONS = [
+  { value: 0, label: 'Solo manual' },
+  { value: 5, label: 'Cada 5 minutos' },
+  { value: 15, label: 'Cada 15 minutos' },
+  { value: 30, label: 'Cada 30 minutos' },
+  { value: 60, label: 'Cada hora' },
+  { value: 180, label: 'Cada 3 horas' },
+  { value: 1440, label: 'Una vez al día' },
+];
+
+const errorStyle = { color: 'var(--text-error, #e5484d)' };
+const fieldStyle = { flex: '0 1 280px', minWidth: 0 };
+
+const formatDate = (iso: string | null) => (iso ? new Date(iso).toLocaleString() : 'nunca');
+
+// La configuración y el token se guardan en el servidor (data/sync.json);
+// el token nunca vuelve al navegador, solo si está guardado
+function SyncSection() {
+  const setTree = useStore((s) => s.setTree);
+  const [config, setConfig] = useState<SyncConfig | null>(null);
+  const [provider, setProvider] = useState<SyncProvider>('none');
+  const [interval, setIntervalValue] = useState(0);
+  const [repo, setRepo] = useState('');
+  const [branch, setBranch] = useState('main');
+  const [githubToken, setGithubToken] = useState('');
+  const [message, setMessage] = useState<{ error: boolean; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const applyConfig = (c: SyncConfig, p: SyncProvider = c.provider) => {
+    setConfig(c);
+    setProvider(p);
+    setIntervalValue(c.interval);
+    setRepo(c.github.repo);
+    setBranch(c.github.branch);
+    setGithubToken('');
+  };
+
+  useEffect(() => {
+    syncApi
+      .get()
+      .then((c) => applyConfig(c))
+      .catch((err) => setMessage({ error: true, text: err.message }));
+  }, []);
+
+  // Si hay una sincronización automática en marcha, se sigue su estado
+  const running = Boolean(config?.status.running);
+  useEffect(() => {
+    if (!running) return;
+    const id = window.setInterval(() => {
+      syncApi.get().then((c) => setConfig((prev) => (prev ? { ...prev, status: c.status } : c))).catch(() => {});
+    }, 3000);
+    return () => window.clearInterval(id);
+  }, [running]);
+
+  const changeProvider = (p: SyncProvider) => {
+    setMessage(null);
+    if (config) applyConfig(config, p);
+    else setProvider(p);
+  };
+
+  const dirty =
+    !!config &&
+    (provider !== config.provider ||
+      interval !== config.interval ||
+      (provider === 'github' &&
+        (repo.trim() !== config.github.repo || branch.trim() !== config.github.branch || githubToken.trim() !== '')));
+
+  const save = async () => {
+    setMessage(null);
+    setBusy(true);
+    const changes: SyncConfigUpdate = { provider, interval };
+    if (provider === 'github') changes.github = { repo: repo.trim(), branch: branch.trim(), token: githubToken.trim() };
+    try {
+      applyConfig(await syncApi.configure(changes));
+      setMessage({ error: false, text: 'Guardado.' });
+    } catch (err) {
+      setMessage({ error: true, text: (err as Error).message });
+    }
+    setBusy(false);
+  };
+
+  const forgetToken = async () => {
+    setMessage(null);
+    try {
+      applyConfig(await syncApi.configure({ github: { token: null } }), provider);
+    } catch (err) {
+      setMessage({ error: true, text: (err as Error).message });
+    }
+  };
+
+  const syncNow = async () => {
+    setMessage(null);
+    setBusy(true);
+    setConfig((prev) => (prev ? { ...prev, status: { ...prev.status, running: true } } : prev));
+    try {
+      const c = await syncApi.run();
+      setConfig(c);
+      // Puede haber traído notas nuevas o cambiadas
+      setTree(await filesApi.getTree());
+    } catch (err) {
+      setMessage({ error: true, text: (err as Error).message });
+    }
+    setBusy(false);
+  };
+
+  if (!config) {
+    return message ? <div className="setting-desc" style={errorStyle}>{message.text}</div> : null;
+  }
+
+  const hasToken = provider === 'github' && config.github.hasToken;
+  const status = config.status;
+
+  return (
+    <>
+      <div className="settings-group">
+        <div className="setting-item">
+          <div className="setting-info">
+            <div className="setting-name">Servicio</div>
+            <div className="setting-desc">
+              Mantiene la bóveda del servidor sincronizada con un repositorio de GitHub (y, a través de él, con
+              Obsidian de escritorio usando el plugin Obsidian Git).
+            </div>
+          </div>
+          <select value={provider} onChange={(e) => changeProvider(e.target.value as SyncProvider)} disabled={busy}>
+            <option value="none">Desactivada</option>
+            <option value="github">GitHub</option>
+          </select>
+        </div>
+        {provider !== 'none' && (
+          <div className="setting-item">
+            <div className="setting-info">
+              <div className="setting-name">Sincronización automática</div>
+              <div className="setting-desc">Frecuencia con la que el servidor sincroniza solo.</div>
+            </div>
+            <select value={interval} onChange={(e) => setIntervalValue(Number(e.target.value))} disabled={busy}>
+              {INTERVAL_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+
+      {provider === 'github' && (
+        <>
+          <h3 className="settings-heading">GitHub</h3>
+          <div className="settings-group">
+            <div className="setting-item">
+              <div className="setting-info">
+                <div className="setting-name">Repositorio</div>
+                <div className="setting-desc">
+                  <code>usuario/repositorio</code> o su URL https. Mejor privado: se suben todas las notas.
+                </div>
+              </div>
+              <input
+                className="setting-input"
+                style={fieldStyle}
+                type="text"
+                placeholder="usuario/mi-vault"
+                value={repo}
+                onChange={(e) => setRepo(e.target.value)}
+                disabled={busy}
+              />
+            </div>
+            <div className="setting-item">
+              <div className="setting-info">
+                <div className="setting-name">Rama</div>
+              </div>
+              <input
+                className="setting-input"
+                style={fieldStyle}
+                type="text"
+                placeholder="main"
+                value={branch}
+                onChange={(e) => setBranch(e.target.value)}
+                disabled={busy}
+              />
+            </div>
+            <div className="setting-item">
+              <div className="setting-info">
+                <div className="setting-name">Token de acceso personal</div>
+                <div className="setting-desc">
+                  Créalo en GitHub → Settings → Developer settings → <em>Fine-grained tokens</em>, solo para este
+                  repositorio y con permiso <em>Contents: Read and write</em>.
+                  {hasToken && ' Hay un token guardado; escribe otro solo para cambiarlo.'}
+                </div>
+              </div>
+              <input
+                className="setting-input"
+                style={fieldStyle}
+                type="password"
+                autoComplete="off"
+                placeholder={hasToken ? '•••••••• (guardado)' : 'github_pat_…'}
+                value={githubToken}
+                onChange={(e) => setGithubToken(e.target.value)}
+                disabled={busy}
+              />
+            </div>
+          </div>
+          <div className="setting-desc" style={{ marginTop: 8 }}>
+            Cada sincronización hace commit de los cambios, integra los del repositorio (si una nota cambió en los dos
+            lados, se queda la versión del servidor) y sube el resultado. La papelera <code>.trash/</code> no se sube.
+          </div>
+        </>
+      )}
+
+
+      <div className="setting-item" style={{ borderBottom: 'none' }}>
+        <div className="setting-info">
+          {message && (
+            <div className="setting-desc" style={message.error ? errorStyle : undefined}>
+              {message.text}
+            </div>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {hasToken && (
+            <button onClick={forgetToken} disabled={busy}>
+              Olvidar token
+            </button>
+          )}
+          <button onClick={save} disabled={busy || !dirty}>
+            Guardar
+          </button>
+        </div>
+      </div>
+
+      {config.provider !== 'none' && (
+        <>
+          <h3 className="settings-heading">Estado</h3>
+          <div className="settings-group">
+            <div className="setting-item">
+              <div className="setting-info">
+                <div className="setting-name">
+                  {status.running ? 'Sincronizando…' : `Última sincronización: ${formatDate(status.lastSync)}`}
+                </div>
+                {!status.running && status.lastError && (
+                  <div className="setting-desc" style={errorStyle}>
+                    Error ({formatDate(status.lastAttempt)}): {status.lastError}
+                  </div>
+                )}
+                {!status.running && !status.lastError && status.lastMessage && (
+                  <div className="setting-desc">{status.lastMessage}</div>
+                )}
+              </div>
+              <button onClick={syncNow} disabled={busy || status.running || dirty} title={dirty ? 'Guarda antes los cambios' : undefined}>
+                Sincronizar ahora
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </>
+  );
+}
+
 const MIN_PASSWORD_LENGTH = 12;
 
 function SecuritySection() {
@@ -639,6 +898,7 @@ export default function SettingsModal({ onClose }: Props) {
             {section === 'appearance' && <AppearanceSection />}
             {section === 'editor' && <EditorSection />}
             {section === 'files' && <FilesSection />}
+            {section === 'sync' && <SyncSection />}
             {section === 'security' && <SecuritySection />}
             {section === 'shortcuts' && <ShortcutsSection />}
           </div>

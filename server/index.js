@@ -9,6 +9,8 @@ import authRoutes from './routes/auth.js';
 import filesRoutes from './routes/files.js';
 import searchRoutes from './routes/search.js';
 import settingsRoutes from './routes/settings.js';
+import syncRoutes from './routes/sync.js';
+import { createSyncManager } from './sync.js';
 import { createSessionStore, createLoginLimiter } from './sessions.js';
 import { securityHeaders, csrfGuard } from './security.js';
 
@@ -36,6 +38,8 @@ if (existsSync(secretPath)) {
 }
 
 const sessions = createSessionStore(dataDir);
+// Sincronización con GitHub / Dropbox / Google Drive (también la periódica)
+const syncManager = createSyncManager(dataDir, () => getConfig());
 // Compartido por el login y por las acciones que piden la contraseña (cambiar el vault)
 const loginLimiter = createLoginLimiter();
 
@@ -91,6 +95,7 @@ app.use('/api', (req, res, next) => {
 app.use('/api/settings', settingsRoutes(dataDir, getConfig, loginLimiter, sessions));
 app.use('/api/files', filesRoutes(dataDir, getConfig));
 app.use('/api/search', searchRoutes(dataDir, getConfig));
+app.use('/api/sync', syncRoutes(syncManager));
 
 // SPA fallback (serve index.html for client-side routing)
 if (existsSync(distPath)) {
