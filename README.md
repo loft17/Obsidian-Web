@@ -2,97 +2,153 @@
 
 # 💎 Obsidian Web
 
-**Visor y editor web ultraligero para tu vault de Obsidian.**
-Accede y edita tus notas Markdown desde cualquier navegador (ideal para un VPS), con una interfaz fiel a la de Obsidian.
+### Tu vault de Obsidian, en cualquier navegador.
 
-[![Node.js Version](https://img.shields.io/badge/node-%3E%3D%2020.0.0-brightgreen.svg)](https://nodejs.org/)
-[![TypeScript](https://img.shields.io/badge/typescript-%5E5.0-blue.svg)](https://www.typescriptlang.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+Visor y editor web **ultraligero** y **autoalojado** para tus notas Markdown.<br>
+Instálalo en tu VPS y accede a tu vault desde cualquier dispositivo, con una interfaz fiel a la de Obsidian.
+
+<br>
+
+[![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A520-5FA04E?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
+[![Express](https://img.shields.io/badge/Express-4-000000?style=for-the-badge&logo=express&logoColor=white)](https://expressjs.com/)
+[![License: MIT](https://img.shields.io/badge/Licencia-MIT-F7DF1E?style=for-the-badge)](https://opensource.org/licenses/MIT)
+
+**[Características](#-características)** ·
+**[Inicio rápido](#-inicio-rápido)** ·
+**[Despliegue](#-despliegue-en-producción)** ·
+**[Sincronización](#-sincronización-con-github)** ·
+**[Seguridad](#-seguridad)** ·
+**[API](#-api)**
 
 </div>
+
+<br>
+
+> [!TIP]
+> **¿Prisa?** `git clone` → `npm install` → `npm start` → abre `http://localhost:3000` y pega el token que aparece en la consola. [Ver inicio rápido ↓](#-inicio-rápido)
 
 ---
 
 ## 📑 Índice
 
-1. [Características](#-características)
-2. [Requisitos](#-requisitos)
-3. [Instalación rápida (local)](#-instalación-rápida-local)
-4. [Primer inicio: configuración inicial](#️-primer-inicio-configuración-inicial)
-5. [Variables de entorno](#️-variables-de-entorno)
-6. [`TRUST_PROXY`](#-trust_proxy)
-7. [Despliegue en producción (VPS)](#-despliegue-en-producción-vps)
-   - [Usuario dedicado](#1-usuario-dedicado)
-   - [Instalación](#2-instalación)
-   - [Servicio systemd](#3-servicio-systemd)
-   - [Proxy inverso con HTTPS: Caddy](#4a-proxy-inverso-con-caddy-recomendado)
-   - [Proxy inverso con HTTPS: nginx](#4b-proxy-inverso-con-nginx)
-   - [Alternativa: PM2](#alternativa-pm2)
-   - [Checklist final](#-checklist-de-despliegue)
-8. [Archivos de datos (`data/`)](#️-archivos-de-datos-data)
-9. [Seguridad](#️-seguridad)
-10. [Límites](#-límites)
-11. [Uso](#-uso)
-12. [Atajos de teclado](#️-atajos-de-teclado)
-13. [Preferencias](#️-preferencias)
-    - [Sincronización](#-sincronización)
-14. [Actualizar, copias de seguridad y recuperación](#-actualizar-copias-de-seguridad-y-recuperación)
-15. [Desarrollo](#-desarrollo)
-16. [Estructura del proyecto](#️-estructura-del-proyecto)
-17. [API](#-api)
-18. [Solución de problemas](#️-solución-de-problemas)
-19. [Licencia](#-licencia)
+<table>
+<tr>
+<td valign="top" width="33%">
+
+**Empezar**
+- [✨ Características](#-características)
+- [🚀 Inicio rápido](#-inicio-rápido)
+- [🔧 Configuración inicial](#-configuración-inicial)
+- [🧩 Variables de entorno](#-variables-de-entorno)
+- [🌐 Despliegue en producción](#-despliegue-en-producción)
+
+</td>
+<td valign="top" width="33%">
+
+**Usar**
+- [📝 Uso](#-uso)
+- [⚡ Atajos de teclado](#-atajos-de-teclado)
+- [🎨 Preferencias](#-preferencias)
+- [🔄 Sincronización con GitHub](#-sincronización-con-github)
+- [🧰 Mantenimiento](#-mantenimiento)
+
+</td>
+<td valign="top" width="33%">
+
+**Referencia**
+- [🔒 Seguridad](#-seguridad)
+- [📏 Límites](#-límites)
+- [📁 Archivos de datos](#-archivos-de-datos)
+- [💻 Desarrollo](#-desarrollo)
+- [🔌 API](#-api)
+- [🩺 Solución de problemas](#-solución-de-problemas)
+
+</td>
+</tr>
+</table>
 
 ---
 
 ## ✨ Características
 
-- 📂 **Explorador de archivos** con carpetas colapsables, menú contextual y creación de notas y carpetas.
-- 🗂️ **Pestañas**: clic para abrir en la pestaña activa; `Ctrl`/`Cmd` + clic, botón central o clic derecho → *"Abrir en pestaña nueva"*.
-- 👁️ **Edición y lectura**: editor CodeMirror 6 con *vista previa en vivo* (estilo Obsidian, incluidas tablas) o *modo fuente*, y modo lectura con Markdown renderizado.
-- 🔗 **Wikilinks**: `[[nota]]`, `[[nota|alias]]` y `[[nota#encabezado]]`. Si la nota no existe se muestra atenuada y se crea al pulsarla.
-- 🏷️ **Propiedades (frontmatter YAML)** editables, con soporte para `tags` y `aliases` como listas.
-- 🔍 **Búsqueda global** en nombres y contenido, con fragmentos de contexto, y búsqueda por etiqueta con `tag:proyecto`. También búsqueda dentro de la nota (`Ctrl+F`).
-- 🖼️ **Adjuntos**: arrastra o pega imágenes; se guardan en la carpeta de adjuntos configurada en `.obsidian/app.json` (la misma que usa Obsidian de escritorio). Visor de imágenes integrado.
-- ⚡ **Autoguardado** con *debounce* mientras escribes (y `Ctrl+S` para forzarlo).
-- 🛠️ **Gestión de archivos**: duplicar, mover, renombrar y borrar (a la papelera `.trash` del vault, nunca de forma definitiva).
-- 🖨️ **Exportación a PDF** mediante la impresión del navegador.
-- 📊 **Panel derecho** con el esquema de encabezados y contador de palabras, caracteres y líneas.
-- 🔄 **Sincronización** de la bóveda con un repositorio de **GitHub**, manual o periódica (ver [Sincronización](#-sincronización)).
-- 🎨 **Tema oscuro, claro o según el sistema**, tamaño de fuente ajustable y otras preferencias.
-- 🔒 **Seguridad**: contraseña con `scrypt`, sesiones revocables, límite de intentos, protección CSRF, CSP estricta y aislamiento del vault (ver [Seguridad](#️-seguridad)).
+<table>
+<tr>
+<td width="50%" valign="top">
+
+### ✍️ Escribe como en Obsidian
+- Editor **CodeMirror 6** con **vista previa en vivo** (incluidas tablas) o **modo fuente**.
+- **Modo lectura** con Markdown renderizado.
+- **Autoguardado** mientras escribes (y `Ctrl+S` para forzarlo).
+- **Propiedades** (frontmatter YAML) editables, con `tags` y `aliases` como listas.
+
+</td>
+<td width="50%" valign="top">
+
+### 🔗 Conecta tus ideas
+- **Wikilinks**: `[[nota]]`, `[[nota|alias]]` y `[[nota#encabezado]]`.
+- Los enlaces a notas que no existen se ven atenuados y **crean la nota** al pulsarlos.
+- **Búsqueda global** en nombres y contenido, con contexto, y por etiqueta con `tag:proyecto`.
+- Búsqueda dentro de la nota (`Ctrl+F`).
+
+</td>
+</tr>
+<tr>
+<td valign="top">
+
+### 📂 Organiza tu vault
+- **Explorador** con carpetas colapsables y menú contextual.
+- **Pestañas**: `Ctrl`/`Cmd` + clic o botón central para abrir en una nueva.
+- Duplica, mueve, renombra y borra (a la **papelera** `.trash`, nunca de forma definitiva).
+- **Adjuntos**: arrastra o pega imágenes; se guardan donde lo hace Obsidian de escritorio.
+
+</td>
+<td valign="top">
+
+### ☁️ Pensado para tu servidor
+- **Sincronización con GitHub**, manual o periódica.
+- **Exportación a PDF** desde el navegador.
+- **Panel lateral** con esquema de encabezados y recuento de palabras.
+- **Tema** oscuro, claro o del sistema, y tamaño de fuente ajustable.
+
+</td>
+</tr>
+</table>
+
+<div align="center">
+
+🔒 **Seguro por defecto** — contraseña con `scrypt` · sesiones revocables · límite de intentos · CSRF · CSP estricta · vault aislado
+
+</div>
 
 ---
 
-## 📋 Requisitos
+## 🚀 Inicio rápido
 
-| Requisito | Detalle |
+| Necesitas | Detalle |
 | :--- | :--- |
-| **Node.js** | **20 o superior** (20.6+ si quieres usar `--env-file`). |
-| **npm** | El que viene con Node. |
-| **Vault** | Una carpeta accesible desde el sistema de archivos del servidor (puede ser un vault existente o una carpeta vacía; si no existe, se crea). |
-| **Producción** | Un dominio y un proxy inverso con HTTPS (Caddy o nginx) — muy recomendado. |
-
----
-
-## 🚀 Instalación rápida (local)
+| 🟢 **Node.js** | **20 o superior** (20.6+ si quieres usar `--env-file`) y el `npm` que trae. |
+| 📁 **Un vault** | Una carpeta del servidor: un vault existente o una carpeta vacía (si no existe, se crea). |
+| 🔐 **En producción** | Un dominio y un proxy inverso con HTTPS (Caddy o nginx). Muy recomendado. |
 
 ```bash
 git clone https://github.com/loft17/Obsidian-Web.git
 cd Obsidian-Web
-npm install      # instala dependencias y compila el frontend (script postinstall)
+npm install      # instala dependencias y compila el frontend
 npm start
 ```
 
-La aplicación queda disponible en **`http://localhost:3000`**.
+Abre **`http://localhost:3000`** y sigue la [configuración inicial](#-configuración-inicial).
 
-> ⚠️ **No uses `npm install --omit=dev` / `--production`.** El `postinstall` compila el frontend con Vite, que es una dependencia de desarrollo. Sin ella no se genera `web/dist` y el servidor no tendrá interfaz que servir.
+> [!WARNING]
+> **No uses `npm install --omit=dev` ni `--production`.** El frontend se compila con Vite (una dependencia de desarrollo) durante el `postinstall`. Sin ella no se genera `web/dist` y la web aparecerá en blanco.
 
 ---
 
-## 🛠️ Primer inicio: configuración inicial
+## 🔧 Configuración inicial
 
-Al arrancar sin configurar, el servidor imprime en la consola un **token de configuración de un solo uso**:
+Al arrancar por primera vez, el servidor imprime en la consola un **token de un solo uso**:
 
 ```text
 ==================================================
@@ -100,58 +156,63 @@ Al arrancar sin configurar, el servidor imprime en la consola un **token de conf
 ==================================================
 ```
 
-Este token impide que cualquiera que llegue antes que tú a la web pueda configurarla (elegir vault y contraseña). Con `systemd` lo verás con `journalctl -u obsidian-web`; con PM2, con `pm2 logs`.
+Así nadie que llegue antes que tú a la web puede configurarla. Con systemd lo verás con `journalctl -u obsidian-web`; con PM2, con `pm2 logs`.
 
-1. Abre la web en el navegador.
-2. Introduce el **token de configuración** que aparece en la consola.
-3. Introduce la **ruta absoluta** de tu vault (p. ej. `/srv/vaults/mi-vault`). Si no existe, se crea.
-4. Define una **contraseña** (mínimo **12 caracteres**).
-5. Opcionalmente, el **puerto** (por defecto `3000`). Ver la nota sobre el puerto más abajo.
-6. Pulsa **Configurar** e inicia sesión.
+1. Abre la web y pega el **token de configuración**.
+2. Escribe la **ruta absoluta** del vault, por ejemplo `/srv/vaults/mi-vault`.
+3. Elige una **contraseña** de al menos **12 caracteres**.
+4. Si quieres, cambia el **puerto** (por defecto `3000`).
+5. Pulsa **Configurar** e inicia sesión. ¡Listo! 🎉
 
-**Rutas de vault no permitidas** (por seguridad):
+<details>
+<summary><b>🚫 Rutas que no se pueden usar como vault</b></summary>
+
+<br>
+
+Por seguridad, se rechazan:
 
 - Rutas relativas o la raíz `/`.
 - Carpetas del sistema y su contenido: `/bin`, `/boot`, `/dev`, `/etc`, `/lib*`, `/proc`, `/run`, `/sbin`, `/snap`, `/sys`, `/usr`, `/var`.
-- Carpetas personales completas: `/root`, `/home`, `/home/<usuario>` (sí se permiten subcarpetas, como `/home/ana/Notas`).
-- Cualquier ruta con un componente oculto (`~/.ssh`, `~/.config`, `/srv/.vaults/...`).
+- Carpetas personales completas: `/root`, `/home`, `/home/<usuario>`. Sus subcarpetas sí valen, como `/home/ana/Notas`.
+- Cualquier ruta con una carpeta oculta: `~/.ssh`, `~/.config`, `/srv/.vaults/...`.
 - La carpeta de la propia app, su carpeta `data/` o cualquier carpeta que las contenga.
-- Fuera de `VAULTS_ROOT`, si está definida.
+- Rutas fuera de `VAULTS_ROOT`, si está definida.
 
-> 💡 **Puerto:** la configuración inicial siempre guarda un puerto en `data/config.json` (por defecto `3000`), y ese valor **tiene prioridad sobre la variable `PORT`**. Para cambiar el puerto después, edita `"port"` en `data/config.json` y reinicia. Orden de prioridad: `config.json` → `PORT` → `3000`. Un valor no válido se ignora.
+</details>
+
+> [!NOTE]
+> **El puerto se guarda en `data/config.json` y tiene prioridad sobre la variable `PORT`.** Para cambiarlo después, edita `"port"` en ese archivo y reinicia. Orden: `config.json` → `PORT` → `3000`.
 
 ---
 
-## ⚙️ Variables de entorno
+## 🧩 Variables de entorno
 
-El servidor **no carga archivos `.env` automáticamente**. Defínelas en tu shell, en la unidad de systemd, en PM2 o usa la opción nativa de Node 20.6+:
+El servidor **no carga archivos `.env` por sí solo**. Defínelas en la shell, en la unidad de systemd o en PM2, o usa la opción nativa de Node 20.6+:
 
 ```bash
-cp .env.example .env
-nano .env
+cp .env.example .env && nano .env
 node --env-file=.env server/index.js
 ```
 
-| Variable | Por defecto | Descripción |
+| Variable | Por defecto | Para qué sirve |
 | :--- | :--- | :--- |
-| `PORT` | `3000` | Puerto de escucha. **Solo se usa si `data/config.json` no define un puerto** (y la configuración inicial siempre lo define). Útil sobre todo antes del primer setup. |
-| `HOST` | *(todas las interfaces)* | Interfaz de escucha. En producción usa **`127.0.0.1`** para que solo el proxy inverso pueda conectar. Sin definir, el servidor avisa al arrancar. |
-| `TRUST_PROXY` | *(desactivado)* | Omítela si no usas proxy. **Obligatoria detrás de un proxy inverso** (normalmente `1`). Ver [`TRUST_PROXY`](#-trust_proxy). |
-| `VAULTS_ROOT` | *(sin límite)* | Si se define, el vault solo puede estar dentro de esta carpeta, tanto en la configuración inicial como al cambiarlo desde *Preferencias*. Ej.: `/srv/vaults`. |
-| `REMOTE_IMAGES` | *(desactivado)* | Con `REMOTE_IMAGES=1` se permiten imágenes `https:` externas en las notas. Por defecto se bloquean (ver [Seguridad](#️-seguridad)). |
+| `HOST` | todas las interfaces | En producción, **`127.0.0.1`**: así solo el proxy inverso puede conectar. Si no la defines, el servidor te avisa al arrancar. |
+| `TRUST_PROXY` | desactivada | **Obligatoria detrás de un proxy inverso** (normalmente `1`). Ver [abajo](#trust_proxy). |
+| `VAULTS_ROOT` | sin límite | El vault solo podrá estar dentro de esta carpeta, también al cambiarlo desde *Preferencias*. Ej.: `/srv/vaults`. |
+| `PORT` | `3000` | Solo se usa si `data/config.json` no define un puerto, es decir, antes de la configuración inicial. |
+| `REMOTE_IMAGES` | desactivada | Con `1` se cargan imágenes `https:` externas en las notas. Ver [Seguridad](#-seguridad). |
 
-> ℹ️ `.env.example` incluye también `COOKIE_SECRET` y `NODE_ENV`, pero **el servidor no los usa**: el secreto de las cookies se genera automáticamente en `data/.secret`.
+> [!NOTE]
+> `.env.example` incluye también `COOKIE_SECRET` y `NODE_ENV`, pero **el servidor no los usa**: el secreto de las cookies se genera solo en `data/.secret`.
 
----
+### `TRUST_PROXY`
 
-## 🔁 `TRUST_PROXY`
+| Situación | Qué hacer |
+| :--- | :--- |
+| Accedes **directamente** a la app, sin proxy | **No la definas.** Si lo haces, cualquiera podría falsificar su IP y saltarse el límite de intentos de login. |
+| Hay un **proxy inverso** delante (Caddy, nginx…) | **`TRUST_PROXY=1`**. Sin ella, todo lo que guarda algo (login, notas…) devuelve **`403 "Origen no permitido"`**. Con varios proxies encadenados, indica su número (`2`, `3`…) o sus IPs. |
 
-- **Opcional si accedes a la app directamente** (sin proxy). En ese caso **no** la definas: cualquiera podría falsificar su IP y saltarse el límite de intentos de login.
-- **Obligatoria si hay un proxy inverso delante** (Caddy, nginx…). Sin ella, todo lo que guarda o modifica algo (login, guardar notas…) devuelve **`403 "Origen no permitido"`**, porque la app no ve el esquema ni el dominio reales.
-
-Valor habitual: **`TRUST_PROXY=1`** (un proxy en el mismo servidor). Con varios proxies encadenados, indica su número (`2`, `3`…) o sus IPs.
-
-El proxy debe enviar las cabeceras `Host` y `X-Forwarded-Proto`. Caddy lo hace solo; en nginx añade:
+El proxy debe enviar las cabeceras `Host` y `X-Forwarded-Proto`. Caddy lo hace solo; en nginx:
 
 ```nginx
 proxy_set_header Host              $host;
@@ -161,17 +222,20 @@ proxy_set_header X-Forwarded-Proto $scheme;
 
 ---
 
-## 🌐 Despliegue en producción (VPS)
+## 🌐 Despliegue en producción
 
-Arquitectura recomendada:
-
-```text
-Navegador ──HTTPS──▶ Caddy/nginx (443) ──HTTP──▶ Obsidian Web (127.0.0.1:3000) ──▶ /srv/vaults/mi-vault
+```mermaid
+flowchart LR
+    A["🧑‍💻 Navegador"] -- HTTPS --> B["🛡️ Caddy / nginx<br/>:443"]
+    B -- HTTP --> C["💎 Obsidian Web<br/>127.0.0.1:3000"]
+    C --> D[("📁 /srv/vaults/mi-vault")]
+    C -. sincronización .-> E["🐙 GitHub"]
 ```
 
-### 1. Usuario dedicado
+### 1️⃣ Crea un usuario dedicado
 
-**No ejecutes la app como root** (el servidor avisa al arrancar si lo haces). Crea un usuario sin privilegios con acceso solo a la app y al vault:
+> [!CAUTION]
+> **No ejecutes la app como root.** Si alguien consiguiera entrar, controlaría todo el servidor. La app te avisa al arrancar si lo haces.
 
 ```bash
 sudo useradd --system --create-home --home-dir /opt/obsidian-web --shell /usr/sbin/nologin obsidian
@@ -179,20 +243,19 @@ sudo mkdir -p /srv/vaults/mi-vault
 sudo chown -R obsidian:obsidian /srv/vaults
 ```
 
-> Si sincronizas el vault con otra herramienta (Syncthing, git, rclone…), asegúrate de que el usuario `obsidian` tenga permisos de lectura y escritura sobre los archivos que esta crea (p. ej. con un grupo común).
+Si sincronizas el vault con otra herramienta (Syncthing, rclone, rsync…), da al usuario `obsidian` permisos de lectura y escritura sobre lo que esta cree, por ejemplo con un grupo común.
 
-### 2. Instalación
+### 2️⃣ Instala la app
 
 ```bash
 sudo -u obsidian -s /bin/bash
 cd /opt/obsidian-web
-git clone <repo-url> app
-cd app
-npm install
+git clone https://github.com/loft17/Obsidian-Web.git app
+cd app && npm install
 exit
 ```
 
-### 3. Servicio systemd
+### 3️⃣ Crea el servicio systemd
 
 `/etc/systemd/system/obsidian-web.service`:
 
@@ -227,17 +290,21 @@ ReadWritePaths=/opt/obsidian-web/app/data /srv/vaults
 WantedBy=multi-user.target
 ```
 
-> Si tu vault está en `/home/...`, quita `ProtectHome=true` o cámbialo por `ProtectHome=read-only` y añade la ruta a `ReadWritePaths`.
-
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl enable --now obsidian-web
-sudo journalctl -u obsidian-web -f     # aquí verás el token de configuración inicial
+sudo journalctl -u obsidian-web -f     # aquí aparece el token de configuración inicial
 ```
 
-### 4a. Proxy inverso con Caddy (recomendado)
+> [!TIP]
+> Si tu vault está en `/home/...`, quita `ProtectHome=true` (o cámbialo por `ProtectHome=read-only`) y añade la ruta a `ReadWritePaths`.
 
-Caddy obtiene y renueva el certificado TLS automáticamente y envía las cabeceras necesarias sin configuración extra.
+### 4️⃣ Ponle HTTPS delante
+
+<details open>
+<summary><b>Opción A — Caddy (recomendada)</b>: certificado automático y sin configuración extra</summary>
+
+<br>
 
 `/etc/caddy/Caddyfile`:
 
@@ -251,7 +318,12 @@ notas.ejemplo.com {
 sudo systemctl reload caddy
 ```
 
-### 4b. Proxy inverso con nginx
+</details>
+
+<details>
+<summary><b>Opción B — nginx</b></summary>
+
+<br>
 
 `/etc/nginx/sites-available/obsidian-web`:
 
@@ -269,7 +341,7 @@ server {
     ssl_certificate     /etc/letsencrypt/live/notas.ejemplo.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/notas.ejemplo.com/privkey.pem;
 
-    # Los adjuntos pueden ocupar hasta 50 MB (el valor por defecto de nginx, 1 MB, da error 413)
+    # Los adjuntos pueden ocupar hasta 50 MB (el límite por defecto de nginx, 1 MB, da error 413)
     client_max_body_size 50m;
 
     location / {
@@ -289,7 +361,12 @@ sudo certbot --nginx -d notas.ejemplo.com   # si aún no tienes certificado
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-### Alternativa: PM2
+</details>
+
+<details>
+<summary><b>Alternativa a systemd — PM2</b></summary>
+
+<br>
 
 ```bash
 HOST=127.0.0.1 TRUST_PROXY=1 VAULTS_ROOT=/srv/vaults pm2 start server/index.js --name obsidian-web
@@ -298,60 +375,186 @@ pm2 startup     # arranque automático con el sistema
 pm2 logs obsidian-web
 ```
 
+</details>
+
 ### ✅ Checklist de despliegue
 
-- [ ] La app se ejecuta con un usuario sin privilegios (no root).
-- [ ] `HOST=127.0.0.1` (el puerto 3000 no es accesible desde fuera; ciérralo en el firewall de todos modos).
+- [ ] La app se ejecuta con un usuario sin privilegios, no como root.
+- [ ] `HOST=127.0.0.1`, y el puerto 3000 cerrado en el firewall de todos modos.
 - [ ] Proxy inverso con HTTPS delante.
-- [ ] `TRUST_PROXY=1` (o el valor adecuado) definido.
-- [ ] En nginx: cabeceras `Host` y `X-Forwarded-Proto` y `client_max_body_size 50m`.
-- [ ] `VAULTS_ROOT` definido.
+- [ ] `TRUST_PROXY=1` (o el valor adecuado).
+- [ ] En nginx: cabeceras `Host` y `X-Forwarded-Proto`, y `client_max_body_size 50m`.
+- [ ] `VAULTS_ROOT` definida.
 - [ ] Contraseña larga y única.
-- [ ] La cookie `token` aparece como `Secure` y la respuesta incluye `Strict-Transport-Security`.
-- [ ] Copias de seguridad del vault (ver más abajo).
+- [ ] La cookie `token` es `Secure` y la respuesta incluye `Strict-Transport-Security`.
+- [ ] Copias de seguridad del vault.
 
 ---
 
-## 🗄️ Archivos de datos (`data/`)
+## 📝 Uso
 
-La carpeta `data/` se crea automáticamente, está en `.gitignore` y el servidor fuerza sus permisos al arrancar (`700` la carpeta, `600` los archivos).
+### 📂 Explorador y pestañas
 
-| Archivo | Contenido |
+| Acción | Resultado |
 | :--- | :--- |
-| `config.json` | `vaultPath`, `passwordHash` (scrypt), `port` y `createdAt`. Se relee en cada petición: los cambios de vault se aplican al instante. |
-| `.secret` | Secreto aleatorio para firmar las cookies. Si se borra, se genera otro y todas las sesiones dejan de valer. |
-| `sessions.json` | Hashes SHA-256 de los tokens de sesión activos, con su caducidad y última actividad (nunca los tokens en claro). |
-| `sync.json` | Configuración de la sincronización con GitHub, su último estado y el token (si lo hay). |
+| **Clic** en una nota | La abre en la pestaña activa. |
+| **`Ctrl`/`Cmd` + clic**, **botón central** o **clic derecho → Abrir en pestaña nueva** | La abre en otra pestaña. |
+| **Clic derecho** sobre archivos o carpetas | Nueva nota, nueva carpeta, duplicar, mover, renombrar, borrar. |
 
-Dentro del vault, la app solo usa:
+Borrar mueve el archivo a `.trash/` dentro del vault. Para recuperarlo, renómbralo en el servidor quitando el sufijo `.<timestamp>.deleted`.
 
-| Ruta | Uso |
+### 🔗 Wikilinks
+
+| Sintaxis | Resultado |
 | :--- | :--- |
-| `.trash/` | Papelera. Lo borrado se mueve aquí como `nombre.ext.<timestamp>.deleted`. |
-| `.obsidian/app.json` | Solo se lee/escribe la clave `attachmentFolderPath` (carpeta de adjuntos). |
-| `.git/` | Solo con la sincronización con GitHub: el repositorio local (se crea si no existe). |
+| `[[Nota]]` | Enlace a `Nota.md`. |
+| `[[Nota\|Texto]]` | Enlace con texto alternativo. |
+| `[[Nota#Encabezado]]` | Enlace a una sección. |
+
+Un enlace a una nota que no existe se muestra atenuado y, al pulsarlo, se crea la nota. En el editor, `Ctrl`/`Cmd` + clic o el botón central lo abren en otra pestaña.
+
+### 🔍 Búsqueda
+
+- **Texto libre**: busca, sin distinguir mayúsculas, en nombres de archivo y en el contenido. Primero salen las coincidencias por nombre y después las que más apariciones tienen.
+- **`tag:proyecto`** o **`tag:#proyecto`**: notas con esa etiqueta, en el frontmatter (`tags:`) o en el texto (`#proyecto`).
+
+### 🖼️ Adjuntos
+
+Arrastra o pega una imagen en el editor. Se guarda en la carpeta de *Preferencias → Archivos* y se inserta el enlace en la nota. Esa carpeta se guarda en `.obsidian/app.json` como `attachmentFolderPath`, igual que en Obsidian de escritorio.
+
+### 🖨️ Exportar a PDF
+
+En el menú de la nota: se abre una versión limpia de la nota (sin frontmatter) y el diálogo de impresión del navegador → *Guardar como PDF*.
 
 ---
 
-## 🛡️ Seguridad
+## ⚡ Atajos de teclado
 
-- **Autenticación**: contraseña única (mín. 12 caracteres) guardada con `scrypt` y sal aleatoria; comparación en tiempo constante.
-- **Configuración inicial protegida** por un token de un solo uso que solo aparece en la consola del servidor.
-- **Sesiones revocables**: la cookie (firmada, `HttpOnly`, `SameSite=Strict`, `Secure` sobre HTTPS) lleva un token aleatorio; en el servidor solo se guarda su hash. Caducan a los **30 días** o tras **7 días sin uso**. Desde *Preferencias → Seguridad* puedes cambiar la contraseña (cierra las demás sesiones) o cerrar todas las sesiones.
-- **Límite de intentos** (login, cambio de vault y cambio de contraseña): 5 fallos en 15 min bloquean la IP 1 min, duplicándose con cada bloqueo seguido hasta 1 h. Las IPv6 se agrupan por su prefijo /64. Además, 50 fallos en total en 15 min bloquean el login para todos durante 5 min.
-- **Cambiar el vault exige la contraseña** actual, además de la sesión.
-- **Protección CSRF**: las peticiones que modifican algo se rechazan si vienen de otro sitio (`Sec-Fetch-Site: cross-site`) o si su `Origin` no coincide exactamente (esquema, dominio y puerto) con el de la web. Por eso [`TRUST_PROXY`](#-trust_proxy) es obligatorio detrás de un proxy.
-- **Cabeceras de seguridad**: CSP estricta (sin scripts externos ni `eval`), `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy: no-referrer`, `Cross-Origin-Opener-Policy` y HSTS cuando llega por HTTPS.
-- **Imágenes externas bloqueadas**: una imagen de otra web en una nota revela tu IP a ese servidor al abrirla (píxeles de rastreo). Por defecto solo se cargan imágenes del vault; las externas aparecen como imagen rota, sin aviso. Arranca con `REMOTE_IMAGES=1` para permitirlas.
-- **Aislamiento del vault**: no se admiten rutas con `../` ni que salgan del vault.
-- **Enlaces simbólicos**: la app **no sigue symlinks dentro del vault** (para evitar exponer `/etc` u otros archivos del sistema). No aparecen en el explorador ni en la búsqueda, y acceder a ellos se rechaza como un `../`. Si necesitas carpetas externas, cópialas o muévelas al vault. *La raíz del vault sí puede ser un symlink* (p. ej. `/srv/vaults/notas → /mnt/disco/notas`).
-- **`.obsidian/` protegida**: no se puede leer ni modificar desde la web (plugins, sus datos y ajustes de escritorio). Así nadie puede colar un plugin que se ejecute en tu ordenador al sincronizar.
-- **`.git/` protegida** igual: sus hooks y su configuración ejecutarían código en el servidor al sincronizar con GitHub. Además, git se lanza con los hooks y `core.fsmonitor` desactivados, sin shell, y solo contra repositorios `https://github.com/…`.
+En Mac, usa <kbd>Cmd</kbd> en lugar de <kbd>Ctrl</kbd>.
+
+| Atajo | Acción |
+| :--- | :--- |
+| <kbd>Ctrl</kbd> + <kbd>P</kbd> | Abrir nota (buscador rápido) |
+| <kbd>Ctrl</kbd> + <kbd>S</kbd> | Guardar la nota ahora |
+| <kbd>Ctrl</kbd> + <kbd>E</kbd> | Alternar edición / lectura |
+| <kbd>Ctrl</kbd> + <kbd>B</kbd> | Mostrar u ocultar la barra lateral |
+| <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>F</kbd> | Búsqueda global |
+| <kbd>Ctrl</kbd> + <kbd>F</kbd> | Buscar en la nota (<kbd>Enter</kbd>/<kbd>F3</kbd> siguiente, <kbd>Shift</kbd>+<kbd>Enter</kbd>/<kbd>Shift</kbd>+<kbd>F3</kbd> anterior) |
+| <kbd>Ctrl</kbd> + rueda / pellizcar | Cambiar el tamaño de fuente (si está activado en *Apariencia*) |
+| <kbd>Esc</kbd> | Cerrar menús, diálogos y búsqueda |
+| <kbd>↑</kbd> <kbd>↓</kbd> <kbd>Enter</kbd> | Moverse y abrir en el buscador rápido |
+| <kbd>Enter</kbd> / <kbd>,</kbd> / <kbd>Retroceso</kbd> | En *Propiedades*: añadir valor / añadir a la lista / borrar el último valor |
+
+---
+
+## 🎨 Preferencias
+
+Se abren desde el icono ⚙️ de engranaje. Las de interfaz se guardan **en el navegador** (`localStorage`), así que son por dispositivo; el resto, **en el servidor**.
+
+| Sección | Opciones | Se guarda en |
+| :--- | :--- | :---: |
+| 👁️ **Apariencia** | Tema (oscuro / claro / sistema), tamaño de fuente, ajuste rápido con <kbd>Ctrl</kbd>+rueda, barra de título de pestaña, cinta lateral | 🌐 Navegador |
+| ✏️ **Editor** | Modo por defecto (visor / edición), modo de edición (vista previa / fuente), título en línea, longitud de línea legible, números de línea | 🌐 Navegador |
+| 📂 **Archivos** | Carpeta de adjuntos, ruta del vault (exige la contraseña), carpetas ocultas en el explorador (un patrón por línea, `*` como comodín; esta opción se guarda en el navegador) | 🖥️ Servidor |
+| 🔄 **Sincronización** | GitHub: repositorio, rama, token, frecuencia, *Sincronizar ahora* | 🖥️ Servidor |
+| 🔒 **Seguridad** | Cambiar la contraseña, cerrar todas las sesiones | 🖥️ Servidor |
+| ⌨️ **Atajos** | Lista de atajos | — |
+
+---
+
+## 🔄 Sincronización con GitHub
+
+Mantén el vault del servidor sincronizado con un repositorio de GitHub y, a través de él, con Obsidian de escritorio usando el plugin **Obsidian Git**. **La propia web lo hace todo**: no hay que configurar nada en el servidor (solo hace falta `git` 2.31 o superior).
+
+### Configúrala en 3 pasos
+
+**1. Crea un repositorio privado** en GitHub (**New repository** → *Private*). Puede estar vacío o tener ya tus notas.
+
+**2. Crea un token de acceso**: avatar → **Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token**.
+
+| Campo | Valor |
+| :--- | :--- |
+| Token name | `Obsidian Web` |
+| Expiration | La que prefieras. Cuando caduque, crea otro y pégalo. |
+| Repository access | *Only select repositories* → tu repositorio |
+| Permissions → Contents | **Read and write** |
+
+Copia el token (empieza por `github_pat_…`): GitHub solo lo muestra una vez.
+
+**3. En la web**, abre **Preferencias → Sincronización**, elige **GitHub**, escribe el repositorio (`usuario/repositorio`), la rama, pega el token, elige la frecuencia y pulsa **Guardar** → **Sincronizar ahora**.
+
+### Cómo funciona
+
+```mermaid
+flowchart LR
+    A["📝 Cambios en el servidor"] --> B["commit"]
+    B --> C["integra los cambios<br/>de GitHub (rebase)"]
+    C --> D["push"]
+    D --> E["🐙 GitHub"]
+```
+
+- Puede ser **manual** o **automática**: cada 5, 15 o 30 minutos, cada hora, cada 3 horas o una vez al día. La hace el servidor, así que funciona aunque tengas el navegador cerrado.
+- Si una nota cambió **en los dos lados**, se queda la versión del servidor. Si un conflicto no se puede resolver solo, se cancela sin tocar nada y verás el error en *Preferencias*.
+- Si el repositorio **ya tenía notas**, la primera vez se combinan con las del servidor sin perder nada.
+- La papelera `.trash/` no se sube.
+- El token se guarda en `data/sync.json`, **nunca se envía al navegador** y no queda escrito ni en `.git/config` ni en la URL.
+
+> [!IMPORTANT]
+> Si tienes una nota abierta y la sincronización trae una versión nueva, **vuelve a abrirla antes de editarla**: el autoguardado guardaría la versión que tienes en pantalla.
+
+> [!TIP]
+> ¿Dropbox, Google Drive u otro servidor? Configura `rclone`, `rsync` o similar directamente en el servidor (con cron o un timer de systemd) sobre la carpeta del vault.
+
+---
+
+## 🔒 Seguridad
+
+<table>
+<tr>
+<td width="50%" valign="top">
+
+#### 🔑 Acceso
+- Contraseña única (mín. 12 caracteres) con **`scrypt`** y sal aleatoria; comparación en tiempo constante.
+- **Configuración inicial** protegida por un token de un solo uso que solo aparece en la consola.
+- **Sesiones revocables**: cookie firmada, `HttpOnly`, `SameSite=Strict` y `Secure` sobre HTTPS, con un token aleatorio del que el servidor solo guarda el hash. Caducan a los **30 días** o tras **7 días sin uso**.
+- **Límite de intentos** en el login, el cambio de vault y el de contraseña: 5 fallos en 15 min bloquean la IP 1 min, y el bloqueo se duplica con cada repetición hasta 1 h. Las IPv6 se agrupan por su prefijo /64. Además, 50 fallos en total en 15 min bloquean el login para todos durante 5 min.
+- **Cambiar el vault exige la contraseña**, además de la sesión.
+
+</td>
+<td width="50%" valign="top">
+
+#### 🌐 Navegador
+- **Protección CSRF**: se rechaza lo que venga de otro sitio (`Sec-Fetch-Site: cross-site`) o con un `Origin` distinto del de la web (esquema, dominio y puerto). Por eso `TRUST_PROXY` es obligatoria detrás de un proxy.
+- **Cabeceras de seguridad**: CSP estricta (sin scripts externos ni `eval`), `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy: no-referrer`, `Cross-Origin-Opener-Policy` y HSTS por HTTPS.
+- **Imágenes externas bloqueadas**: una imagen de otra web revela tu IP a ese servidor (píxeles de rastreo). Se muestran como imagen rota; actívalas con `REMOTE_IMAGES=1`.
 - **SVG seguros**: los archivos del vault se sirven con una CSP *sandbox*, así que un SVG no puede ejecutar scripts.
-- **Errores sin filtraciones**: las respuestas de error no incluyen rutas del servidor ni trazas.
-- **Avisos al arrancar** si se ejecuta como root o escucha en todas las interfaces por HTTP.
 
-> 🔐 **Sin HTTPS, la contraseña y la cookie viajan sin cifrar.** Úsalo siempre fuera de `localhost`.
+</td>
+</tr>
+<tr>
+<td valign="top">
+
+#### 📁 Vault
+- **Aislamiento**: no se admiten rutas con `../` ni que salgan del vault.
+- **Enlaces simbólicos**: no se siguen dentro del vault (no aparecen ni en el explorador ni en la búsqueda). La *raíz* del vault sí puede ser un symlink.
+- **`.obsidian/` protegida**: no se puede leer ni modificar desde la web, así nadie puede colar un plugin que se ejecute en tu ordenador al sincronizar.
+- **`.git/` protegida**: sus hooks y su configuración ejecutarían código en el servidor al sincronizar.
+
+</td>
+<td valign="top">
+
+#### 🖥️ Servidor
+- **git seguro**: se lanza sin shell, con los hooks y `core.fsmonitor` desactivados, y solo contra repositorios `https://github.com/…`.
+- **Errores sin filtraciones**: las respuestas no incluyen rutas del servidor ni trazas.
+- **Avisos al arrancar** si se ejecuta como root o escucha en todas las interfaces por HTTP.
+- La carpeta `data/` tiene permisos `700` y sus archivos `600`.
+
+</td>
+</tr>
+</table>
+
+> [!CAUTION]
+> **Sin HTTPS, la contraseña y la cookie viajan sin cifrar.** Úsalo siempre fuera de `localhost`.
 
 ---
 
@@ -359,101 +562,41 @@ Dentro del vault, la app solo usa:
 
 | Límite | Valor |
 | :--- | :--- |
-| Tamaño de una petición JSON (guardar nota, etc.) | 20 MB |
-| Tamaño de un adjunto subido | 50 MB |
-| Longitud mínima de la contraseña | 12 caracteres |
+| Petición JSON (guardar nota, etc.) | 20 MB |
+| Adjunto subido | 50 MB |
+| Contraseña | mínimo 12 caracteres |
 | Búsquedas | 60 por minuto y por IP (después, `429`) |
 | Longitud de una búsqueda | 200 caracteres |
-| Notas leídas por la búsqueda | Se omiten las de más de 2 MB; máximo 200 MB leídos por búsqueda |
+| Notas leídas por búsqueda | se omiten las de más de 2 MB; máximo 200 MB por búsqueda |
 | Resultados de búsqueda | 200 archivos, 5 coincidencias por archivo |
-| Sesiones | 30 días máximo, 7 días de inactividad |
+| Sesiones | 30 días como máximo, 7 días de inactividad |
 
 ---
 
-## 📝 Uso
+## 📁 Archivos de datos
 
-### Explorador y pestañas
+La carpeta `data/` se crea sola, está en `.gitignore` y el servidor ajusta sus permisos al arrancar (`700` la carpeta, `600` los archivos).
 
-- **Clic** en una nota: la abre en la pestaña activa.
-- **`Ctrl`/`Cmd` + clic**, **botón central** o **clic derecho → Abrir en pestaña nueva**: la abre en otra pestaña.
-- **Clic derecho** sobre archivos y carpetas: nueva nota, nueva carpeta, duplicar, mover, renombrar, borrar.
-- Borrar mueve a `.trash/` dentro del vault; para recuperar algo, renómbralo desde el servidor quitando el sufijo `.<timestamp>.deleted`.
-
-### Wikilinks
-
-| Sintaxis | Resultado |
+| Archivo | Contenido |
 | :--- | :--- |
-| `[[Nota]]` | Enlace a `Nota.md` |
-| `[[Nota\|Texto]]` | Enlace con texto alternativo |
-| `[[Nota#Encabezado]]` | Enlace a una sección |
+| `config.json` | `vaultPath`, `passwordHash` (scrypt), `port` y `createdAt`. Se relee en cada petición, así que un cambio de vault se aplica al instante. |
+| `.secret` | Secreto aleatorio que firma las cookies. Si se borra, se genera otro y todas las sesiones dejan de valer. |
+| `sessions.json` | Hashes SHA-256 de las sesiones activas, con su caducidad y última actividad (nunca los tokens en claro). |
+| `sync.json` | Configuración de la sincronización con GitHub, su último estado y el token (si lo hay). |
 
-Un enlace a una nota inexistente se muestra atenuado; al pulsarlo se crea la nota. En el editor, `Ctrl`/`Cmd` + clic o botón central lo abre en otra pestaña.
+Dentro del vault, la app solo usa:
 
-### Búsqueda
-
-- **Texto libre**: busca (sin distinguir mayúsculas) en nombres de archivo y contenido de las notas. Primero aparecen las coincidencias por nombre, luego por número de apariciones.
-- **`tag:proyecto`** o **`tag:#proyecto`**: notas con esa etiqueta, en el frontmatter (`tags:`) o en línea (`#proyecto`).
-
-### Adjuntos
-
-Arrastra o pega una imagen en el editor. Se guarda en la carpeta configurada en *Preferencias → Archivos* (que se guarda en `.obsidian/app.json` como `attachmentFolderPath`, compatible con Obsidian de escritorio) y se inserta el enlace en la nota.
-
-### Exportar a PDF
-
-Desde el menú de la nota: abre una versión limpia de la nota (sin frontmatter) y lanza el diálogo de impresión del navegador → *Guardar como PDF*.
-
----
-
-## ⌨️ Atajos de teclado
-
-En Mac, usa `Cmd` en lugar de `Ctrl`.
-
-| Atajo | Acción |
+| Ruta | Uso |
 | :--- | :--- |
-| `Ctrl+P` | Abrir nota (buscador rápido) |
-| `Ctrl+S` | Guardar la nota ahora |
-| `Ctrl+E` | Alternar edición / lectura |
-| `Ctrl+B` | Mostrar u ocultar la barra lateral |
-| `Ctrl+Shift+F` | Búsqueda global |
-| `Ctrl+F` | Buscar en la nota (`Enter`/`F3` siguiente, `Shift+Enter`/`Shift+F3` anterior) |
-| `Ctrl` + rueda / pellizcar | Cambiar el tamaño de fuente (si está activado en *Apariencia*) |
-| `Esc` | Cerrar menús, diálogos y búsqueda |
-| `↑` `↓` `Enter` | Navegar y abrir en el buscador rápido |
-| `Enter` / `,` / `Retroceso` | Añadir valor / añadir a lista / borrar último valor en *Propiedades* |
+| `.trash/` | Papelera: lo borrado se mueve aquí como `nombre.ext.<timestamp>.deleted`. |
+| `.obsidian/app.json` | Solo la clave `attachmentFolderPath` (carpeta de adjuntos). |
+| `.git/` | Solo con la sincronización con GitHub: el repositorio local (se crea si no existe). |
 
 ---
 
-## 🎛️ Preferencias
+## 🧰 Mantenimiento
 
-Se abren desde el icono de engranaje. **Las preferencias de interfaz se guardan en el navegador** (`localStorage`), así que son por dispositivo; las de *Archivos* y *Seguridad* se guardan en el servidor.
-
-| Sección | Opciones | Dónde se guarda |
-| :--- | :--- | :--- |
-| **Apariencia** | Tema (oscuro / claro / sistema), tamaño de fuente, ajuste rápido con `Ctrl`+rueda, barra de título de pestaña, cinta lateral | Navegador |
-| **Editor** | Modo por defecto (visor / edición), modo de edición (vista previa / fuente), título en línea, longitud de línea legible, números de línea | Navegador |
-| **Archivos** | Carpeta de adjuntos (servidor), ruta del vault (servidor, exige contraseña), carpetas a ocultar en el explorador — un patrón por línea, `*` como comodín (navegador) | Servidor / navegador |
-| **Sincronización** | GitHub: repositorio, rama, token, frecuencia, *Sincronizar ahora* | Servidor |
-| **Seguridad** | Cambiar contraseña, cerrar todas las sesiones | Servidor |
-| **Atajos** | Lista de atajos | — |
-
-### 🔄 Sincronización
-
-En *Preferencias → Sincronización* eliges **GitHub**, el repositorio, la rama, el token y la frecuencia (solo manual, cada 5/15/30 min, cada hora, cada 3 h o una vez al día) y pulsas **Guardar**. **Sincronizar ahora** lanza una sincronización al momento y refresca el explorador. La hace el servidor (necesita `git` 2.31+), así que la automática sigue funcionando con el navegador cerrado.
-
-Cada sincronización hace commit de los cambios → integra los del repositorio (rebase; si una nota cambió en los dos lados, gana la del servidor) → push. Si el repositorio ya tiene notas, la primera vez se adopta su historial sin perder nada local. Si un conflicto no se puede resolver solo, se aborta sin tocar nada y se muestra el error. La papelera `.trash/` no se sube.
-
-**Token**: crea un *fine-grained token* en GitHub → *Settings → Developer settings → Personal access tokens*, limitado al repositorio (mejor privado) y con permiso **Contents: Read and write**. Se guarda en `data/sync.json`, nunca se devuelve al navegador y se pasa a git por variables de entorno: no queda en `.git/config` ni en la URL.
-
-Para sincronizar con Dropbox, Google Drive u otro servidor, configura `rclone`, `rsync` o similar directamente en el servidor (cron o un timer de systemd) sobre la carpeta del vault.
-
-> [!NOTE]
-> Si tienes una nota abierta mientras la sincronización trae una versión nueva, vuelve a abrirla antes de editarla: el autoguardado guardaría la versión que tienes en pantalla.
-
----
-
-## 🔄 Actualizar, copias de seguridad y recuperación
-
-### Actualizar
+### ⬆️ Actualizar
 
 ```bash
 cd /opt/obsidian-web/app
@@ -462,14 +605,14 @@ sudo -u obsidian npm install      # recompila el frontend
 sudo systemctl restart obsidian-web
 ```
 
-Tras actualizar, recarga la web con `Ctrl+F5`.
+Después, recarga la web con <kbd>Ctrl</kbd> + <kbd>F5</kbd>.
 
-### Copias de seguridad
+### 💾 Copias de seguridad
 
-- **El vault** es lo importante: son archivos Markdown normales; cópialos con tu herramienta habitual (rsync, restic, git, Syncthing…).
-- `data/` solo contiene la configuración y las sesiones; si se pierde, basta con repetir la configuración inicial.
+- **El vault es lo importante.** Son archivos Markdown normales: cópialos con tu herramienta habitual (rsync, restic, git, Syncthing…).
+- `data/` solo guarda configuración y sesiones; si se pierde, basta con repetir la configuración inicial.
 
-### He olvidado la contraseña
+### 🔑 He olvidado la contraseña
 
 ```bash
 sudo systemctl stop obsidian-web
@@ -478,9 +621,9 @@ sudo systemctl start obsidian-web
 sudo journalctl -u obsidian-web -n 20   # copia el nuevo token de configuración
 ```
 
-Vuelve a hacer la configuración inicial apuntando al mismo vault: tus notas no se tocan y todas las sesiones anteriores se invalidan.
+Repite la configuración inicial apuntando al mismo vault: tus notas no se tocan y todas las sesiones anteriores dejan de valer.
 
-### Cerrar todas las sesiones sin entrar en la web
+### 🚪 Cerrar todas las sesiones sin entrar en la web
 
 Borra `data/sessions.json` (o `data/.secret`) y reinicia el servicio.
 
@@ -493,39 +636,38 @@ npm install
 npm run dev
 ```
 
-Esto levanta a la vez:
+Esto levanta a la vez **Vite** en `http://localhost:5173` (frontend con *hot reload*) y **Express** en `http://localhost:3000` (la API, que se reinicia al cambiar `server/`).
 
-1. **Vite** en `http://localhost:5173`: frontend con *hot-reload*.
-2. **Express** con `--watch` en `http://localhost:3000`: la API, que se reinicia al cambiar `server/`.
+> [!IMPORTANT]
+> **En desarrollo abre siempre `http://localhost:5173`**, no el 3000. Vite redirige `/api` al backend y así se evitan problemas de CORS y cookies.
 
-> ⚠️ **En desarrollo abre siempre `http://localhost:5173`**, no el 3000. Vite redirige `/api` al backend, evitando problemas de CORS y cookies.
-
-### Scripts
-
-| Script | Descripción |
+| Script | Qué hace |
 | :--- | :--- |
-| `npm start` | Arranca el servidor (sirve la API y `web/dist`) |
-| `npm run dev` | Frontend (Vite) + backend con recarga |
-| `npm run web:build` | Compila el frontend en `web/dist` (se ejecuta solo en `npm install`) |
-| `npm run web:dev` | Solo el frontend (Vite) |
-| `npm run server:dev` | Solo la API, con recarga automática |
+| `npm start` | Arranca el servidor (API y `web/dist`). |
+| `npm run dev` | Frontend (Vite) + backend con recarga. |
+| `npm run web:build` | Compila el frontend en `web/dist` (se ejecuta solo con `npm install`). |
+| `npm run web:dev` | Solo el frontend. |
+| `npm run server:dev` | Solo la API, con recarga automática. |
 
-### Tech stack
+### 🧱 Tecnologías
 
-- **Backend:** Node.js (ESM), Express 4, `cookie-parser`, `markdown-it` (exportación a PDF), `crypto.scrypt`.
-- **Frontend:** React 18, Vite 6, TypeScript, Zustand.
-- **Editor:** CodeMirror 6 + Lezer Markdown, con extensiones propias de vista previa en vivo, tablas y wikilinks.
-- **Estilos:** CSS propio inspirado en Obsidian (`web/src/styles/obsidian.css`).
+| Capa | Stack |
+| :--- | :--- |
+| **Backend** | Node.js (ESM), Express 4, `cookie-parser`, `markdown-it` (exportación a PDF), `crypto.scrypt` |
+| **Frontend** | React 18, Vite 6, TypeScript, Zustand |
+| **Editor** | CodeMirror 6 + Lezer Markdown, con extensiones propias de vista previa en vivo, tablas y wikilinks |
+| **Estilos** | CSS propio inspirado en Obsidian (`web/src/styles/obsidian.css`) |
 
----
+<details>
+<summary><b>🗂️ Estructura del proyecto</b></summary>
 
-## 🗂️ Estructura del proyecto
+<br>
 
 ```text
 Obsidian-Web/
 ├── server/                  # Backend Node.js + Express
 │   ├── index.js             # Punto de entrada: middleware, autenticación, arranque
-│   ├── security.js          # Cabeceras de seguridad (CSP, HSTS), protección CSRF, errores públicos
+│   ├── security.js          # Cabeceras de seguridad (CSP, HSTS), CSRF, errores públicos
 │   ├── sessions.js          # Sesiones revocables y límite de intentos de login
 │   ├── password.js          # Hash y verificación de contraseñas (scrypt)
 │   ├── vault.js             # Acceso al sistema de archivos y validación de rutas
@@ -556,16 +698,23 @@ Obsidian-Web/
 └── .env.example             # Plantilla de variables de entorno
 ```
 
-Para el flujo de datos en profundidad, consulta [ARQUITECTURA.md](utils/ARQUITECTURA.md).
+Para el flujo de datos en detalle, consulta [ARQUITECTURA.md](utils/ARQUITECTURA.md).
+
+</details>
 
 ---
 
 ## 🔌 API
 
-Todas las rutas cuelgan de `/api`. Salvo `setup` y `auth`, exigen una sesión válida (`401` si no). Las peticiones que no son `GET` pasan la [protección CSRF](#️-seguridad). `:filePath` es la ruta relativa al vault, codificada como un solo segmento de URL.
+Todas las rutas cuelgan de `/api`. Salvo `setup` y `auth`, exigen una sesión válida (si no, `401`). Las peticiones que no son `GET` pasan la [protección CSRF](#-seguridad). `:filePath` es la ruta relativa al vault, codificada como un solo segmento de URL.
+
+<details>
+<summary><b>Ver todas las rutas</b></summary>
+
+<br>
 
 | Método | Ruta | Descripción |
-| :--- | :--- | :--- |
+| :---: | :--- | :--- |
 | `GET` | `/api/setup/status` | `{ configured }` |
 | `POST` | `/api/setup/init` | Configuración inicial (`setupToken`, `vaultPath`, `password`, `port`) |
 | `POST` | `/api/auth/login` | Inicia sesión (`password`) |
@@ -582,36 +731,39 @@ Todas las rutas cuelgan de `/api`. Salvo `setup` y `auth`, exigen una sesión v�
 | `POST` | `/api/files/create-note` | Crea una nota (`path`) |
 | `POST` | `/api/files/create-folder` | Crea una carpeta (`path`) |
 | `GET` | `/api/search?q=…` | Búsqueda de texto o `tag:` |
-| `GET` / `POST` | `/api/settings/vault` | Lee / cambia la ruta del vault (`vaultPath`, `password`) |
+| `GET` `POST` | `/api/settings/vault` | Lee / cambia la ruta del vault (`vaultPath`, `password`) |
 | `POST` | `/api/settings/password` | Cambia la contraseña (`currentPassword`, `newPassword`) |
 | `POST` | `/api/settings/sessions/revoke` | Cierra todas las sesiones |
-| `GET` / `POST` | `/api/settings/attachments` | Lee / cambia `attachmentFolderPath` |
-| `GET` | `/api/sync` | Configuración y estado de la sincronización (sin tokens: solo `hasToken`) |
+| `GET` `POST` | `/api/settings/attachments` | Lee / cambia `attachmentFolderPath` |
+| `GET` | `/api/sync` | Configuración y estado de la sincronización (sin el token: solo `hasToken`) |
 | `POST` | `/api/sync/config` | Cambia la configuración (`provider`, `interval`, `github`; `github.token: null` lo borra) |
 | `POST` | `/api/sync/run` | Sincroniza ahora y devuelve el estado al terminar |
 
+</details>
+
 ---
 
-## 🛠️ Solución de problemas
+## 🩺 Solución de problemas
 
 | Problema | Causa probable y solución |
 | :--- | :--- |
-| **`403 "Origen no permitido"`** al guardar, iniciar sesión, etc. | Estás detrás de un proxy sin `TRUST_PROXY=1`, o nginx no envía `Host`/`X-Forwarded-Proto`. Ver [`TRUST_PROXY`](#-trust_proxy). También ocurre si accedes por un dominio/puerto distinto del que reenvía el proxy. |
+| **`403 "Origen no permitido"`** al guardar, entrar, etc. | Estás detrás de un proxy sin `TRUST_PROXY=1`, o nginx no envía `Host`/`X-Forwarded-Proto`. Ver [`TRUST_PROXY`](#trust_proxy). También pasa si entras por un dominio o puerto distinto del que reenvía el proxy. |
 | **`403` en la configuración inicial** | Token incorrecto. Cópialo de la consola del servidor (`journalctl -u obsidian-web`). |
-| **No encuentro el token de configuración** | Solo se muestra si no existe `data/config.json`. Reinicia el servicio y mira los primeros mensajes del log. |
-| **`429 Demasiados intentos`** | Límite de intentos de login. Espera el tiempo indicado. Si te ocurre sin haber fallado, puede que estés detrás de un proxy sin `TRUST_PROXY` y otra IP esté fallando. |
+| **No encuentro el token de configuración** | Solo aparece si no existe `data/config.json`. Reinicia el servicio y mira los primeros mensajes del log. |
+| **`429 Demasiados intentos`** | Límite de intentos de login: espera el tiempo indicado. Si te pasa sin haber fallado, puede que estés detrás de un proxy sin `TRUST_PROXY` y otra IP esté fallando. |
 | **`413` al subir una imagen** | nginx limita el cuerpo a 1 MB por defecto: añade `client_max_body_size 50m;`. |
-| **Las imágenes externas salen rotas** | Bloqueadas a propósito. Arranca con `REMOTE_IMAGES=1`. |
+| **Las imágenes externas salen rotas** | Están bloqueadas a propósito. Arranca con `REMOTE_IMAGES=1`. |
 | **El puerto no cambia con `PORT`** | `data/config.json` define `"port"` y tiene prioridad. Edítalo y reinicia. |
-| **"Esa carpeta no se puede usar como vault"** | Ruta del sistema, carpeta personal completa, carpeta oculta o carpeta de la app. Usa una subcarpeta normal (p. ej. `/srv/vaults/notas`). |
-| **"El vault debe estar dentro de …"** | `VAULTS_ROOT` está definido y la ruta queda fuera. |
-| **Una carpeta del vault no aparece** | Es un enlace simbólico (no se siguen), su nombre empieza por `.` (nunca se muestran: `.obsidian/`, `.trash/`, `.git/`…) o coincide con un patrón de *Preferencias → Archivos → carpetas ocultas*. |
-| **`Permiso denegado`** | El usuario que ejecuta la app no puede leer/escribir el vault. Revisa propietario y permisos (`chown`/`chmod`). |
+| **"Esa carpeta no se puede usar como vault"** | Es una ruta del sistema, una carpeta personal completa, una carpeta oculta o la de la app. Usa una subcarpeta normal, como `/srv/vaults/notas`. |
+| **"El vault debe estar dentro de …"** | `VAULTS_ROOT` está definida y la ruta queda fuera. |
+| **Una carpeta del vault no aparece** | Es un enlace simbólico (no se siguen), su nombre empieza por `.` (`.obsidian/`, `.trash/`, `.git/`… nunca se muestran) o coincide con un patrón de *Preferencias → Archivos → Ocultar carpetas*. |
+| **`Permiso denegado`** | El usuario que ejecuta la app no puede leer o escribir en el vault. Revisa propietario y permisos (`chown`/`chmod`). |
+| **Error al sincronizar con GitHub (401 / 403)** | El token ha caducado o no tiene permiso *Contents: Read and write* sobre ese repositorio. Crea otro y pégalo en *Preferencias → Sincronización*. |
 | **Pantalla en blanco o "Cannot GET /"** | No existe `web/dist`. Ejecuta `npm run web:build` (y no instales con `--omit=dev`). |
-| **La sesión se cierra sola** | Caducidad de 7 días sin uso o 30 días en total, o se cambió la contraseña / se cerraron todas las sesiones. |
-| **Las preferencias no se mantienen entre dispositivos** | Son por navegador (`localStorage`). |
+| **La sesión se cierra sola** | Han pasado 7 días sin uso o 30 en total, o se cambió la contraseña o se cerraron todas las sesiones. |
+| **Las preferencias no se mantienen entre dispositivos** | Las de interfaz se guardan en cada navegador (`localStorage`). |
 
-Para más casos consulta [TROUBLESHOOTING.md](utils/TROUBLESHOOTING.md) o ejecuta el script de diagnóstico desde la raíz del proyecto:
+¿Sigue sin funcionar? Consulta [TROUBLESHOOTING.md](utils/TROUBLESHOOTING.md) o ejecuta el diagnóstico desde la raíz del proyecto:
 
 ```bash
 chmod +x utils/diagnose.sh
@@ -620,7 +772,7 @@ chmod +x utils/diagnose.sh
 
 ---
 
-## 🗺️ Hoja de ruta
+## 🧭 Hoja de ruta
 
 - [x] Sincronización con GitHub
 
@@ -629,3 +781,13 @@ chmod +x utils/diagnose.sh
 ## 📄 Licencia
 
 Distribuido bajo la licencia [MIT](https://opensource.org/licenses/MIT).
+
+<div align="center">
+
+<br>
+
+Hecho con 💜 para quienes viven en su vault de Obsidian.
+
+**[⬆ Volver arriba](#-obsidian-web)**
+
+</div>
