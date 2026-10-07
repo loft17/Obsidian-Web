@@ -6,6 +6,7 @@ push.sh
 .env
 .env.*
 !.env.example
+package-lock.json
 
 # Datos de la aplicación: config.json (hash de contraseña, ruta del vault) y .secret (firma de cookies)
 data/
