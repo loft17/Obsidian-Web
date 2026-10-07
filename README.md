@@ -90,7 +90,7 @@ la propia web.
 ### ✍️ Escribe como en Obsidian
 - Editor **CodeMirror 6** con **vista previa en vivo** (incluidas tablas) o **modo fuente**.
 - **Modo lectura** con Markdown renderizado.
-- **Autoguardado** mientras escribes (y `Ctrl+S` para forzarlo).
+- **Autoguardado** mientras escribes (y `Ctrl+S` para forzarlo). Si la nota cambia en otro dispositivo, se recarga sola; si además tenías cambios sin guardar, eliges qué versión conservar.
 - **Propiedades** (frontmatter YAML) editables, con `tags` y `aliases` como listas.
 
 </td>
@@ -110,7 +110,7 @@ la propia web.
 ### 📂 Organiza tu vault
 - **Explorador** con carpetas colapsables y menú contextual.
 - **Pestañas**: `Ctrl`/`Cmd` + clic o botón central para abrir en una nueva.
-- Duplica, mueve, renombra y borra (a la **papelera** `.trash`, nunca de forma definitiva).
+- Duplica, mueve, renombra (los **enlaces se actualizan** solos) y borra (a la **papelera** `.trash`, nunca de forma definitiva).
 - **Adjuntos**: arrastra o pega imágenes; se guardan donde lo hace Obsidian de escritorio.
 
 </td>
@@ -744,13 +744,13 @@ Todas las rutas cuelgan de `/api`. Salvo `setup` y `auth`, exigen una sesión v�
 | `POST` | `/api/auth/login` | Inicia sesión (`password`) |
 | `POST` | `/api/auth/logout` | Cierra la sesión actual |
 | `GET` | `/api/files/tree` | Árbol del vault |
-| `GET` | `/api/files/read/:filePath` | Contenido de una nota |
+| `GET` | `/api/files/read/:filePath` | Contenido de una nota y su versión (`content`, `version`) |
 | `GET` | `/api/files/raw/:filePath` | Archivo binario (imágenes) |
 | `GET` | `/api/files/export-pdf/:filePath` | Versión imprimible de la nota |
-| `POST` | `/api/files/write/:filePath` | Guarda una nota (`content`) |
+| `POST` | `/api/files/write/:filePath` | Guarda una nota (`content`, `baseVersion` opcional). `409` con la versión actual si ha cambiado desde `baseVersion` |
 | `POST` | `/api/files/upload?note=…&name=…` | Sube un adjunto (cuerpo binario) |
 | `DELETE` | `/api/files/:filePath` | Mueve a `.trash/` |
-| `POST` | `/api/files/rename` | Renombra o mueve (`oldPath`, `newPath`) |
+| `POST` | `/api/files/rename` | Renombra o mueve (`oldPath`, `newPath`) y actualiza los enlaces; devuelve las notas modificadas (`updated`) |
 | `POST` | `/api/files/copy` | Duplica (`path`) |
 | `POST` | `/api/files/create-note` | Crea una nota (`path`) |
 | `POST` | `/api/files/create-folder` | Crea una carpeta (`path`) |

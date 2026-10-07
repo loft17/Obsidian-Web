@@ -6,14 +6,17 @@ import SettingsModal from './SettingsModal';
 import FileExplorer from './FileExplorer';
 import SearchPanel from './SearchPanel';
 import Tabs from './Tabs';
-import Editor, { flushPendingSave } from './Editor';
-import { QuickOpenDialog } from './FileDialogs';
+import Editor, { flushPendingSave, cancelPendingSave, hasPendingSave, noteVersions, saveNote, NOTES_CHANGED } from './Editor';
+import { QuickOpenDialog, ConflictDialog } from './FileDialogs';
 import ReadingView from './ReadingView';
 import ImageViewer from './ImageViewer';
 import StatusBar from './StatusBar';
 import { isImage } from '../attachments';
 import NoteMenu from './NoteMenu';
 import { IconBook, IconEdit } from './Icons';
+
+// Cada cuánto se comprueba si la nota abierta ha cambiado en el servidor (ms)
+const EXTERNAL_CHECK_INTERVAL = 15000;
 
 export default function MainLayout() {
   const activeTab = useStore((s) => s.activeTab);
@@ -31,6 +34,7 @@ export default function MainLayout() {
   const showTabHeader = useStore((s) => s.showTabHeader);
   const settingsOpen = useStore((s) => s.settingsOpen);
   const setSettingsOpen = useStore((s) => s.setSettingsOpen);
+  const conflict = useStore((s) => s.conflicts[0]);
 
   // Atajos globales: Ctrl/Cmd+P abrir nota, +S guardar, +E editar/leer, +B barra lateral, +Shift+F buscar
   useEffect(() => {
@@ -98,7 +102,10 @@ export default function MainLayout() {
     const loadFile = async () => {
       setLoading(true);
       try {
+        // Un guardado aún en curso de esta nota se leería a medias
+        await flushPendingSave(activeTab);
         const data = await filesApi.readFile(activeTab);
+        noteVersions.set(activeTab, data.version);
         setFileContent(data.content);
       } catch (err) {
         console.error('Error loading file:', err);
@@ -109,6 +116,65 @@ export default function MainLayout() {
 
     loadFile();
   }, [activeTab]);
+
+  // La nota abierta puede cambiar fuera de esta pestaña: otro dispositivo, la sincronización
+  // con GitHub, Obsidian de escritorio... Se comprueba al volver a la pestaña, cada poco
+  // mientras está visible y cuando el servidor reescribe enlaces. Si hay cambios sin guardar
+  // no se toca nada: el guardado detectará el conflicto
+  useEffect(() => {
+    let checking = false;
+    const busy = (path: string) =>
+      hasPendingSave(path) || !!useStore.getState().tabs.find((t) => t.path === path)?.isDirty;
+
+    const check = async () => {
+      const { activeTab: path, conflicts } = useStore.getState();
+      if (checking || !path || isImage(path) || conflicts.length || busy(path)) return;
+      if (document.visibilityState !== 'visible') return;
+      checking = true;
+      try {
+        const known = noteVersions.get(path);
+        const data = await filesApi.readFile(path);
+        const unchanged = useStore.getState().activeTab === path && !busy(path) && noteVersions.get(path) === known;
+        if (!unchanged || data.version === known) return;
+        noteVersions.set(path, data.version);
+        setFileContent(data.content);
+      } catch {
+        // borrada o sin conexión: se vuelve a intentar en la próxima comprobación
+      } finally {
+        checking = false;
+      }
+    };
+
+    const timer = window.setInterval(check, EXTERNAL_CHECK_INTERVAL);
+    document.addEventListener('visibilitychange', check);
+    window.addEventListener('focus', check);
+    window.addEventListener(NOTES_CHANGED, check);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', check);
+      window.removeEventListener('focus', check);
+      window.removeEventListener(NOTES_CHANGED, check);
+    };
+  }, []);
+
+  // Conflicto: conservar lo escrito aquí (sobrescribe la versión del servidor)…
+  const keepMine = async () => {
+    if (!conflict) return;
+    noteVersions.set(conflict.path, conflict.version);
+    await saveNote(conflict.path, conflict.mine);
+  };
+
+  // …o quedarse con la del servidor y descartar lo escrito aquí
+  const keepTheirs = () => {
+    if (!conflict) return;
+    const { path, theirs, version } = conflict;
+    cancelPendingSave(path);
+    noteVersions.set(path, version);
+    const { setTabDirty, clearConflict, activeTab } = useStore.getState();
+    setTabDirty(path, false);
+    clearConflict(path);
+    if (activeTab === path) setFileContent(theirs);
+  };
 
   return (
     <div className="app-container">
@@ -170,6 +236,16 @@ export default function MainLayout() {
         </div>
       </div>
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
+      {conflict && (
+        <ConflictDialog
+          key={conflict.path}
+          path={conflict.path}
+          mine={conflict.mine}
+          theirs={conflict.theirs}
+          onKeepMine={keepMine}
+          onKeepTheirs={keepTheirs}
+        />
+      )}
       {quickOpen && (
         <QuickOpenDialog
           files={tree.filter((i) => i.type === 'file' && /\.md$/i.test(i.path))}

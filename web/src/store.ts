@@ -12,7 +12,19 @@ interface Tab {
   isDirty: boolean;
 }
 
+// Al guardar, la nota había cambiado en el servidor: `mine` es lo escrito aquí y `theirs` lo del servidor
+export interface NoteConflict {
+  path: string;
+  mine: string;
+  theirs: string;
+  version: string;
+}
+
 interface AppStore {
+  // Conflictos pendientes de resolver (se muestran de uno en uno)
+  conflicts: NoteConflict[];
+  setConflict: (conflict: NoteConflict) => void;
+  clearConflict: (path: string) => void;
   hiddenFolders: string;
   setHiddenFolders: (value: string) => void;
   tree: TreeItem[];
@@ -193,6 +205,16 @@ export const isHiddenPath = (path: string, isFolder: boolean, matchers: RegExp[]
 };
 
 export const useStore =create<AppStore>((set) => ({
+  conflicts: [],
+  setConflict: (conflict) =>
+    set((state) => {
+      const i = state.conflicts.findIndex((c) => c.path === conflict.path);
+      if (i < 0) return { conflicts: [...state.conflicts, conflict] };
+      const conflicts = [...state.conflicts];
+      conflicts[i] = conflict;
+      return { conflicts };
+    }),
+  clearConflict: (path) => set((state) => ({ conflicts: state.conflicts.filter((c) => c.path !== path) })),
   hiddenFolders: initialHiddenFolders,
   setHiddenFolders: (value) => {
     try {

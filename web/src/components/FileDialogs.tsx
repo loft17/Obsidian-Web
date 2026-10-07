@@ -367,3 +367,58 @@ export function DeleteFileDialog({
     </ConfirmDialog>
   );
 }
+
+// La nota ha cambiado en otro sitio mientras se editaba aquí: hay que elegir qué versión
+// conservar. No se puede cerrar sin elegir, para no seguir escribiendo sobre una versión vieja
+export function ConflictDialog({
+  path,
+  mine,
+  theirs,
+  onKeepMine,
+  onKeepTheirs,
+}: {
+  path: string;
+  mine: string;
+  theirs: string;
+  onKeepMine: () => Promise<void>;
+  onKeepTheirs: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const name = (path.split('/').pop() || path).replace(/\.md$/i, '');
+
+  const keepMine = async () => {
+    setBusy(true);
+    try {
+      await onKeepMine();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <DialogShell title="La nota ha cambiado en otro sitio" onClose={() => {}}>
+      <p className="file-dialog-message">
+        <strong>{name}</strong> se ha modificado fuera de esta pestaña (otro dispositivo, la sincronización…) mientras
+        la editabas. Elige qué versión conservar; la otra se descartará.
+      </p>
+      <div className="conflict-versions">
+        <div>
+          <div className="conflict-label">Tu versión</div>
+          <pre className="conflict-text">{mine}</pre>
+        </div>
+        <div>
+          <div className="conflict-label">Versión del servidor</div>
+          <pre className="conflict-text">{theirs}</pre>
+        </div>
+      </div>
+      <div className="file-dialog-buttons">
+        <button type="button" className="btn-secondary" disabled={busy} onClick={onKeepTheirs}>
+          Usar la del servidor
+        </button>
+        <button type="button" disabled={busy} onClick={keepMine}>
+          Conservar la mía
+        </button>
+      </div>
+    </DialogShell>
+  );
+}

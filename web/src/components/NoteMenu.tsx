@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { EditorView } from '@codemirror/view';
 import { useStore } from '../store';
 import { filesApi } from '../api';
-import { flushPendingSave, cancelPendingSave } from './Editor';
+import { flushPendingSave, cancelPendingSave, changeNotePath } from './Editor';
 import { IconMenu } from './Icons';
 import { RenameDialog, MoveDialog, DeleteFileDialog } from './FileDialogs';
 import { isImage } from '../attachments';
@@ -18,7 +18,6 @@ export default function NoteMenu() {
   const activeTab = useStore((s) => s.activeTab);
   const tree = useStore((s) => s.tree);
   const setTree = useStore((s) => s.setTree);
-  const renameTab = useStore((s) => s.renameTab);
   const removeTab = useStore((s) => s.removeTab);
 
   const ref = useRef<HTMLDivElement>(null);
@@ -65,9 +64,7 @@ export default function NoteMenu() {
   };
 
   const changePath = async (newPath: string) => {
-    await flushPendingSave(activeTab);
-    await filesApi.renameFile(activeTab, newPath);
-    renameTab(activeTab, newPath);
+    await changeNotePath(activeTab, newPath);
     setTree(await filesApi.getTree());
     setDialog(null);
   };

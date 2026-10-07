@@ -1545,6 +1545,35 @@ a:hover {
   word-break: break-all;
 }
 
+.file-dialog:has(.conflict-versions) {
+  max-width: min(860px, 92vw);
+}
+
+.conflict-versions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.conflict-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted, var(--text-normal));
+  margin-bottom: 4px;
+}
+
+.conflict-text {
+  margin: 0;
+  max-height: 260px;
+  overflow: auto;
+  padding: 8px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .file-dialog-list {
   max-height: 300px;
   overflow-y: auto;

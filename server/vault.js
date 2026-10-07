@@ -1,5 +1,6 @@
 import { readFileSync, writeFileSync, readdirSync, statSync, lstatSync, realpathSync, mkdirSync, renameSync, existsSync, copyFileSync, cpSync } from 'fs';
 import { join, resolve, relative, dirname, basename, extname, isAbsolute, sep } from 'path';
+import { createHash } from 'crypto';
 
 // Como existsSync, pero también cuenta los enlaces simbólicos rotos
 const entryExists = (p) => {
@@ -95,10 +96,30 @@ export const readFile =(vaultPath, filePath) => {
   return readFileSync(fullPath, 'utf8');
 };
 
-export const writeFile = (vaultPath, filePath, content) => {
+// Versión de una nota: hash de su contenido. Sirve para detectar que ha cambiado
+// en otro sitio (otro dispositivo, la sincronización, Obsidian de escritorio...)
+export const contentVersion = (content) => createHash('sha1').update(content, 'utf8').digest('hex');
+
+export class ConflictError extends Error {
+  constructor(content) {
+    super('La nota ha cambiado en otro sitio');
+    this.content = content;
+    this.version = contentVersion(content);
+  }
+}
+
+// Con `baseVersion` (la versión que leyó el cliente), solo escribe si la nota no ha
+// cambiado desde entonces; si ha cambiado, lanza ConflictError con el contenido actual.
+// Si la nota ya no existe se vuelve a crear: así no se pierde lo escrito.
+export const writeFile = (vaultPath, filePath, content, baseVersion) => {
   const fullPath = guardPath(vaultPath, filePath);
+  if (baseVersion && existsSync(fullPath)) {
+    const current = readFileSync(fullPath, 'utf8');
+    if (contentVersion(current) !== baseVersion && current !== content) throw new ConflictError(current);
+  }
   mkdirSync(dirname(fullPath), { recursive: true });
   writeFileSync(fullPath, content, 'utf8');
+  return contentVersion(content);
 };
 
 export const deleteFile = (vaultPath, filePath) => {

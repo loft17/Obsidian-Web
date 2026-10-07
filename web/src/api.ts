@@ -49,23 +49,36 @@ export const authApi = {
   },
 };
 
+// La nota ha cambiado en el servidor desde la versión que se leyó: trae la versión actual
+export class ConflictError extends Error {
+  constructor(public content: string, public version: string) {
+    super('La nota ha cambiado en otro sitio');
+  }
+}
+
 export const filesApi = {
   getTree: async () => {
     const res = await fetch(`${API_URL}/files/tree`);
     if (!res.ok) throw new Error((await res.json()).error);
     return res.json();
   },
-  readFile: async (filePath: string) => {
+  // `version` identifica el contenido leído; se pasa al guardar para detectar conflictos
+  readFile: async (filePath: string): Promise<{ content: string; version: string }> => {
     const res = await fetch(`${API_URL}/files/read/${encodeURIComponent(filePath)}`);
     if (!res.ok) throw new Error((await res.json()).error);
     return res.json();
   },
-  writeFile: async (filePath: string, content: string) => {
+  // Con `baseVersion`, lanza ConflictError si la nota ha cambiado en el servidor desde entonces
+  writeFile: async (filePath: string, content: string, baseVersion?: string): Promise<{ version: string }> => {
     const res = await fetch(`${API_URL}/files/write/${encodeURIComponent(filePath)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content }),
+      body: JSON.stringify({ content, baseVersion }),
     });
+    if (res.status === 409) {
+      const data = await res.json();
+      throw new ConflictError(data.content, data.version);
+    }
     if (!res.ok) throw new Error((await res.json()).error);
     return res.json();
   },
@@ -76,7 +89,8 @@ export const filesApi = {
     if (!res.ok) throw new Error((await res.json()).error);
     return res.json();
   },
-  renameFile: async (oldPath: string, newPath: string) => {
+  // `updated`: notas cuyos enlaces ha reescrito el servidor para seguir el cambio de ruta
+  renameFile: async (oldPath: string, newPath: string): Promise<{ updated: string[] }> => {
     const res = await fetch(`${API_URL}/files/rename`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

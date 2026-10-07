@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useStore, isUnder, hiddenMatchers, isHiddenPath } from '../store';
 import { filesApi } from '../api';
-import { flushPendingSave, cancelPendingSave } from './Editor';
+import { flushPendingSave, cancelPendingSave, changeNotePath } from './Editor';
 import { RenameDialog, MoveDialog, DeleteFileDialog } from './FileDialogs';
 import { IconChevronRight, IconChevronDown, IconCollapseAll, IconFileNew, IconFolderNew } from './Icons';
 
@@ -109,7 +109,6 @@ export default function FileExplorer() {
   const setTree = useStore((s) => s.setTree);
   const addTab = useStore((s) => s.addTab);
   const openFile = useStore((s) => s.openFile);
-  const renameTab = useStore((s) => s.renameTab);
   const removeTab = useStore((s) => s.removeTab);
   const setActiveTab = useStore((s) => s.setActiveTab);
   const [menu, setMenu] = useState<{ x: number; y: number; path: string; isFolder: boolean } | null>(null);
@@ -183,9 +182,7 @@ export default function FileExplorer() {
 
   // Renombrar y mover son el mismo cambio de ruta en el servidor
   const changePath = async (oldPath: string, newPath: string) => {
-    await flushPendingSave(oldPath);
-    await filesApi.renameFile(oldPath, newPath);
-    renameTab(oldPath, newPath);
+    await changeNotePath(oldPath, newPath);
     await refreshTree();
     setDialog(null);
   };

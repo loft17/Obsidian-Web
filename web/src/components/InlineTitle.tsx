@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store';
 import { filesApi } from '../api';
-import { flushPendingSave } from './Editor';
+import { changeNotePath } from './Editor';
 
 const INVALID_CHARS = /[\\/:*?"<>|]/;
 
@@ -10,7 +10,6 @@ const parentFolder = (path: string) => (path.includes('/') ? path.substring(0, p
 
 // Título en línea: el nombre del archivo encima de la nota; al editarlo se renombra el archivo
 export default function InlineTitle({ filePath, onEnter }: { filePath: string; onEnter?: () => void }) {
-  const renameTab = useStore((s) => s.renameTab);
   const setTree = useStore((s) => s.setTree);
   const ref = useRef<HTMLDivElement>(null);
   const [error, setError] = useState('');
@@ -41,9 +40,7 @@ export default function InlineTitle({ filePath, onEnter }: { filePath: string; o
     const ext = /\.md$/i.test(filePath) ? '.md' : '';
     const newPath = `${folder ? folder + '/' : ''}${newName}${ext}`;
     try {
-      await flushPendingSave(filePath);
-      await filesApi.renameFile(filePath, newPath);
-      renameTab(filePath, newPath);
+      await changeNotePath(filePath, newPath);
       setError('');
       setTree(await filesApi.getTree());
     } catch (err) {

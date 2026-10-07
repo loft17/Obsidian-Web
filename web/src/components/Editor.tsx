@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useStore, isUnder, type EditorMode } from '../store';
-import { filesApi } from '../api';
+import { filesApi, ConflictError } from '../api';
 import { parseNote, composeNote, type FrontmatterData } from '../frontmatter';
 import Properties from './Properties';
 import EditorToolbar from './EditorToolbar';
 import InlineTitle from './InlineTitle';
-import { Compartment, EditorState } from '@codemirror/state';
+import { Annotation, Compartment, EditorState, Transaction } from '@codemirror/state';
 import { EditorView, drawSelection, highlightActiveLineGutter, keymap, lineNumbers } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { markdown, markdownKeymap, markdownLanguage } from '@codemirror/lang-markdown';
@@ -20,27 +20,80 @@ interface Props {
 
 const AUTOSAVE_DELAY = 2000;
 
+// Versión de cada nota tal como se leyó o guardó por última vez. Al guardar se envía
+// al servidor, que rechaza el guardado si la nota ha cambiado en otro sitio desde entonces
+export const noteVersions = new Map<string, string>();
+
 // Autoguardados pendientes por ruta, para poder forzarlos o cancelarlos
 // antes de renombrar, mover o borrar un archivo (o una carpeta entera)
 const pendingSaves = new Map<string, { timer: number; run: () => Promise<void> }>();
+// Guardados ya enviados al servidor que aún no han terminado
+const inFlightSaves = new Map<string, Promise<void>>();
 
-const pendingUnder = (path: string) => [...pendingSaves.entries()].filter(([p]) => isUnder(p, path));
+// `path` null: todas las notas
+const under = <T,>(map: Map<string, T>, path: string | null) =>
+  [...map.entries()].filter(([p]) => path === null || isUnder(p, path));
 
-export async function flushPendingSave(path: string) {
-  await Promise.all(
-    pendingUnder(path).map(([, pending]) => {
+export const hasPendingSave = (path: string) => pendingSaves.has(path) || inFlightSaves.has(path);
+
+// Guarda ya los autoguardados pendientes y espera a los que están en curso
+export async function flushPendingSave(path: string | null) {
+  await Promise.all([
+    ...under(pendingSaves, path).map(([, pending]) => {
       clearTimeout(pending.timer);
       return pending.run();
-    })
-  );
+    }),
+    ...under(inFlightSaves, path).map(([, saving]) => saving),
+  ]);
 }
 
 export function cancelPendingSave(path: string) {
-  for (const [p, pending] of pendingUnder(path)) {
+  for (const [p, pending] of under(pendingSaves, path)) {
     clearTimeout(pending.timer);
     pendingSaves.delete(p);
   }
 }
+
+// Guarda la nota partiendo de la versión conocida; si ha cambiado en el servidor, no la
+// sobrescribe: abre el conflicto para que el usuario elija qué versión conservar
+export function saveNote(path: string, content: string): Promise<void> {
+  const { setTabDirty, setConflict, clearConflict } = useStore.getState();
+  const save = (async () => {
+    try {
+      const { version } = await filesApi.writeFile(path, content, noteVersions.get(path));
+      noteVersions.set(path, version);
+      // Si se ha seguido escribiendo mientras tanto, queda otro guardado pendiente
+      if (!pendingSaves.has(path)) setTabDirty(path, false);
+      clearConflict(path);
+    } catch (err) {
+      if (err instanceof ConflictError) {
+        setConflict({ path, mine: content, theirs: err.content, version: err.version });
+      } else {
+        console.error('Autosave failed:', err);
+      }
+    }
+  })();
+  inFlightSaves.set(path, save);
+  return save.finally(() => {
+    if (inFlightSaves.get(path) === save) inFlightSaves.delete(path);
+  });
+}
+
+// Evento para que la nota abierta compruebe si ha cambiado en el servidor
+export const NOTES_CHANGED = 'notes-changed';
+
+// Renombra o mueve un archivo o carpeta. El servidor actualiza los enlaces de otras notas,
+// así que antes se guarda todo lo pendiente y después se avisa para recargar la nota abierta
+export async function changeNotePath(oldPath: string, newPath: string) {
+  await flushPendingSave(null);
+  const { updated } = await filesApi.renameFile(oldPath, newPath);
+  useStore.getState().renameTab(oldPath, newPath);
+  if (updated.length) window.dispatchEvent(new Event(NOTES_CHANGED));
+}
+
+// Cambios que llegan de fuera (la nota ha cambiado en el servidor): no son ediciones
+// del usuario, así que no se autoguardan ni entran en el historial de deshacer
+const externalChange = Annotation.define<boolean>();
 
 // Permite cambiar entre vista previa en vivo y modo fuente sin recrear el editor
 const modeCompartment = new Compartment();
@@ -63,7 +116,9 @@ function createState(doc: string, onChange: (doc: string) => void, getPath: () =
       imageUpload(getPath),
       keymap.of([...markdownKeymap, ...defaultKeymap, ...historyKeymap, indentWithTab]),
       EditorView.updateListener.of((u) => {
-        if (u.docChanged) onChange(u.state.doc.toString());
+        if (u.docChanged && !u.transactions.some((tr) => tr.annotation(externalChange))) {
+          onChange(u.state.doc.toString());
+        }
       }),
     ],
   });
@@ -107,13 +162,36 @@ export default function Editor({ filePath, content, onContentChange }: Props) {
     viewRef.current?.dispatch({ effects: lineNumbersCompartment.reconfigure(lineNumbersExtension(showLineNumbers)) });
   }, [showLineNumbers]);
 
-  // Contenido cambiado desde fuera (otra nota, propiedades...): estado nuevo, historial limpio
+  // Contenido cambiado desde fuera. Otra nota: estado nuevo, historial limpio. La misma nota
+  // (cambiada en otro dispositivo, por la sincronización...): solo se sustituye el tramo
+  // distinto, para no perder el cursor, el scroll ni el historial
+  const shownPathRef = useRef(filePath);
   useEffect(() => {
     const view = viewRef.current;
-    if (view && view.state.doc.toString() !== body) {
-      view.setState(createState(body, (doc) => onBodyChangeRef.current(doc), getPath));
+    if (!view) return;
+    const current = view.state.doc.toString();
+    if (current !== body) {
+      if (shownPathRef.current === filePath) {
+        let from = 0;
+        while (from < current.length && from < body.length && current[from] === body[from]) from++;
+        let end = 0;
+        while (
+          end < current.length - from &&
+          end < body.length - from &&
+          current[current.length - 1 - end] === body[body.length - 1 - end]
+        ) {
+          end++;
+        }
+        view.dispatch({
+          changes: { from, to: current.length - end, insert: body.slice(from, body.length - end) },
+          annotations: [externalChange.of(true), Transaction.addToHistory.of(false)],
+        });
+      } else {
+        view.setState(createState(body, (doc) => onBodyChangeRef.current(doc), getPath));
+      }
     }
-  }, [body]);
+    shownPathRef.current = filePath;
+  }, [body, filePath]);
 
   const handleBodyChange = (newBody: string) => {
     if (!note.valid) commit(newBody);
@@ -126,17 +204,20 @@ export default function Editor({ filePath, content, onContentChange }: Props) {
     onContentChange(newContent);
     setTabDirty(filePath, true);
 
+    // Con un conflicto abierto no se guarda: se espera a que el usuario elija
+    const { conflicts, setConflict } = useStore.getState();
+    const conflict = conflicts.find((c) => c.path === filePath);
+    if (conflict) {
+      setConflict({ ...conflict, mine: newContent });
+      return;
+    }
+
     // Debounced autosave
     cancelPendingSave(filePath);
 
-    const run = async () => {
+    const run = () => {
       pendingSaves.delete(filePath);
-      try {
-        await filesApi.writeFile(filePath, newContent);
-        setTabDirty(filePath, false);
-      } catch (err) {
-        console.error('Autosave failed:', err);
-      }
+      return saveNote(filePath, newContent);
     };
     pendingSaves.set(filePath, { timer: window.setTimeout(run, AUTOSAVE_DELAY), run });
   };

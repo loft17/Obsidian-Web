@@ -1,6 +1,7 @@
 import express, { Router } from 'express';
 import MarkdownIt from 'markdown-it';
 import * as vault from '../vault.js';
+import { prepareLinkUpdate } from '../links.js';
 import { publicError, scriptHash } from '../security.js';
 import { MAX_UPLOAD_MB } from '../limits.js';
 
@@ -49,7 +50,8 @@ export default (dataDir, getConfig) => {
   router.get('/tree', withVault((cfg, req, res) => res.json(vault.listTree(cfg.vaultPath))));
 
   router.get('/read/:filePath', withVault((cfg, req, res) => {
-    res.json({ content: vault.readFile(cfg.vaultPath, req.params.filePath) });
+    const content = vault.readFile(cfg.vaultPath, req.params.filePath);
+    res.json({ content, version: vault.contentVersion(content) });
   }));
 
   // Archivos binarios del vault (imágenes adjuntas a las notas)
@@ -85,9 +87,17 @@ ${md.render(body)}
 </html>`);
   }));
 
+  // 409 si la nota ha cambiado desde `baseVersion`: el cliente decide qué versión conservar
   router.post('/write/:filePath', withVault((cfg, req, res) => {
-    vault.writeFile(cfg.vaultPath, req.params.filePath, req.body.content);
-    res.json({ success: true });
+    const { content, baseVersion } = req.body;
+    if (typeof content !== 'string') throw new Error('Contenido no válido');
+    try {
+      const version = vault.writeFile(cfg.vaultPath, req.params.filePath, content, baseVersion);
+      res.json({ success: true, version });
+    } catch (err) {
+      if (!(err instanceof vault.ConflictError)) throw err;
+      res.status(409).json({ error: 'conflict', content: err.content, version: err.version });
+    }
   }));
 
   // Sube un adjunto de la nota `note` (cuerpo binario); la carpeta destino sale de los ajustes
@@ -108,9 +118,12 @@ ${md.render(body)}
     res.json({ success: true });
   }));
 
+  // `updated`: notas cuyos enlaces se han reescrito para seguir apuntando al archivo movido
   router.post('/rename', withVault((cfg, req, res) => {
-    vault.renameFile(cfg.vaultPath, req.body.oldPath, req.body.newPath);
-    res.json({ success: true });
+    const { oldPath, newPath } = req.body;
+    const updateLinks = prepareLinkUpdate(cfg.vaultPath, String(oldPath), String(newPath));
+    vault.renameFile(cfg.vaultPath, oldPath, newPath);
+    res.json({ success: true, updated: updateLinks() });
   }));
 
   router.post('/copy', withVault((cfg, req, res) => {
