@@ -1,0 +1,34 @@
+# --- Secretos y credenciales ---
+# Script de push con token de GitHub embebido
+push.sh
+
+# Variables de entorno (se mantiene la plantilla)
+.env
+.env.*
+!.env.example
+
+# Datos de la aplicación: config.json (hash de contraseña, ruta del vault) y .secret (firma de cookies)
+data/
+
+# Claves y certificados
+*.pem
+*.key
+*.crt
+*.p12
+
+# --- Dependencias y builds ---
+node_modules/
+web/node_modules/
+dist/
+web/dist/
+
+# --- Logs ---
+logs/
+*.log
+npm-debug.log*
+
+# --- Editor / sistema ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
