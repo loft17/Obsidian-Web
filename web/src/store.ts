@@ -37,6 +37,12 @@ interface AppStore {
   setQuickFontSize: (enabled: boolean) => void;
   editorMode: EditorMode;
   setEditorMode: (mode: EditorMode) => void;
+  showInlineTitle: boolean;
+  setShowInlineTitle: (show: boolean) => void;
+  showLineNumbers: boolean;
+  setShowLineNumbers: (show: boolean) => void;
+  readableLineLength: boolean;
+  setReadableLineLength: (enabled: boolean) => void;
   showTabHeader: boolean;
   setShowTabHeader: (show: boolean) => void;
   showRibbon: boolean;
@@ -153,6 +159,14 @@ const saveBool = (key: string, value: boolean) => {
     // almacenamiento no disponible: la preferencia solo dura la sesión
   }
 };
+
+// Longitud de línea legible: limita el ancho del texto de la nota con la variable CSS --line-width
+const READABLE_LINE_KEY = 'readableLineLength';
+const LINE_NUMBERS_KEY = 'showLineNumbers';
+const INLINE_TITLE_KEY = 'showInlineTitle';
+const applyReadableLineLength = (enabled: boolean) =>
+  document.documentElement.style.setProperty('--line-width', enabled ? '720px' : 'none');
+applyReadableLineLength(readBool(READABLE_LINE_KEY, true));
 
 const HIDDEN_KEY = 'hiddenFolders';
 const initialHiddenFolders = (() => {
@@ -283,6 +297,22 @@ export const useStore =create<AppStore>((set) => ({
       // almacenamiento no disponible: la preferencia solo dura la sesión
     }
     set({ editorMode: mode });
+  },
+  showInlineTitle: readBool(INLINE_TITLE_KEY, true),
+  setShowInlineTitle: (show) => {
+    saveBool(INLINE_TITLE_KEY, show);
+    set({ showInlineTitle: show });
+  },
+  showLineNumbers: readBool(LINE_NUMBERS_KEY, false),
+  setShowLineNumbers: (show) => {
+    saveBool(LINE_NUMBERS_KEY, show);
+    set({ showLineNumbers: show });
+  },
+  readableLineLength: readBool(READABLE_LINE_KEY, true),
+  setReadableLineLength: (enabled) => {
+    saveBool(READABLE_LINE_KEY, enabled);
+    applyReadableLineLength(enabled);
+    set({ readableLineLength: enabled });
   },
   showTabHeader: readBool(SHOW_TAB_HEADER_KEY, true),
   setShowTabHeader: (show) => {

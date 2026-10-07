@@ -4,8 +4,9 @@ import { filesApi } from '../api';
 import { parseNote, composeNote, type FrontmatterData } from '../frontmatter';
 import Properties from './Properties';
 import EditorToolbar from './EditorToolbar';
+import InlineTitle from './InlineTitle';
 import { Compartment, EditorState } from '@codemirror/state';
-import { EditorView, drawSelection, keymap } from '@codemirror/view';
+import { EditorView, drawSelection, highlightActiveLineGutter, keymap, lineNumbers } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { markdown, markdownKeymap, markdownLanguage } from '@codemirror/lang-markdown';
 import { livePreview, sourceMode, HighlightSyntax, notePath } from '../livePreview';
@@ -45,6 +46,9 @@ export function cancelPendingSave(path: string) {
 const modeCompartment = new Compartment();
 const modeExtension = (mode: EditorMode) => (mode === 'source' ? sourceMode : livePreview);
 
+const lineNumbersCompartment = new Compartment();
+const lineNumbersExtension = (show: boolean) => (show ? [lineNumbers(), highlightActiveLineGutter()] : []);
+
 function createState(doc: string, onChange: (doc: string) => void, getPath: () => string) {
   return EditorState.create({
     doc,
@@ -55,6 +59,7 @@ function createState(doc: string, onChange: (doc: string) => void, getPath: () =
       EditorView.lineWrapping,
       markdown({ base: markdownLanguage, extensions: [HighlightSyntax] }),
       modeCompartment.of(modeExtension(useStore.getState().editorMode)),
+      lineNumbersCompartment.of(lineNumbersExtension(useStore.getState().showLineNumbers)),
       imageUpload(getPath),
       keymap.of([...markdownKeymap, ...defaultKeymap, ...historyKeymap, indentWithTab]),
       EditorView.updateListener.of((u) => {
@@ -69,6 +74,8 @@ export default function Editor({ filePath, content, onContentChange }: Props) {
   const viewRef = useRef<EditorView | null>(null);
   const setTabDirty = useStore((s) => s.setTabDirty);
   const editorMode = useStore((s) => s.editorMode);
+  const showLineNumbers = useStore((s) => s.showLineNumbers);
+  const showInlineTitle = useStore((s) => s.showInlineTitle);
   const note = useMemo(() => parseNote(content), [content]);
   // Con un frontmatter inválido se edita el texto completo, sin panel de propiedades
   const body = note.valid ? note.body : content;
@@ -95,6 +102,10 @@ export default function Editor({ filePath, content, onContentChange }: Props) {
   useEffect(() => {
     viewRef.current?.dispatch({ effects: modeCompartment.reconfigure(modeExtension(editorMode)) });
   }, [editorMode]);
+
+  useEffect(() => {
+    viewRef.current?.dispatch({ effects: lineNumbersCompartment.reconfigure(lineNumbersExtension(showLineNumbers)) });
+  }, [showLineNumbers]);
 
   // Contenido cambiado desde fuera (otra nota, propiedades...): estado nuevo, historial limpio
   useEffect(() => {
@@ -134,6 +145,7 @@ export default function Editor({ filePath, content, onContentChange }: Props) {
     <>
       <EditorToolbar viewRef={viewRef} />
       <div className="editor-scroll">
+        {showInlineTitle && <InlineTitle filePath={filePath} onEnter={() => viewRef.current?.focus()} />}
         {note.valid && (
           <div className="editor-properties">
             <Properties data={note.data} editable onChange={handlePropertiesChange} />

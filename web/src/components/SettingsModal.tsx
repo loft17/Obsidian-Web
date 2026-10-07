@@ -116,7 +116,14 @@ function EditorSection() {
   const setDefaultEditMode = useStore((s) => s.setDefaultEditMode);
   const editorMode = useStore((s) => s.editorMode);
   const setEditorMode = useStore((s) => s.setEditorMode);
+  const showInlineTitle = useStore((s) => s.showInlineTitle);
+  const setShowInlineTitle = useStore((s) => s.setShowInlineTitle);
+  const showLineNumbers = useStore((s) => s.showLineNumbers);
+  const setShowLineNumbers = useStore((s) => s.setShowLineNumbers);
+  const readableLineLength = useStore((s) => s.readableLineLength);
+  const setReadableLineLength = useStore((s) => s.setReadableLineLength);
   return (
+    <>
     <div className="settings-group">
       <div className="setting-item">
         <div className="setting-info">
@@ -145,6 +152,49 @@ function EditorSection() {
         </select>
       </div>
     </div>
+    <h3 className="settings-heading">Pantalla</h3>
+    <div className="settings-group">
+      <div className="setting-item">
+        <div className="setting-info">
+          <div className="setting-name">Título en línea</div>
+          <div className="setting-desc">
+            Mostrar el nombre de archivo como un título editable en línea con el contenido del archivo.
+          </div>
+        </div>
+        <label className="setting-toggle">
+          <input type="checkbox" checked={showInlineTitle} onChange={(e) => setShowInlineTitle(e.target.checked)} />
+          <span />
+        </label>
+      </div>
+      <div className="setting-item">
+        <div className="setting-info">
+          <div className="setting-name">Longitud de línea legible</div>
+          <div className="setting-desc">
+            Limita la longitud de línea máxima. Muestra menos contenido en pantalla, pero los párrafos largos son más
+            legibles.
+          </div>
+        </div>
+        <label className="setting-toggle">
+          <input
+            type="checkbox"
+            checked={readableLineLength}
+            onChange={(e) => setReadableLineLength(e.target.checked)}
+          />
+          <span />
+        </label>
+      </div>
+      <div className="setting-item">
+        <div className="setting-info">
+          <div className="setting-name">Números de línea</div>
+          <div className="setting-desc">Muestra los números de línea.</div>
+        </div>
+        <label className="setting-toggle">
+          <input type="checkbox" checked={showLineNumbers} onChange={(e) => setShowLineNumbers(e.target.checked)} />
+          <span />
+        </label>
+      </div>
+    </div>
+    </>
   );
 }
 

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, type MouseEvent } from 'react';
 import markdownIt from 'markdown-it';
 import { parseNote } from '../frontmatter';
 import Properties from './Properties';
+import InlineTitle from './InlineTitle';
 import { useStore } from '../store';
 import { attachmentUrl, isImage, parseSize } from '../attachments';
 import {
@@ -276,6 +277,7 @@ interface Props {
 export default function ReadingView({ content, filePath }: Props) {
   const { data: frontmatter, body: markdownContent } = useMemo(() => parseNote(content), [content]);
   const searchTag = useStore((s) => s.searchTag);
+  const showInlineTitle = useStore((s) => s.showInlineTitle);
   // Las rutas de las imágenes se resuelven contra el árbol del vault
   // (y también los [[enlaces]], para marcar los que apuntan a notas inexistentes)
   const tree = useStore((s) => s.tree);
@@ -293,13 +295,11 @@ export default function ReadingView({ content, filePath }: Props) {
     if (heading && contentRef.current) scrollToHeading(contentRef.current, heading);
   }, [html, notePath]);
 
-  const fileName = (filePath?.split('/').pop() || 'Untitled').replace(/\.md$/i, '');
-  const title = (frontmatter.title as string) || fileName;
 
   return (
     <div className="reading-view">
       <div className="reading-view-inner">
-        <h1 className="reading-view-title">{title}</h1>
+        {showInlineTitle && filePath && <InlineTitle filePath={filePath} />}
 
         <Properties data={frontmatter} onTagClick={searchTag} />
 
