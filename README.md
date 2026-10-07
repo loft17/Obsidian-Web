@@ -76,7 +76,7 @@ Accede y edita tus notas Markdown desde cualquier navegador (ideal para un VPS),
 ## 🚀 Instalación rápida (local)
 
 ```bash
-git clone <repo-url> Obsidian-Web
+git clone https://github.com/loft17/Obsidian-Web.git
 cd Obsidian-Web
 npm install      # instala dependencias y compila el frontend (script postinstall)
 npm start
