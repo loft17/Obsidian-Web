@@ -61,8 +61,10 @@ app.use((req, res, next) => {
   const publicRoutes = ['/api/setup', '/api/auth/login', '/api/auth/logout'];
   const isPublicRoute = publicRoutes.some(route => req.path.startsWith(route));
 
-  // Excluir archivos estáticos del middleware de autenticación
-  const isStaticFile = /\.(js|css|svg|png|jpg|jpeg|gif|ico|json|woff|woff2|ttf|eot)$/i.test(req.path);
+  // Excluir archivos estáticos del middleware de autenticación (nunca la API:
+  // /api/files/raw/imagen.png sirve archivos del vault)
+  const isStaticFile = !req.path.startsWith('/api/') &&
+    /\.(js|css|svg|png|jpg|jpeg|gif|ico|json|woff|woff2|ttf|eot)$/i.test(req.path);
 
   if (cfg && !isPublicRoute && !isStaticFile && req.path !== '/') {
     const token = req.signedCookies.token;

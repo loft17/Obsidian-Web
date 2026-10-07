@@ -2,11 +2,12 @@
 // con formato y los marcadores (#, **, >, [](url)...) solo aparecen en la línea
 // donde está el cursor.
 import { syntaxTree, syntaxHighlighting, HighlightStyle } from '@codemirror/language';
-import type { EditorState, Range } from '@codemirror/state';
+import { Facet, type EditorState, type Range } from '@codemirror/state';
 import { Decoration, EditorView, ViewPlugin, WidgetType, type DecorationSet, type ViewUpdate } from '@codemirror/view';
 import { Tag, tags } from '@lezer/highlight';
 import type { MarkdownConfig } from '@lezer/markdown';
 import { liveTables } from './liveTables';
+import { attachmentUrl, isImage, parseSize } from './attachments';
 
 // ==resaltado== no forma parte de GFM: se define igual que el tachado de @lezer/markdown
 const highlightTag = Tag.define();
@@ -91,6 +92,29 @@ class RuleWidget extends WidgetType {
   }
 }
 
+class ImageWidget extends WidgetType {
+  constructor(readonly src: string, readonly alt: string, readonly width?: number, readonly height?: number) {
+    super();
+  }
+  eq(other: ImageWidget) {
+    return other.src === this.src && other.alt === this.alt && other.width === this.width && other.height === this.height;
+  }
+  toDOM() {
+    const img = document.createElement('img');
+    img.className = 'cm-lp-image';
+    img.src = this.src;
+    img.alt = this.alt;
+    if (this.width) img.width = this.width;
+    if (this.height) img.height = this.height;
+    return img;
+  }
+}
+
+// Ruta de la nota abierta en el editor, para resolver las imágenes relativas
+export const notePath = Facet.define<() => string, () => string>({
+  combine: (values) => values[0] ?? (() => ''),
+});
+
 const hide = Decoration.replace({});
 const bullet = Decoration.replace({ widget: new BulletWidget() });
 const rule = Decoration.replace({ widget: new RuleWidget() });
@@ -122,6 +146,14 @@ function build(view: EditorView): DecorationSet {
     const last = doc.lineAt(to).number;
     for (let n = doc.lineAt(from).number; n <= last; n++) decos.push(line(cls).range(doc.line(n).from));
   };
+  // La imagen sustituye a su sintaxis; en la línea del cursor se ve debajo de ella
+  const currentNote = state.facet(notePath)();
+  const image = (from: number, to: number, src: string, altText: string) => {
+    const { text, width, height } = parseSize(altText);
+    const widget = new ImageWidget(attachmentUrl(src, currentNote), text, width, height);
+    if (isActive(from)) decos.push(Decoration.widget({ widget, side: 1 }).range(to));
+    else add(Decoration.replace({ widget }), from, to);
+  };
 
   for (const { from, to } of view.visibleRanges) {
     syntaxTree(state).iterate({
@@ -141,6 +173,16 @@ function build(view: EditorView): DecorationSet {
           case 'CodeBlock':
             eachLine(node.from, node.to, 'cm-lp-codeblock');
             return false;
+          case 'Image': {
+            // ![alt](url "título")
+            const marks = node.node.getChildren('LinkMark');
+            const url = node.node.getChild('URL');
+            if (marks.length < 2 || !url) return false;
+            let src = doc.sliceString(url.from, url.to);
+            if (src.startsWith('<') && src.endsWith('>')) src = src.slice(1, -1);
+            image(node.from, node.to, src, doc.sliceString(marks[0].to, marks[1].from));
+            return false;
+          }
         }
         if (isActive(node.from)) return;
         switch (node.name) {
@@ -187,13 +229,19 @@ function build(view: EditorView): DecorationSet {
 
     // [[enlaces internos]]
     const text = doc.sliceString(from, to);
-    for (const m of text.matchAll(/\[\[([^\]\n]+)\]\]/g)) {
+    for (const m of text.matchAll(/!?\[\[([^\]\n]+)\]\]/g)) {
       const start = from + m.index!;
       const end = start + m[0].length;
       if (/Code/.test(syntaxTree(state).resolveInner(start, 1).name)) continue;
-      add(wikilink, start + 2, end - 2);
+      // ![[imagen.png|300]]
+      const [target] = m[1].split('|');
+      if (m[0].startsWith('!') && isImage(target.split('#')[0].trim())) {
+        image(start, end, target.trim(), m[1].includes('|') ? m[1] : target.trim().split('/').pop()!);
+        continue;
+      }
+      add(wikilink, start + m[0].indexOf('[[') + 2, end - 2);
       if (!isActive(start)) {
-        add(hide, start, start + 2);
+        add(hide, start, start + m[0].indexOf('[[') + 2);
         add(hide, end - 2, end);
       }
     }

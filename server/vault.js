@@ -13,7 +13,9 @@ const guardPath = (vaultPath, userPath) => {
 
 const toVaultPath = (vaultPath, fullPath) => relative(resolve(vaultPath), fullPath).split('\\').join('/');
 
-export const readFile = (vaultPath, filePath) => {
+export const resolveFile = (vaultPath, filePath) => guardPath(vaultPath, filePath);
+
+export const readFile =(vaultPath, filePath) => {
   const fullPath = guardPath(vaultPath, filePath);
   return readFileSync(fullPath, 'utf8');
 };

@@ -533,6 +533,14 @@ a:hover {
   cursor: pointer;
 }
 
+.cm-lp-image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 4px 0;
+  border-radius: 4px;
+}
+
 .cm-lp-hr {
   display: inline-block;
   width: 100%;
@@ -972,6 +980,12 @@ a:hover {
 
 .reading-view-content {
   padding-top: 8px;
+}
+
+.reading-view-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
 }
 
 .reading-view h1 {

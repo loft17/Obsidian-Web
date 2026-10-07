@@ -44,7 +44,20 @@ export default (dataDir, getConfig) => {
     res.json({ content: vault.readFile(cfg.vaultPath, req.params.filePath) });
   }));
 
-  router.get('/export-pdf/:filePath', withVault((cfg, req, res) => {
+  // Archivos binarios del vault (imágenes adjuntas a las notas)
+  router.get('/raw/:filePath', withVault((cfg, req, res) => {
+    const fullPath = vault.resolveFile(cfg.vaultPath, req.params.filePath);
+    // Un SVG abierto directamente no debe poder ejecutar scripts
+    res.set({
+      'X-Content-Type-Options': 'nosniff',
+      'Content-Security-Policy': "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox",
+    });
+    res.sendFile(fullPath, { dotfiles: 'allow' }, (err) => {
+      if (err && !res.headersSent) res.status(err.statusCode || 404).json({ error: 'Not found' });
+    });
+  }));
+
+  router.get('/export-pdf/:filePath',withVault((cfg, req, res) => {
     const raw = vault.readFile(cfg.vaultPath, req.params.filePath);
     let body = raw;
     try {

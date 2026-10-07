@@ -3,6 +3,7 @@ import markdownIt from 'markdown-it';
 import { parseNote } from '../frontmatter';
 import Properties from './Properties';
 import { useStore } from '../store';
+import { attachmentUrl, isImage, parseSize } from '../attachments';
 
 const md = markdownIt({
   html: false,
@@ -49,6 +50,49 @@ md.inline.ruler.before('emphasis', 'tag', (state, silent) => {
   state.pos = start + m[0].length;
   return true;
 });
+
+// Incrustaciones al estilo Obsidian: ![[imagen.png]] o ![[imagen.png|300]]
+md.inline.ruler.before('image', 'embed', (state, silent) => {
+  const start = state.pos;
+  if (state.src.slice(start, start + 3) !== '![[') return false;
+  const end = state.src.indexOf(']]', start + 3);
+  if (end < 0 || end + 2 > state.posMax) return false;
+  const inner = state.src.slice(start + 3, end);
+  if (!inner || inner.includes('\n')) return false;
+  if (!silent) {
+    const [target] = inner.split('|');
+    if (isImage(target.split('#')[0].trim())) {
+      const token = state.push('image', 'img', 0);
+      token.attrs = [['src', target.trim()]];
+      token.content = inner.includes('|') ? inner : target.trim().split('/').pop()!;
+      token.children = [];
+    } else {
+      // Notas incrustadas: de momento, un enlace interno
+      const open = state.push('wikilink_open', 'a', 1);
+      open.attrSet('href', '#');
+      open.attrSet('class', 'wikilink');
+      state.push('text', '', 0).content = inner;
+      state.push('wikilink_close', 'a', -1);
+    }
+  }
+  state.pos = end + 2;
+  return true;
+});
+
+// Imágenes: rutas del vault resueltas desde la nota y tamaño "alt|300"
+md.renderer.rules.image = (tokens, idx, _options, env: { notePath?: string }) => {
+  const token = tokens[idx];
+  const { text, width, height } = parseSize(token.content);
+  const src = attachmentUrl(token.attrGet('src') ?? '', env.notePath ?? '');
+  const title = token.attrGet('title');
+  return (
+    `<img src="${md.utils.escapeHtml(src)}" alt="${md.utils.escapeHtml(text)}"` +
+    (title ? ` title="${md.utils.escapeHtml(title)}"` : '') +
+    (width ? ` width="${width}"` : '') +
+    (height ? ` height="${height}"` : '') +
+    ' loading="lazy">'
+  );
+};
 
 // Callouts al estilo Obsidian: > [!tipo] Título
 const svg = (body: string) =>
@@ -192,13 +236,16 @@ interface Props {
 export default function ReadingView({ content, filePath }: Props) {
   const { data: frontmatter, body: markdownContent } = useMemo(() => parseNote(content), [content]);
   const searchTag = useStore((s) => s.searchTag);
+  // Las rutas de las imágenes se resuelven contra el árbol del vault
+  const tree = useStore((s) => s.tree);
 
   const html = useMemo(() => {
     let text = markdownContent;
     // Process wikilinks: [[note]]
-    text = text.replace(/\[\[([^\]]+)\]\]/g, '<a href="#" class="wikilink">$1</a>');
-    return md.render(text);
-  }, [markdownContent]);
+    // (las incrustaciones ![[...]] las procesa la regla "embed")
+    text = text.replace(/(?<!!)\[\[([^\]]+)\]\]/g, '<a href="#" class="wikilink">$1</a>');
+    return md.render(text, { notePath: filePath ?? '' });
+  }, [markdownContent, filePath, tree]);
 
   const fileName = (filePath?.split('/').pop() || 'Untitled').replace(/\.md$/i, '');
   const title = (frontmatter.title as string) || fileName;

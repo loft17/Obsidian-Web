@@ -8,7 +8,7 @@ import { EditorState } from '@codemirror/state';
 import { EditorView, drawSelection, keymap } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { markdown, markdownKeymap, markdownLanguage } from '@codemirror/lang-markdown';
-import { livePreview, HighlightSyntax } from '../livePreview';
+import { livePreview, HighlightSyntax, notePath } from '../livePreview';
 
 interface Props {
   filePath: string;
@@ -40,10 +40,11 @@ export function cancelPendingSave(path: string) {
   }
 }
 
-function createState(doc: string, onChange: (doc: string) => void) {
+function createState(doc: string, onChange: (doc: string) => void, getPath: () => string) {
   return EditorState.create({
     doc,
     extensions: [
+      notePath.of(getPath),
       history(),
       drawSelection(),
       EditorView.lineWrapping,
@@ -68,11 +69,14 @@ export default function Editor({ filePath, content, onContentChange }: Props) {
   // El listener de CodeMirror se crea una vez: siempre llama al manejador del último render
   const onBodyChangeRef = useRef<(newBody: string) => void>(() => {});
   onBodyChangeRef.current = (newBody) => handleBodyChange(newBody);
+  const filePathRef = useRef(filePath);
+  filePathRef.current = filePath;
+  const getPath = () => filePathRef.current;
 
   useEffect(() => {
     const view = new EditorView({
       parent: hostRef.current!,
-      state: createState(body, (doc) => onBodyChangeRef.current(doc)),
+      state: createState(body, (doc) => onBodyChangeRef.current(doc), getPath),
     });
     viewRef.current = view;
     return () => {
@@ -85,7 +89,7 @@ export default function Editor({ filePath, content, onContentChange }: Props) {
   useEffect(() => {
     const view = viewRef.current;
     if (view && view.state.doc.toString() !== body) {
-      view.setState(createState(body, (doc) => onBodyChangeRef.current(doc)));
+      view.setState(createState(body, (doc) => onBodyChangeRef.current(doc), getPath));
     }
   }, [body]);
 
