@@ -13,6 +13,18 @@ interface TreeItem {
 
 type Grouped = Map<string, TreeItem[]>;
 
+// Arrastrar y soltar: `folder` es la carpeta de destino ('' = raíz). Soltar sobre un
+// archivo lo mueve a la carpeta de ese archivo, como en Obsidian
+interface DragHandlers {
+  dropTarget: string | null;
+  onDragStart: (e: React.DragEvent, path: string) => void;
+  onDragOver: (e: React.DragEvent, folder: string, hoveredFolder?: string) => void;
+  onDrop: (e: React.DragEvent, folder: string) => void;
+  onDragEnd: () => void;
+}
+
+const parentFolder = (path: string) => (path.includes('/') ? path.substring(0, path.lastIndexOf('/')) : '');
+
 const displayName = (item: TreeItem) =>
   item.type === 'file' ? item.name.replace(/\.md$/i, '') : item.name;
 
@@ -49,6 +61,7 @@ function FileTreeNode({
   onToggle,
   onSelect,
   onContextMenu,
+  drag,
   depth,
 }: {
   item: TreeItem;
@@ -57,20 +70,27 @@ function FileTreeNode({
   onToggle: (path: string) => void;
   onSelect: (path: string) => void;
   onContextMenu: (e: React.MouseEvent, path: string, isFolder: boolean) => void;
+  drag: DragHandlers;
   depth: number;
 }) {
   const activeTab = useStore((s) => s.activeTab);
   const isFolder = item.type === 'folder';
   const isExpanded = expandedFolders.has(item.path);
   const children = grouped.get(item.path) ?? [];
+  const folder = isFolder ? item.path : parentFolder(item.path);
 
   return (
-    <div className="tree-node">
+    <div className={`tree-node ${isFolder && drag.dropTarget === item.path ? 'drop-target' : ''}`}>
       <div
         className={`tree-item ${isFolder ? 'folder' : 'file'} ${activeTab === item.path ? 'active' : ''}`}
         style={{ paddingLeft: '8px' }}
+        draggable
         onClick={() => (isFolder ? onToggle(item.path) : onSelect(item.path))}
         onContextMenu={(e) => onContextMenu(e, item.path, isFolder)}
+        onDragStart={(e) => drag.onDragStart(e, item.path)}
+        onDragOver={(e) => drag.onDragOver(e, folder, isFolder ? item.path : undefined)}
+        onDrop={(e) => drag.onDrop(e, folder)}
+        onDragEnd={drag.onDragEnd}
       >
         {isFolder && (
           <span className="tree-chevron">
@@ -91,6 +111,7 @@ function FileTreeNode({
               onToggle={onToggle}
               onSelect={onSelect}
               onContextMenu={onContextMenu}
+              drag={drag}
               depth={depth + 1}
             />
           ))}
@@ -120,7 +141,6 @@ export default function FileExplorer() {
   const menuRef = useRef<HTMLDivElement>(null);
 
   const fileName = (path: string) => path.split('/').pop() || path;
-  const parentFolder = (path: string) => (path.includes('/') ? path.substring(0, path.lastIndexOf('/')) : '');
 
   const refreshTree = async () => setTree(await filesApi.getTree());
 
@@ -208,6 +228,72 @@ export default function FileExplorer() {
     setDialog(null);
   };
 
+  // Arrastrar y soltar. La ruta arrastrada se guarda aquí porque durante el arrastre
+  // el navegador no deja leer los datos del dataTransfer
+  const dragPath = useRef<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<string | null>(null);
+  // Una carpeta cerrada se abre si se mantiene el arrastre encima un momento
+  const expandTimer = useRef<{ folder: string; timer: number } | null>(null);
+
+  const clearExpandTimer = () => {
+    if (expandTimer.current) clearTimeout(expandTimer.current.timer);
+    expandTimer.current = null;
+  };
+
+  const endDrag = () => {
+    dragPath.current = null;
+    setDropTarget(null);
+    clearExpandTimer();
+  };
+
+  // No se mueve a su misma carpeta ni una carpeta dentro de sí misma
+  const canDrop = (from: string, folder: string) => parentFolder(from) !== folder && !isUnder(folder, from);
+
+  const drag: DragHandlers = {
+    dropTarget,
+    onDragStart: (e, path) => {
+      dragPath.current = path;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', path);
+      setMenu(null);
+    },
+    onDragOver: (e, folder, hoveredFolder) => {
+      const from = dragPath.current;
+      // Arrastres que no salen del explorador (archivos del sistema, texto...): no se tocan
+      if (from === null) return;
+      e.stopPropagation();
+      if (hoveredFolder !== expandTimer.current?.folder) {
+        clearExpandTimer();
+        if (hoveredFolder && !useStore.getState().expandedFolders.has(hoveredFolder)) {
+          expandTimer.current = { folder: hoveredFolder, timer: window.setTimeout(() => expandFolder(hoveredFolder), 700) };
+        }
+      }
+      const target = canDrop(from, folder) ? folder : null;
+      if (target !== null) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+      }
+      if (target !== dropTarget) setDropTarget(target);
+    },
+    onDrop: async (e, folder) => {
+      const from = dragPath.current;
+      if (from === null) return;
+      e.preventDefault();
+      e.stopPropagation();
+      endDrag();
+      if (!canDrop(from, folder)) return;
+      try {
+        await handleMove(from, folder);
+        if (folder) expandFolder(folder);
+      } catch (err) {
+        alert(`No se pudo mover: ${(err as Error).message}`);
+      }
+    },
+    onDragEnd: endDrag,
+  };
+
+  useEffect(() => clearExpandTimer, []);
+
   useEffect(() => {
     if (!menu) return;
     const onDown = (e: MouseEvent) => {
@@ -241,7 +327,18 @@ export default function FileExplorer() {
           <IconCollapseAll size={16} />
         </button>
       </div>
-      <div className="file-explorer">
+      <div
+        className={`file-explorer ${dropTarget === '' ? 'drop-target' : ''}`}
+        // El hueco libre del explorador es la raíz de la bóveda
+        onDragOver={(e) => drag.onDragOver(e, '')}
+        onDrop={(e) => drag.onDrop(e, '')}
+        onDragLeave={(e) => {
+          if (dragPath.current !== null && !e.currentTarget.contains(e.relatedTarget as Node | null)) {
+            setDropTarget(null);
+            clearExpandTimer();
+          }
+        }}
+      >
         {roots.map((item) => (
           <FileTreeNode
             key={item.path}
@@ -251,6 +348,7 @@ export default function FileExplorer() {
             onToggle={toggleFolder}
             onSelect={handleSelect}
             onContextMenu={handleContextMenu}
+            drag={drag}
             depth={0}
           />
         ))}

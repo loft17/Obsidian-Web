@@ -372,6 +372,17 @@ a:hover {
   border-left: 1px solid var(--background-modifier-border);
 }
 
+/* Destino al arrastrar archivos: la carpeta entera o, en la raíz, todo el explorador */
+.tree-node.drop-target,
+.file-explorer.drop-target {
+  background-color: rgba(var(--interactive-accent-rgb), 0.12);
+  border-radius: 4px;
+}
+
+.tree-node.drop-target > .tree-item {
+  color: var(--text-normal);
+}
+
 /* Editor area */
 .editor-container {
   flex: 1;

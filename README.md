@@ -798,7 +798,9 @@ chmod +x utils/diagnose.sh
 
 ## 🧭 Hoja de ruta
 
-- [x] Sincronización con GitHub
+- Notas diarias y plantillas.
+- No he comprobado si el modo lectura renderiza fórmulas LaTeX, Mermaid y resaltado de sintaxis en bloques de código. No hay ninguna librería para ello entre las dependencias, así que seguramente no.
+- Recuperar la papelera desde la web: los archivos borrados van a .trash, pero no hay forma de restaurarlos desde la interfaz.
 
 ---
 
