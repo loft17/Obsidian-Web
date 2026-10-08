@@ -87,7 +87,7 @@ la propia web.
 
 ### ✍️ Escribe como en Obsidian
 - Editor **CodeMirror 6** con **vista previa en vivo** (incluidas tablas) o **modo fuente**.
-- **Modo lectura** con Markdown renderizado y resaltado de sintaxis en los bloques de código.
+- **Modo lectura** con Markdown renderizado, resaltado de sintaxis en los bloques de código y **diagramas Mermaid**.
 - **Autoguardado** mientras escribes (y `Ctrl+S` para forzarlo). Si la nota cambia en otro dispositivo, se recarga sola; si además tenías cambios sin guardar, eliges qué versión conservar.
 - **Propiedades** (frontmatter YAML) editables, con `tags` y `aliases` como listas.
 

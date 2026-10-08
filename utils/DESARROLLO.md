@@ -186,7 +186,8 @@ npm install paquete@latest    # para saltar de versión mayor, una a una
 
 Ideas pendientes, por si quieres contribuir:
 
-- **Fórmulas LaTeX y diagramas Mermaid** en el modo lectura. Ahora mismo no se renderizan (el resaltado de sintaxis de los bloques de código sí funciona). Si se añaden, conviene cargarlos con `import()` dinámico como `codeHighlight.ts`.
+- **Fórmulas LaTeX** en el modo lectura. Ahora mismo no se renderizan. Si se añaden, conviene cargarlas con `import()` dinámico como `codeHighlight.ts` o `mermaidDiagrams.ts`.
+- **Diagramas Mermaid en la vista previa en vivo** y en la exportación a PDF: ahora solo se dibujan en el modo lectura.
 - **Rendimiento con vaults muy grandes**: el explorador pinta todo el árbol. La búsqueda ya usa un índice en memoria, pero sigue recorriendo el árbol (`stat` de cada archivo) en cada consulta; vigilar la carpeta con `fs.watch` evitaría ese recorrido.
 - **Traducir los errores del servidor**: la interfaz está en español e inglés (`web/src/i18n/`), pero los errores que devuelve el backend ("Contraseña incorrecta", "Ya existe un archivo con ese nombre"...) y los mensajes de estado de la sincronización siguen saliendo siempre en español. La idea es que el servidor devuelva un código (`{ error, code: 'WRONG_PASSWORD', params }`) y el cliente lo traduzca con sus diccionarios, dejando `error` en español como respaldo.
 - **Tests automáticos**, al menos para `guardPath()`, la resolución de wikilinks y la reescritura de enlaces al renombrar.

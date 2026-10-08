@@ -11,6 +11,7 @@ import {
 import { embedSection, getEmbedContent, getEmbedsVersion, refreshEmbeds, subscribeEmbeds } from '../noteEmbeds';
 import { NOTES_CHANGED } from './Editor';
 import { highlightCodeBlocks } from '../codeHighlight';
+import { cachedDiagram, currentDiagramTheme, renderMermaidDiagrams } from '../mermaidDiagrams';
 import { t, useI18n } from '../i18n';
 
 const md = markdownIt({
@@ -272,10 +273,20 @@ const COPY_ICON =
 const CHECK_ICON =
   '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
 
+// Diagramas ```mermaid: si ya se dibujaron se pintan desde la caché; si no, se muestra
+// el código fuente hasta que renderMermaidDiagrams los sustituye
+function renderMermaidFence(source: string) {
+  const svg = cachedDiagram(source, currentDiagramTheme());
+  const attr = `data-source="${md.utils.escapeHtml(source)}"`;
+  if (svg) return `<div class="mermaid-diagram is-rendered" ${attr}>${svg}</div>\n`;
+  return `<div class="mermaid-diagram" ${attr}><pre><code>${md.utils.escapeHtml(source)}</code></pre></div>\n`;
+}
+
 // Code blocks: language label + copy button
 const defaultFence = md.renderer.rules.fence!;
 md.renderer.rules.fence = (tokens, idx, options, env, self) => {
   const lang = tokens[idx].info.trim().split(/\s+/)[0];
+  if (lang.toLowerCase() === 'mermaid') return renderMermaidFence(tokens[idx].content);
   const label = lang ? `<span class="code-block-lang">${md.utils.escapeHtml(lang)}</span>` : '<span></span>';
   const copy = md.utils.escapeHtml(t('common.copy'));
   return (
@@ -358,6 +369,8 @@ export default function ReadingView({ content, filePath }: Props) {
   const tree = useStore((s) => s.tree);
   // Los textos de la interfaz que van dentro del HTML (Copiar, Cargando…) siguen el idioma
   const lang = useI18n((s) => s.lang);
+  // Los diagramas Mermaid se dibujan con los colores del tema
+  const theme = useStore((s) => s.theme);
   const contentRef = useRef<HTMLDivElement>(null);
   const notePath = filePath ?? '';
 
@@ -368,7 +381,7 @@ export default function ReadingView({ content, filePath }: Props) {
 
   const html = useMemo(
     () => md.render(markdownContent, { notePath }),
-    [markdownContent, notePath, tree, embedsVersion, lang]
+    [markdownContent, notePath, tree, embedsVersion, lang, theme]
   );
 
   // También al volver a la pestaña y cuando el servidor reescribe enlaces
@@ -389,7 +402,9 @@ export default function ReadingView({ content, filePath }: Props) {
   }, [html, notePath]);
 
   useEffect(() => {
-    if (contentRef.current) highlightCodeBlocks(contentRef.current);
+    if (!contentRef.current) return;
+    highlightCodeBlocks(contentRef.current);
+    renderMermaidDiagrams(contentRef.current, t('mermaid.error'));
   }, [html]);
 
   return (

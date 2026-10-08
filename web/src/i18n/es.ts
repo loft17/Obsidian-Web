@@ -134,6 +134,7 @@ export const es = {
   'status.chars': '{n} caracteres',
   'embed.loadError': 'No se pudo cargar la nota',
   'embed.headingNotFound': 'No se encuentra «{heading}» en la nota',
+  'mermaid.error': 'Error en el diagrama',
   'image.loadError': 'No se pudo cargar la imagen',
   'image.fitWindow': 'Clic para ajustar a la ventana',
   'image.actualSize': 'Clic para ver a tamaño real',

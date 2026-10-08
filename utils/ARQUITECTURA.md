@@ -84,6 +84,7 @@ Obsidian-Web/
 │       ├── livePreview.ts     # Vista previa en vivo (decoraciones de CodeMirror)
 │       ├── liveTables.ts      # Tablas en vivo
 │       ├── codeHighlight.ts   # Resaltado de bloques de código en lectura (highlight.js bajo demanda)
+│       ├── mermaidDiagrams.ts # Diagramas ```mermaid en lectura (Mermaid bajo demanda, SVG en caché)
 │       ├── components/
 │       │   ├── MainLayout.tsx # Disposición, atajos globales, carga de notas, cambios externos
 │       │   ├── Editor.tsx     # CodeMirror, autoguardado, versiones y conflictos
@@ -159,7 +160,7 @@ sequenceDiagram
 
 ### Modo lectura e incrustaciones
 
-`ReadingView.tsx` configura una instancia de `markdown-it` (`html: false`) con reglas propias: `[[wikilinks]]` (atenuados si no existen), `![[imagen]]` con tamaño, `![[nota]]` / `![[nota#encabezado]]`, callouts `> [!tipo]`, `==resaltado==`, `#etiquetas` y bloques de código con botón de copiar y resaltado de sintaxis (`codeHighlight.ts`, que descarga highlight.js solo cuando una nota tiene código).
+`ReadingView.tsx` configura una instancia de `markdown-it` (`html: false`) con reglas propias: `[[wikilinks]]` (atenuados si no existen), `![[imagen]]` con tamaño, `![[nota]]` / `![[nota#encabezado]]`, callouts `> [!tipo]`, `==resaltado==`, `#etiquetas` y bloques de código con botón de copiar y resaltado de sintaxis (`codeHighlight.ts`, que descarga highlight.js solo cuando una nota tiene código). Los bloques ` ```mermaid ` se convierten en diagramas con `mermaidDiagrams.ts`, que también descarga Mermaid bajo demanda, lo usa con `securityLevel: 'strict'` (etiquetas saneadas, sin clics con JavaScript) y guarda los SVG en caché por tema. Mermaid mete `<style>` en cada SVG, lo que la CSP ya permite con `style-src 'unsafe-inline'`; no usa `eval`, así que `script-src` no cambia.
 
 El render es síncrono, así que las notas incrustadas se piden en segundo plano a `noteEmbeds.ts`. Al llegar, avisa (`useSyncExternalStore`) y la vista se vuelve a pintar. La profundidad máxima de incrustación es 4, y una nota no puede incrustarse a sí misma en bucle.
 

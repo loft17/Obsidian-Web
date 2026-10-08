@@ -135,6 +135,7 @@ export const en: Messages = {
   'status.chars': '{n} characters',
   'embed.loadError': 'Could not load the note',
   'embed.headingNotFound': '“{heading}” was not found in the note',
+  'mermaid.error': 'Diagram error',
   'image.loadError': 'Could not load the image',
   'image.fitWindow': 'Click to fit to window',
   'image.actualSize': 'Click to view at actual size',

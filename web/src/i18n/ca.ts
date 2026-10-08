@@ -135,6 +135,7 @@ export const ca: Messages = {
   'status.chars': '{n} caràcters',
   'embed.loadError': "No s'ha pogut carregar la nota",
   'embed.headingNotFound': "No es troba «{heading}» a la nota",
+  'mermaid.error': 'Error al diagrama',
   'image.loadError': "No s'ha pogut carregar la imatge",
   'image.fitWindow': 'Fes clic per ajustar a la finestra',
   'image.actualSize': 'Fes clic per veure a mida real',
