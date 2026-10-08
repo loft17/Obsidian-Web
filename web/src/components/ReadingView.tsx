@@ -10,6 +10,7 @@ import {
 } from '../wikilinks';
 import { embedSection, getEmbedContent, getEmbedsVersion, refreshEmbeds, subscribeEmbeds } from '../noteEmbeds';
 import { NOTES_CHANGED } from './Editor';
+import { highlightCodeBlocks } from '../codeHighlight';
 
 const md = markdownIt({
   html: false,
@@ -383,6 +384,9 @@ export default function ReadingView({ content, filePath }: Props) {
     if (heading && contentRef.current) scrollToHeading(contentRef.current, heading);
   }, [html, notePath]);
 
+  useEffect(() => {
+    if (contentRef.current) highlightCodeBlocks(contentRef.current);
+  }, [html]);
 
   return (
     <div className="reading-view">

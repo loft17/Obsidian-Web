@@ -1369,6 +1369,71 @@ a:hover {
   color: var(--color-green);
 }
 
+/* Resaltado de sintaxis (highlight.js, ver codeHighlight.ts) */
+.reading-view .hljs-comment,
+.reading-view .hljs-quote {
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+.reading-view .hljs-keyword,
+.reading-view .hljs-selector-tag,
+.reading-view .hljs-literal,
+.reading-view .hljs-doctag,
+.reading-view .hljs-meta .hljs-keyword {
+  color: var(--text-accent);
+}
+
+.reading-view .hljs-string,
+.reading-view .hljs-regexp,
+.reading-view .hljs-addition,
+.reading-view .hljs-template-tag,
+.reading-view .hljs-meta .hljs-string {
+  color: var(--color-green);
+}
+
+.reading-view .hljs-number,
+.reading-view .hljs-symbol,
+.reading-view .hljs-bullet,
+.reading-view .hljs-variable.language_,
+.reading-view .hljs-built_in {
+  color: var(--color-orange);
+}
+
+.reading-view .hljs-title,
+.reading-view .hljs-section,
+.reading-view .hljs-selector-id,
+.reading-view .hljs-selector-class {
+  color: var(--color-blue);
+}
+
+.reading-view .hljs-attr,
+.reading-view .hljs-attribute,
+.reading-view .hljs-name,
+.reading-view .hljs-type,
+.reading-view .hljs-property,
+.reading-view .hljs-selector-attr,
+.reading-view .hljs-selector-pseudo,
+.reading-view .hljs-template-variable,
+.reading-view .hljs-deletion {
+  color: var(--color-red);
+}
+
+.reading-view .hljs-meta,
+.reading-view .hljs-punctuation,
+.reading-view .hljs-tag {
+  color: var(--text-muted);
+}
+
+.reading-view .hljs-emphasis {
+  font-style: italic;
+}
+
+.reading-view .hljs-strong,
+.reading-view .hljs-section {
+  font-weight: bold;
+}
+
 .reading-view blockquote {
   border-left: 3px solid var(--interactive-accent);
   padding-left: 12px;
