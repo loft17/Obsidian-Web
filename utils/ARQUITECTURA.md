@@ -1,6 +1,6 @@
 # Arquitectura de Obsidian Web
 
-Documentación técnica para quien quiera entender o modificar el código. Para instalar y usar la app, consulta el [README](../README.md).
+Cómo está hecho Obsidian Web por dentro. Para instalar y usar la app, consulta el [README](../README.md); para preparar el entorno y hacer cambios, [DESARROLLO.md](DESARROLLO.md).
 
 ## Índice
 
@@ -12,7 +12,6 @@ Documentación técnica para quien quiera entender o modificar el código. Para 
 - [Archivos de datos](#archivos-de-datos)
 - [API](#api)
 - [Estado del frontend](#estado-del-frontend)
-- [Convenciones de desarrollo](#convenciones-de-desarrollo)
 
 ---
 
@@ -37,7 +36,7 @@ flowchart LR
 | **Backend** | Node.js ≥ 20 (ESM, sin paso de compilación), Express 4, `cookie-parser`, `markdown-it` (exportación a PDF), `crypto.scrypt` |
 | **Frontend** | React 18, Vite 6, TypeScript, Zustand |
 | **Editor** | CodeMirror 6 + Lezer Markdown, con extensiones propias de vista previa en vivo, tablas y wikilinks |
-| **Lectura** | `markdown-it` con reglas propias: wikilinks, incrustaciones, callouts, `==resaltado==` y `#etiquetas` |
+| **Lectura** | `markdown-it` con reglas propias: wikilinks, incrustaciones, callouts, `==resaltado==` y `#etiquetas`; `highlight.js` (carga diferida) para los bloques de código |
 | **Estilos** | CSS propio inspirado en Obsidian (`web/src/styles/obsidian.css`), con variables para los temas |
 
 Todas las dependencias están en el `package.json` de la raíz. El frontend se compila con Vite en el `postinstall`, por eso las dependencias de desarrollo son necesarias también en producción.
@@ -83,6 +82,7 @@ Obsidian-Web/
 │       ├── templates.ts       # Notas diarias y plantillas ({{date}}, {{title}}…)
 │       ├── livePreview.ts     # Vista previa en vivo (decoraciones de CodeMirror)
 │       ├── liveTables.ts      # Tablas en vivo
+│       ├── codeHighlight.ts   # Resaltado de bloques de código en lectura (highlight.js bajo demanda)
 │       ├── components/
 │       │   ├── MainLayout.tsx # Disposición, atajos globales, carga de notas, cambios externos
 │       │   ├── Editor.tsx     # CodeMirror, autoguardado, versiones y conflictos
@@ -98,9 +98,12 @@ Obsidian-Web/
 │       │   ├── Setup.tsx, Login.tsx, ImageViewer.tsx, Icons.tsx
 │       └── styles/obsidian.css
 ├── utils/                     # Documentación técnica y diagnóstico
-│   ├── ARQUITECTURA.md
-│   ├── TROUBLESHOOTING.md
-│   └── diagnose.sh
+│   ├── README.md              # Índice de esta carpeta
+│   ├── DESARROLLO.md          # Entorno, convenciones, recetas y hoja de ruta
+│   ├── ARQUITECTURA.md        # Este archivo
+│   ├── MANTENIMIENTO.md       # Actualizar, copias, contraseña, variables y límites
+│   ├── TROUBLESHOOTING.md     # Errores frecuentes
+│   └── diagnose.sh            # Diagnóstico automático
 ├── data/                      # Configuración y secretos (autogenerado, en .gitignore)
 ├── .env.example               # Plantilla de variables de entorno
 └── package.json               # Dependencias y scripts de todo el proyecto
@@ -155,7 +158,7 @@ sequenceDiagram
 
 ### Modo lectura e incrustaciones
 
-`ReadingView.tsx` configura una instancia de `markdown-it` (`html: false`) con reglas propias: `[[wikilinks]]` (atenuados si no existen), `![[imagen]]` con tamaño, `![[nota]]` / `![[nota#encabezado]]`, callouts `> [!tipo]`, `==resaltado==`, `#etiquetas` y bloques de código con botón de copiar.
+`ReadingView.tsx` configura una instancia de `markdown-it` (`html: false`) con reglas propias: `[[wikilinks]]` (atenuados si no existen), `![[imagen]]` con tamaño, `![[nota]]` / `![[nota#encabezado]]`, callouts `> [!tipo]`, `==resaltado==`, `#etiquetas` y bloques de código con botón de copiar y resaltado de sintaxis (`codeHighlight.ts`, que descarga highlight.js solo cuando una nota tiene código).
 
 El render es síncrono, así que las notas incrustadas se piden en segundo plano a `noteEmbeds.ts`. Al llegar, avisa (`useSyncExternalStore`) y la vista se vuelve a pintar. La profundidad máxima de incrustación es 4, y una nota no puede incrustarse a sí misma en bucle.
 
@@ -175,7 +178,7 @@ El render es síncrono, así que las notas incrustadas se piden en segundo plano
 
 ## Seguridad en el código
 
-Qué hace cada medida está en el README ([Seguridad](../README.md#-seguridad)). Aquí, dónde está cada una:
+Qué hace cada medida está en el README ([Seguridad](../README.md#-seguridad)). Aquí, dónde está cada una. Si tocas alguno de estos archivos, revisa que la medida sigue en pie:
 
 | Medida | Dónde |
 | :--- | :--- |
@@ -268,11 +271,4 @@ Fuera del store, en `Editor.tsx`, viven `noteVersions` (versión conocida de cad
 
 ---
 
-## Convenciones de desarrollo
-
-- **Servidor sin compilar**: JavaScript con ESM (`import`/`export`), se ejecuta tal cual con Node.
-- **Comentarios y mensajes en español**, también los errores que ve el usuario.
-- **Límites en `limits.js`**: cualquier límite nuevo se define ahí con su variable de entorno, se expone en `/api/settings/limits` y se documenta en el README.
-- **Errores al cliente con `publicError()`**: nunca se devuelve `err.message` sin filtrar.
-- **Nuevas rutas con archivos**: usa `withVault` en `routes/files.js` y deja que `guardPath()` valide la ruta.
-- **Desarrollo**: `npm run dev` levanta Vite en `:5173` (con proxy de `/api` a `:3000`) y Express con `node --watch`. Abre siempre `http://localhost:5173`.
+Las convenciones de código y las recetas para cambios habituales están en [DESARROLLO.md](DESARROLLO.md).

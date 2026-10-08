@@ -30,7 +30,7 @@ la propia web.
 **[Despliegue](#-despliegue-en-producción)** ·
 **[Sincronización](#-sincronización-con-github)** ·
 **[Seguridad](#-seguridad)** ·
-**[Arquitectura](utils/ARQUITECTURA.md)**
+**[Documentación técnica](utils/README.md)**
 
 </div>
 
@@ -62,17 +62,15 @@ la propia web.
 - [⚡ Atajos de teclado](#-atajos-de-teclado)
 - [🎨 Preferencias](#-preferencias)
 - [🔄 Sincronización con GitHub](#-sincronización-con-github)
-- [🧰 Mantenimiento](#-mantenimiento)
 
 </td>
 <td valign="top" width="33%">
 
 **Referencia**
 - [🔒 Seguridad](#-seguridad)
-- [📏 Límites](#-límites)
-- [💻 Desarrollo](#-desarrollo)
-- [🏗️ Arquitectura y API](utils/ARQUITECTURA.md)
-- [🩺 Solución de problemas](#-solución-de-problemas)
+- [📚 Documentación técnica](#-documentación-técnica)
+- [🩺 Solución de problemas](utils/TROUBLESHOOTING.md)
+- [🧰 Mantenimiento](utils/MANTENIMIENTO.md)
 
 </td>
 </tr>
@@ -88,7 +86,7 @@ la propia web.
 
 ### ✍️ Escribe como en Obsidian
 - Editor **CodeMirror 6** con **vista previa en vivo** (incluidas tablas) o **modo fuente**.
-- **Modo lectura** con Markdown renderizado.
+- **Modo lectura** con Markdown renderizado y resaltado de sintaxis en los bloques de código.
 - **Autoguardado** mientras escribes (y `Ctrl+S` para forzarlo). Si la nota cambia en otro dispositivo, se recarga sola; si además tenías cambios sin guardar, eliges qué versión conservar.
 - **Propiedades** (frontmatter YAML) editables, con `tags` y `aliases` como listas.
 
@@ -191,7 +189,7 @@ Por seguridad, se rechazan:
 </details>
 
 > [!NOTE]
-> **El puerto se guarda en `data/config.json` y tiene prioridad sobre la variable `PORT`.** Para cambiarlo después, edita `"port"` en ese archivo y reinicia. Orden: `config.json` → `PORT` → `3000`.
+> **El puerto se guarda en `data/config.json` y tiene prioridad sobre la variable `PORT`.** Para cambiarlo después, consulta [MANTENIMIENTO.md](utils/MANTENIMIENTO.md#cambiar-el-puerto).
 
 ---
 
@@ -213,10 +211,7 @@ También puedes definirlas en la shell, en la unidad de systemd o en PM2: **esas
 | `VAULTS_ROOT` | sin límite | El vault solo podrá estar dentro de esta carpeta, también al cambiarlo desde *Preferencias*. Ej.: `/srv/vaults`. |
 | `PORT` | `3000` | Solo se usa si `data/config.json` no define un puerto, es decir, antes de la configuración inicial. |
 | `REMOTE_IMAGES` | desactivada | Con `1` se cargan imágenes `https:` externas en las notas. Ver [Seguridad](#-seguridad). |
-| `MAX_UPLOAD_MB`, `MIN_PASSWORD_LENGTH`… | ver [Límites](#-límites) | Tamaño de notas y adjuntos, contraseña, búsqueda y sesiones. |
-
-> [!NOTE]
-> `.env.example` incluye también `COOKIE_SECRET` y `NODE_ENV`, pero **el servidor no los usa**: el secreto de las cookies se genera solo en `data/.secret`.
+| `MAX_UPLOAD_MB`, `MIN_PASSWORD_LENGTH`… | ver [Límites](utils/MANTENIMIENTO.md#límites) | Tamaño de notas y adjuntos (20 MB y 50 MB), contraseña, búsqueda y sesiones. |
 
 ### `TRUST_PROXY`
 
@@ -402,6 +397,8 @@ pm2 logs obsidian-web
 - [ ] La cookie `token` es `Secure` y la respuesta incluye `Strict-Transport-Security`.
 - [ ] Copias de seguridad del vault.
 
+Para actualizar, hacer copias de seguridad o recuperar la contraseña, consulta [MANTENIMIENTO.md](utils/MANTENIMIENTO.md).
+
 ---
 
 ## 📝 Uso
@@ -579,123 +576,17 @@ flowchart LR
 
 ---
 
-## 📏 Límites
+## 📚 Documentación técnica
 
-Todos se cambian con [variables de entorno](#-variables-de-entorno) y requieren reiniciar el servidor. Los valores actuales se ven en *Preferencias → Acerca de*. Un valor no válido (texto, cero o negativo) se ignora con un aviso en la consola.
+¿Quieres modificar, mejorar o mantener Obsidian Web? Toda la documentación técnica está en la carpeta [`utils/`](utils/README.md):
 
-| Límite | Por defecto | Variable |
-| :--- | :--- | :--- |
-| Petición JSON (guardar nota, etc.) | 20 MB | `MAX_NOTE_MB` |
-| Adjunto subido | 50 MB | `MAX_UPLOAD_MB` |
-| Contraseña | mínimo 12 caracteres | `MIN_PASSWORD_LENGTH` |
-| Búsquedas | 60 por minuto y por IP (después, `429`) | `SEARCH_RATE_MAX` |
-| Longitud de una búsqueda | 200 caracteres | `SEARCH_MAX_QUERY_LENGTH` |
-| Notas leídas por búsqueda | se omiten las de más de 2 MB | `SEARCH_MAX_FILE_MB` |
-| Total leído por búsqueda | 200 MB | `SEARCH_MAX_SCANNED_MB` |
-| Resultados de búsqueda | 200 archivos | `SEARCH_MAX_RESULTS` |
-| Coincidencias por archivo | 5 | `SEARCH_MAX_MATCHES_PER_FILE` |
-| Duración máxima de una sesión | 30 días | `SESSION_MAX_DAYS` |
-| Caducidad por inactividad | 7 días | `SESSION_IDLE_DAYS` |
-
-> [!IMPORTANT]
-> Si subes `MAX_UPLOAD_MB` o `MAX_NOTE_MB` y usas nginx, sube también `client_max_body_size` al mayor de los dos; si no, nginx responderá `413` antes de llegar a la app.
-
-> [!NOTE]
-> Cambiar el mínimo de contraseña no afecta a la contraseña actual: solo se aplica al crearla o cambiarla.
-
----
-
-## 🧰 Mantenimiento
-
-### ⬆️ Actualizar
-
-```bash
-cd /opt/obsidian-web/app
-sudo -u obsidian git pull
-sudo -u obsidian npm install      # recompila el frontend
-sudo systemctl restart obsidian-web
-```
-
-Después, recarga la web con <kbd>Ctrl</kbd> + <kbd>F5</kbd>.
-
-### 💾 Copias de seguridad
-
-- **El vault es lo importante.** Son archivos Markdown normales: cópialos con tu herramienta habitual (rsync, restic, git, Syncthing…).
-- `data/` solo guarda configuración y sesiones; si se pierde, basta con repetir la configuración inicial.
-
-### 🔑 He olvidado la contraseña
-
-```bash
-sudo systemctl stop obsidian-web
-sudo -u obsidian rm /opt/obsidian-web/app/data/config.json
-sudo systemctl start obsidian-web
-sudo journalctl -u obsidian-web -n 20   # copia el nuevo token de configuración
-```
-
-Repite la configuración inicial apuntando al mismo vault: tus notas no se tocan y todas las sesiones anteriores dejan de valer.
-
-### 🚪 Cerrar todas las sesiones sin entrar en la web
-
-Borra `data/sessions.json` (o `data/.secret`) y reinicia el servicio.
-
----
-
-## 💻 Desarrollo
-
-```bash
-npm install
-npm run dev
-```
-
-Esto levanta a la vez **Vite** en `http://localhost:5173` (frontend con *hot reload*) y **Express** en `http://localhost:3000` (la API, que se reinicia al cambiar `server/`).
-
-> [!IMPORTANT]
-> **En desarrollo abre siempre `http://localhost:5173`**, no el 3000. Vite redirige `/api` al backend y así se evitan problemas de CORS y cookies.
-
-| Script | Qué hace |
+| Archivo | Contenido |
 | :--- | :--- |
-| `npm start` | Arranca el servidor (API y `web/dist`). |
-| `npm run dev` | Frontend (Vite) + backend con recarga. |
-| `npm run web:build` | Compila el frontend en `web/dist` (se ejecuta solo con `npm install`). |
-| `npm run web:dev` | Solo el frontend. |
-| `npm run server:dev` | Solo la API, con recarga automática. |
-
-La estructura del código, las tecnologías, los flujos internos, los archivos de `data/` y la referencia completa de la API están en **[ARQUITECTURA.md](utils/ARQUITECTURA.md)**.
-
----
-
-## 🩺 Solución de problemas
-
-| Problema | Causa probable y solución |
-| :--- | :--- |
-| **`403 "Origen no permitido"`** al guardar, entrar, etc. | Estás detrás de un proxy sin `TRUST_PROXY=1`, o nginx no envía `Host`/`X-Forwarded-Proto`. Ver [`TRUST_PROXY`](#trust_proxy). También pasa si entras por un dominio o puerto distinto del que reenvía el proxy. |
-| **`403` en la configuración inicial** | Token incorrecto. Cópialo de la consola del servidor (`journalctl -u obsidian-web`). |
-| **No encuentro el token de configuración** | Solo aparece si no existe `data/config.json`. Reinicia el servicio y mira los primeros mensajes del log. |
-| **`429 Demasiados intentos`** | Límite de intentos de login: espera el tiempo indicado. Si te pasa sin haber fallado, puede que estés detrás de un proxy sin `TRUST_PROXY` y otra IP esté fallando. |
-| **`413` al subir una imagen** | nginx limita el cuerpo a 1 MB por defecto: añade `client_max_body_size 50m;`. |
-| **Las imágenes externas salen rotas** | Están bloqueadas a propósito. Arranca con `REMOTE_IMAGES=1`. |
-| **El puerto no cambia con `PORT`** | `data/config.json` define `"port"` y tiene prioridad. Edítalo y reinicia. |
-| **"Esa carpeta no se puede usar como vault"** | Es una ruta del sistema, una carpeta personal completa, una carpeta oculta o la de la app. Usa una subcarpeta normal, como `/srv/vaults/notas`. |
-| **"El vault debe estar dentro de …"** | `VAULTS_ROOT` está definida y la ruta queda fuera. |
-| **Una carpeta del vault no aparece** | Es un enlace simbólico (no se siguen), su nombre empieza por `.` (`.obsidian/`, `.trash/`, `.git/`… nunca se muestran) o coincide con un patrón de *Preferencias → Archivos → Ocultar carpetas*. |
-| **`Permiso denegado`** | El usuario que ejecuta la app no puede leer o escribir en el vault. Revisa propietario y permisos (`chown`/`chmod`). |
-| **Error al sincronizar con GitHub (401 / 403)** | El token ha caducado o no tiene permiso *Contents: Read and write* sobre ese repositorio. Crea otro y pégalo en *Preferencias → Sincronización*. |
-| **Pantalla en blanco o "Cannot GET /"** | No existe `web/dist`. Ejecuta `npm run web:build` (y no instales con `--omit=dev`). |
-| **La sesión se cierra sola** | Han pasado 7 días sin uso o 30 en total, o se cambió la contraseña o se cerraron todas las sesiones. |
-| **Las preferencias no se mantienen entre dispositivos** | Las de interfaz se guardan en cada navegador (`localStorage`). |
-
-¿Sigue sin funcionar? Consulta [TROUBLESHOOTING.md](utils/TROUBLESHOOTING.md) o ejecuta el diagnóstico desde la raíz del proyecto:
-
-```bash
-chmod +x utils/diagnose.sh
-./utils/diagnose.sh
-```
-
----
-
-## 🧭 Hoja de ruta
-
-- No he comprobado si el modo lectura renderiza fórmulas LaTeX, Mermaid y resaltado de sintaxis en bloques de código. No hay ninguna librería para ello entre las dependencias, así que seguramente no.
+| 💻 [DESARROLLO.md](utils/DESARROLLO.md) | Entorno de desarrollo, scripts, convenciones, recetas para cambios habituales y hoja de ruta. **Empieza por aquí.** |
+| 🏗️ [ARQUITECTURA.md](utils/ARQUITECTURA.md) | Estructura del código, flujos internos, archivos de `data/` y referencia de la API. |
+| 🧰 [MANTENIMIENTO.md](utils/MANTENIMIENTO.md) | Actualizar, copias de seguridad, recuperar la contraseña, variables de entorno y límites. |
+| 🩺 [TROUBLESHOOTING.md](utils/TROUBLESHOOTING.md) | Errores frecuentes y cómo reportar un fallo. |
+| 🔍 [diagnose.sh](utils/diagnose.sh) | Diagnóstico automático de la instalación: `./utils/diagnose.sh` |
 
 ---
 
