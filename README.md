@@ -24,6 +24,7 @@ la propia web.
 [![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
 [![Express](https://img.shields.io/badge/Express-4-000000?style=for-the-badge&logo=express&logoColor=white)](https://expressjs.com/)
 [![License: MIT](https://img.shields.io/badge/Licencia-MIT-F7DF1E?style=for-the-badge)](https://opensource.org/licenses/MIT)
+[![Desarrollado con Claude](https://img.shields.io/badge/Desarrollado_con-Claude-D97757?style=for-the-badge&logo=claude&logoColor=white)](https://claude.com/claude-code)
 
 **[Características](#-características)** ·
 **[Inicio rápido](#-inicio-rápido)** ·
@@ -587,6 +588,12 @@ flowchart LR
 | 🧰 [MANTENIMIENTO.md](utils/MANTENIMIENTO.md) | Actualizar, copias de seguridad, recuperar la contraseña, variables de entorno y límites. |
 | 🩺 [TROUBLESHOOTING.md](utils/TROUBLESHOOTING.md) | Errores frecuentes y cómo reportar un fallo. |
 | 🔍 [diagnose.sh](utils/diagnose.sh) | Diagnóstico automático de la instalación: `./utils/diagnose.sh` |
+
+---
+
+## 🤖 Desarrollado con IA
+
+Obsidian Web se ha desarrollado con ayuda de **[Claude](https://claude.com/claude-code)**, la IA de Anthropic, usando Claude Code: tanto el código como la documentación se han escrito y revisado en colaboración con ella.
 
 ---
 
