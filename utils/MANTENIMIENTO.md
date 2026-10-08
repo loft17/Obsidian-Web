@@ -103,7 +103,7 @@ El servidor carga el `.env` de la carpeta de la app si existe (Node 20.12+). Las
 
 ## Límites
 
-Se definen en `server/limits.js`. Los valores actuales se ven en *Preferencias → Acerca de*. Un valor no válido (texto, cero o negativo) se ignora con un aviso en la consola.
+Se definen en `server/limits.js`. Los valores actuales se ven en *Preferencias → Variables*. Un valor no válido (texto, cero o negativo) se ignora con un aviso en la consola.
 
 | Límite | Por defecto | Variable |
 | :--- | :--- | :--- |

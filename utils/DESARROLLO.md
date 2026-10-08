@@ -102,7 +102,7 @@ Todos se ejecutan desde la raíz del proyecto.
 
 1. Defínelo en `server/limits.js` con `num()` o `int()` y un valor por defecto.
 2. Úsalo donde toque.
-3. Exponlo en `GET /api/settings/limits` (`routes/settings.js`) para que aparezca en *Preferencias → Acerca de*.
+3. Exponlo en `GET /api/settings/limits` (`routes/settings.js`) para que aparezca en *Preferencias → Variables*.
 4. Añádelo, comentado, a `.env.example`.
 5. Documéntalo en la tabla de [límites de MANTENIMIENTO.md](MANTENIMIENTO.md#límites).
 

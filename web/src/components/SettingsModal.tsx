@@ -16,6 +16,7 @@ const SECTIONS = [
   { id: 'sync', label: 'Sincronización', Icon: IconSync },
   { id: 'security', label: 'Seguridad', Icon: IconLock },
   { id: 'shortcuts', label: 'Atajos', Icon: IconList },
+  { id: 'variables', label: 'Variables', Icon: IconUserCircle },
 ];
 
 // Los cambios se guardan automáticamente (el store los persiste en localStorage)
@@ -981,6 +982,25 @@ function ShortcutsSection() {
 }
 
 function AboutSection() {
+  return (
+    <div className="settings-group">
+      <div className="setting-item">
+        <div className="setting-info">
+          <div className="setting-name">Versión {__APP_VERSION__}</div>
+          <div className="setting-desc">Obsidian Web</div>
+        </div>
+      </div>
+      <div className="setting-item">
+        <div className="setting-info">
+          <div className="setting-name">Desarrollado por Jose Luis Romera</div>
+          <div className="setting-desc">Hecho con cariño (y una ayudita de la IA) para todos los Obsidian lovers 💜</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function VariablesSection() {
   const limits = useServerLimits();
   const rows: [string, string, string][] = limits
     ? [
@@ -1000,14 +1020,6 @@ function AboutSection() {
 
   return (
     <>
-      <div className="settings-group">
-        <div className="setting-item">
-          <div className="setting-info">
-            <div className="setting-name">Versión {__APP_VERSION__}</div>
-            <div className="setting-desc">Obsidian Web</div>
-          </div>
-        </div>
-      </div>
       {limits && (
         <div className="settings-group">
           <div className="settings-nav-title">Límites del servidor</div>
@@ -1082,6 +1094,7 @@ export default function SettingsModal({ onClose }: Props) {
             {section === 'sync' && <SyncSection />}
             {section === 'security' && <SecuritySection />}
             {section === 'shortcuts' && <ShortcutsSection />}
+            {section === 'variables' && <VariablesSection />}
           </div>
         </div>
       </div>
