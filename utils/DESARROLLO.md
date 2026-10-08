@@ -175,5 +175,5 @@ npm install paquete@latest    # para saltar de versión mayor, una a una
 Ideas pendientes, por si quieres contribuir:
 
 - **Fórmulas LaTeX y diagramas Mermaid** en el modo lectura. Ahora mismo no se renderizan (el resaltado de sintaxis de los bloques de código sí funciona). Si se añaden, conviene cargarlos con `import()` dinámico como `codeHighlight.ts`.
-- **Rendimiento con vaults muy grandes**: la búsqueda recorre el vault en cada consulta, sin índice, y el explorador pinta todo el árbol.
+- **Rendimiento con vaults muy grandes**: el explorador pinta todo el árbol. La búsqueda ya usa un índice en memoria, pero sigue recorriendo el árbol (`stat` de cada archivo) en cada consulta; vigilar la carpeta con `fs.watch` evitaría ese recorrido.
 - **Tests automáticos**, al menos para `guardPath()`, la resolución de wikilinks y la reescritura de enlaces al renombrar.

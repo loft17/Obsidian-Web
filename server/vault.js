@@ -362,7 +362,7 @@ export const listTree = (vaultPath) => {
         tree.push({ type: 'folder', path, name: item });
         walk(fullPath, path);
       } else if (item.endsWith('.md')) {
-        tree.push({ type: 'file', path, name: item, size: stat.size });
+        tree.push({ type: 'file', path, name: item, size: stat.size, mtime: stat.mtimeMs });
       } else {
         tree.push({ type: 'other', path, name: item });
       }

@@ -56,6 +56,7 @@ Obsidian-Web/
 │   ├── password.js            # Hash y verificación de contraseñas (scrypt)
 │   ├── vault.js               # Acceso al sistema de archivos: guardPath, papelera, adjuntos, ajustes de .obsidian
 │   ├── links.js               # Reescritura de enlaces al renombrar o mover
+│   ├── searchIndex.js         # Índice en memoria de las notas para la búsqueda
 │   ├── sync.js                # Sincronización con GitHub (git) y sincronización periódica
 │   └── routes/
 │       ├── setup.js           # Configuración inicial (token de un solo uso)
@@ -164,7 +165,7 @@ El render es síncrono, así que las notas incrustadas se piden en segundo plano
 
 ### Búsqueda y etiquetas
 
-`routes/search.js` recorre el vault en cada consulta, sin índice, dentro de los límites de `limits.js`: tamaño por archivo, total leído, resultados, coincidencias y peticiones por minuto. `tag:` busca en la propiedad `tags` del frontmatter y en las `#etiquetas` del cuerpo, fuera de bloques de código. `GET /api/search/tags` usa el mismo recorrido para el panel de etiquetas.
+`routes/search.js` busca sobre el índice en memoria de `searchIndex.js`. En cada consulta se recorre el árbol del vault (solo `stat`) y se vuelven a leer únicamente las notas cuya fecha de modificación o tamaño han cambiado; así el índice recoge lo guardado desde la web, la sincronización con GitHub y los cambios hechos fuera de la app, sin vigilar la carpeta. Se construye en la primera búsqueda. Los límites de `limits.js` siguen aplicándose: tamaño por archivo, total indexado, resultados, coincidencias y peticiones por minuto. `tag:` busca en la propiedad `tags` del frontmatter y en las `#etiquetas` del cuerpo, fuera de bloques de código. `GET /api/search/tags` usa el mismo índice para el panel de etiquetas; las etiquetas de cada nota se calculan una vez por versión.
 
 ### Papelera
 
@@ -173,6 +174,8 @@ El render es síncrono, así que las notas incrustadas se piden en segundo plano
 ### Sincronización con GitHub
 
 `server/sync.js` ejecuta `git` con `spawn` y sin shell: commit de los cambios locales → `fetch` → `rebase -X theirs` sobre la rama remota (en un conflicto gana la versión del servidor; si aun así falla, `rebase --abort`) → `push`. Toda la configuración de git va en variables `GIT_CONFIG_*` del proceso; el token viaja como cabecera `extraHeader` en ellas, nunca en la URL ni en `.git/config`, y se elimina de los mensajes de error. Un temporizador comprueba cada minuto si toca la sincronización periódica según `interval`.
+
+**Historial de versiones.** Con la sincronización activa, `noteHistory` saca de `git log --follow` los commits que tocaron una nota (siguiendo los renombrados, hasta 200) y `noteAtCommit` devuelve su contenido en uno de ellos (`git cat-file`) y el diff de ese commit (`git show`, sin `textconv` ni diff externos). Las rutas se pasan con `GIT_LITERAL_PATHSPECS=1` y el commit pedido tiene que estar en el historial de la nota. `HistoryDialog` (en `FileDialogs.tsx`, desde el menú de la nota) lo muestra; restaurar es un guardado normal con la versión conocida, así que no pisa cambios hechos en otro sitio.
 
 ---
 
@@ -253,6 +256,8 @@ Todas las rutas cuelgan de `/api`. Salvo `setup` y `auth`, exigen una sesión v�
 | `GET` | `/api/sync` | Configuración y estado de la sincronización (sin el token: solo `hasToken`) |
 | `POST` | `/api/sync/config` | Cambia la configuración (`provider`, `interval`, `github`; `github.token: null` lo borra) |
 | `POST` | `/api/sync/run` | Sincroniza ahora y devuelve el estado al terminar |
+| `GET` | `/api/sync/history?path=` | Commits que han tocado la nota (fecha, autor, mensaje y ruta en ese commit) |
+| `GET` | `/api/sync/history/version?path=&commit=` | Contenido de la nota en ese commit y su diff |
 
 > [!NOTE]
 > Las acciones de la papelera van por `POST` y no por `DELETE` para no chocar con `DELETE /api/files/:filePath` cuando una nota se llama `trash`.

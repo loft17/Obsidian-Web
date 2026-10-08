@@ -1009,7 +1009,7 @@ function VariablesSection() {
         ['Longitud mínima de la contraseña', `${limits.minPasswordLength} caracteres`, 'MIN_PASSWORD_LENGTH'],
         ['Longitud máxima de una búsqueda', `${limits.searchMaxQueryLength} caracteres`, 'SEARCH_MAX_QUERY_LENGTH'],
         ['Notas omitidas en la búsqueda', `más de ${limits.searchMaxFileMB} MB`, 'SEARCH_MAX_FILE_MB'],
-        ['Datos leídos por búsqueda', `${limits.searchMaxScannedMB} MB`, 'SEARCH_MAX_SCANNED_MB'],
+        ['Notas indexadas para la búsqueda', `${limits.searchMaxScannedMB} MB`, 'SEARCH_MAX_SCANNED_MB'],
         ['Búsquedas por minuto', `${limits.searchRateMax}`, 'SEARCH_RATE_MAX'],
         ['Resultados de búsqueda', `${limits.searchMaxResults} archivos`, 'SEARCH_MAX_RESULTS'],
         ['Coincidencias por archivo', `${limits.searchMaxMatchesPerFile}`, 'SEARCH_MAX_MATCHES_PER_FILE'],

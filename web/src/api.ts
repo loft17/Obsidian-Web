@@ -262,6 +262,15 @@ export interface SyncConfigUpdate {
   github?: Partial<{ repo: string; branch: string; authorName: string; authorEmail: string; token: string | null }>;
 }
 
+// Commit de git que ha tocado una nota; `path` es la ruta que tenía la nota en ese commit
+export interface NoteCommit {
+  hash: string;
+  date: number;
+  author: string;
+  message: string;
+  path: string;
+}
+
 export const syncApi = {
   get: async (): Promise<SyncConfig> => {
     const res = await fetch(`${API_URL}/sync`);
@@ -280,6 +289,18 @@ export const syncApi = {
   // Espera a que termine; el resultado va en status (lastError / lastMessage)
   run: async (): Promise<SyncConfig> => {
     const res = await fetch(`${API_URL}/sync/run`, { method: 'POST' });
+    if (!res.ok) throw new Error((await res.json()).error);
+    return res.json();
+  },
+  // Historial de versiones de una nota (solo con la sincronización con GitHub activa)
+  history: async (path: string): Promise<NoteCommit[]> => {
+    const res = await fetch(`${API_URL}/sync/history?${new URLSearchParams({ path })}`);
+    if (!res.ok) throw new Error((await res.json()).error);
+    return res.json();
+  },
+  // Contenido de la nota en ese commit y los cambios que introdujo (diff de git)
+  version: async (path: string, commit: string): Promise<NoteCommit & { content: string; diff: string }> => {
+    const res = await fetch(`${API_URL}/sync/history/version?${new URLSearchParams({ path, commit })}`);
     if (!res.ok) throw new Error((await res.json()).error);
     return res.json();
   },

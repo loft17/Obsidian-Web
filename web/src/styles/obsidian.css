@@ -1748,6 +1748,141 @@ a:hover {
   word-break: break-word;
 }
 
+.file-dialog:has(.history-layout) {
+  width: min(900px, 92vw);
+  max-width: min(900px, 92vw);
+}
+
+/* Historial de versiones de una nota */
+.history-layout {
+  display: grid;
+  grid-template-columns: minmax(180px, 240px) 1fr;
+  gap: 12px;
+  min-height: 0;
+}
+
+.history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 420px;
+  overflow-y: auto;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+}
+
+.history-item {
+  padding: 6px 8px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.history-item:last-child {
+  border-bottom: none;
+}
+
+.history-item:hover {
+  background-color: var(--interactive-hover);
+}
+
+.history-item.active {
+  background-color: var(--interactive-accent);
+  color: #fff;
+}
+
+.history-item-date {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.history-item-badge {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 0 5px;
+  border-radius: 8px;
+  border: 1px solid currentColor;
+  opacity: 0.8;
+}
+
+.history-item-message {
+  font-size: 11px;
+  opacity: 0.75;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.history-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.history-tabs button {
+  padding: 3px 10px;
+  font-size: 12px;
+  background-color: var(--background-modifier-border);
+  color: var(--text-normal);
+}
+
+.history-tabs button.active {
+  background-color: var(--interactive-accent);
+  color: #fff;
+}
+
+.history-old-path {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-muted, var(--text-normal));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-text {
+  max-height: 390px;
+  min-height: 200px;
+}
+
+.diff-line {
+  min-height: 1.4em;
+}
+
+.diff-add {
+  color: var(--color-green);
+  background-color: color-mix(in srgb, var(--color-green) 12%, transparent);
+}
+
+.diff-del {
+  color: var(--color-red);
+  background-color: color-mix(in srgb, var(--color-red) 12%, transparent);
+}
+
+.diff-hunk {
+  color: var(--text-muted, var(--text-normal));
+  font-style: italic;
+}
+
+@media (max-width: 640px) {
+  .history-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .history-list {
+    max-height: 160px;
+  }
+}
+
 .file-dialog-list {
   max-height: 300px;
   overflow-y: auto;

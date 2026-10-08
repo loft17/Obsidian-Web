@@ -97,7 +97,7 @@ app.use('/api', (req, res, next) => {
 app.use('/api/settings', settingsRoutes(dataDir, getConfig, loginLimiter, sessions));
 app.use('/api/files', filesRoutes(dataDir, getConfig));
 app.use('/api/search', searchRoutes(dataDir, getConfig));
-app.use('/api/sync', syncRoutes(syncManager));
+app.use('/api/sync', syncRoutes(syncManager, getConfig));
 
 // SPA fallback (serve index.html for client-side routing)
 if (existsSync(distPath)) {

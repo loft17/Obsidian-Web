@@ -158,6 +158,52 @@ export const syncGithub = async (vaultPath, opts) => {
   return parts.length ? parts.join(', ') : 'Sin cambios';
 };
 
+// ---------- Historial de una nota ----------
+
+const HISTORY_LIMIT = 200;
+const COMMIT_RE = /^[0-9a-f]{40}([0-9a-f]{24})?$/;
+
+// Solo lectura: sin token, sin hooks ni fsmonitor, y las rutas se toman literalmente (sin comodines)
+const historyGit = (vaultPath, args) =>
+  run('git', args, { cwd: vaultPath, env: { ...gitEnv({}), GIT_LITERAL_PATHSPECS: '1' } });
+
+// Commits que han tocado la nota (siguiendo los renombrados), del más reciente al más antiguo.
+// `path` es la ruta que tenía la nota en ese commit
+export const noteHistory = async (vaultPath, relPath) => {
+  if (!existsSync(join(vaultPath, '.git'))) return [];
+  const hasHead = await historyGit(vaultPath, ['rev-parse', '-q', '--verify', 'HEAD']).then(() => true, () => false);
+  if (!hasHead) return [];
+  const out = await historyGit(vaultPath, [
+    'log', '--follow', '--diff-filter=d', '-z', '--name-only', `-n${HISTORY_LIMIT}`,
+    '--format=%x1e%H%x1f%at%x1f%an%x1f%s', '--', relPath,
+  ]);
+  return out
+    .split('\x1e')
+    .filter(Boolean)
+    .map((chunk) => {
+      const [header, files = ''] = chunk.split('\0');
+      const [hash, time, author, ...subject] = header.split('\x1f');
+      return { hash, date: Number(time) * 1000, author, message: subject.join('\x1f'), path: files.replace(/^\n/, '') };
+    })
+    .filter((c) => COMMIT_RE.test(c.hash) && c.path);
+};
+
+// Contenido de la nota en un commit de su historial y los cambios que introdujo ese commit
+export const noteAtCommit = async (vaultPath, relPath, commit, maxBytes) => {
+  if (!COMMIT_RE.test(String(commit))) throw new Error('Versión no válida');
+  const entry = (await noteHistory(vaultPath, relPath)).find((c) => c.hash === commit);
+  if (!entry) throw new Error('Esa versión no está en el historial de la nota');
+  const spec = `${commit}:${entry.path}`;
+  const size = Number((await historyGit(vaultPath, ['cat-file', '-s', spec])).trim());
+  if (size > maxBytes) throw new Error('La versión es demasiado grande para mostrarla');
+  const content = await historyGit(vaultPath, ['cat-file', 'blob', spec]);
+  // Los commits iniciales no tienen padre: --root muestra todo el archivo como añadido
+  const diff = await historyGit(vaultPath, [
+    'show', '--root', '--format=', '--no-color', '--no-ext-diff', '--no-textconv', commit, '--', entry.path,
+  ]).catch(() => '');
+  return { ...entry, content, diff: diff.length > maxBytes ? '' : diff };
+};
+
 // ---------- Gestor ----------
 
 export const createSyncManager = (dataDir, getConfig) => {
@@ -275,5 +321,21 @@ export const createSyncManager = (dataDir, getConfig) => {
   const timer = setInterval(tick, 60 * 1000);
   timer.unref();
 
-  return { publicConfig, configure, syncNow };
+  // El historial de las notas sale del repositorio git del vault: solo con la sincronización
+  // con GitHub activa
+  const history = (relPath) => {
+    const app = getConfig();
+    if (!app) throw new Error('Not configured');
+    if (load().provider !== 'github') throw new Error('El historial necesita la sincronización con GitHub');
+    return noteHistory(app.vaultPath, relPath);
+  };
+
+  const versionAt = (relPath, commit, maxBytes) => {
+    const app = getConfig();
+    if (!app) throw new Error('Not configured');
+    if (load().provider !== 'github') throw new Error('El historial necesita la sincronización con GitHub');
+    return noteAtCommit(app.vaultPath, relPath, commit, maxBytes);
+  };
+
+  return { publicConfig, configure, syncNow, history, versionAt };
 };

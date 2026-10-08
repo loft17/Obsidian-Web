@@ -516,6 +516,7 @@ flowchart LR
 - Si una nota cambió **en los dos lados**, se queda la versión del servidor. Si un conflicto no se puede resolver solo, se cancela sin tocar nada y verás el error en *Preferencias*.
 - Si el repositorio **ya tenía notas**, la primera vez se combinan con las del servidor sin perder nada.
 - La papelera `.trash/` no se sube.
+- **Historial de versiones**: en el menú de la nota (⋯ → *Historial de versiones*) ves cada versión guardada en git, qué cambió en ella y puedes restaurarla. Solo incluye lo que ya se ha sincronizado.
 - El token se guarda en `data/sync.json`, **nunca se envía al navegador** y no queda escrito ni en `.git/config` ni en la URL.
 
 > [!IMPORTANT]

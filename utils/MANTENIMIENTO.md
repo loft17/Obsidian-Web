@@ -113,7 +113,7 @@ Se definen en `server/limits.js`. Los valores actuales se ven en *Preferencias �
 | Búsquedas | 60 por minuto y por IP (después, `429`) | `SEARCH_RATE_MAX` |
 | Longitud de una búsqueda | 200 caracteres | `SEARCH_MAX_QUERY_LENGTH` |
 | Notas leídas por búsqueda | se omiten las de más de 2 MB | `SEARCH_MAX_FILE_MB` |
-| Total leído por búsqueda | 200 MB | `SEARCH_MAX_SCANNED_MB` |
+| Total indexado para la búsqueda (en memoria) | 200 MB; las notas que no caben no se buscan | `SEARCH_MAX_SCANNED_MB` |
 | Resultados de búsqueda | 200 archivos | `SEARCH_MAX_RESULTS` |
 | Coincidencias por archivo | 5 | `SEARCH_MAX_MATCHES_PER_FILE` |
 | Duración máxima de una sesión | 30 días | `SESSION_MAX_DAYS` |

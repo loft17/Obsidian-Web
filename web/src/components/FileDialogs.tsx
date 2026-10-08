@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { flushPendingSave } from './Editor';
 import { noteImageUsage } from '../attachments';
+import { syncApi, type NoteCommit } from '../api';
 
 function useEscape(onClose: () => void) {
   useEffect(() => {
@@ -429,6 +430,147 @@ export function ConflictDialog({
         <button type="button" disabled={busy} onClick={keepMine}>
           Conservar la mía
         </button>
+      </div>
+    </DialogShell>
+  );
+}
+
+const formatCommitDate = (ms: number) =>
+  new Date(ms).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
+
+// Solo las líneas de cambios del diff de git (sin las cabeceras), con su tipo
+function diffLines(diff: string) {
+  const lines = diff.split('\n');
+  const start = lines.findIndex((l) => l.startsWith('@@'));
+  if (start < 0) return [];
+  return lines
+    .slice(start)
+    .filter((l) => l !== '' && !l.startsWith('\\'))
+    .map((l) => ({
+      text: l,
+      kind: l.startsWith('@@') ? 'hunk' : l[0] === '+' ? 'add' : l[0] === '-' ? 'del' : 'ctx',
+    }));
+}
+
+// Historial de versiones de la nota sacado de git (sincronización con GitHub): cada commit
+// que la tocó, su contenido en ese momento y los cambios de ese commit; se puede restaurar
+export function HistoryDialog({
+  path,
+  onRestore,
+  onClose,
+}: {
+  path: string;
+  onRestore: (content: string) => Promise<void>;
+  onClose: () => void;
+}) {
+  const [commits, setCommits] = useState<NoteCommit[] | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [version, setVersion] = useState<(NoteCommit & { content: string; diff: string }) | null>(null);
+  const [view, setView] = useState<'content' | 'diff'>('diff');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const name = (path.split('/').pop() || path).replace(/\.md$/i, '');
+
+  useEffect(() => {
+    syncApi
+      .history(path)
+      .then((list) => {
+        setCommits(list);
+        if (list.length) setSelected(list[0].hash);
+      })
+      .catch((err) => setError((err as Error).message));
+  }, [path]);
+
+  useEffect(() => {
+    if (!selected) return;
+    let cancelled = false;
+    setVersion(null);
+    syncApi
+      .version(path, selected)
+      .then((v) => !cancelled && setVersion(v))
+      .catch((err) => !cancelled && setError((err as Error).message));
+    return () => {
+      cancelled = true;
+    };
+  }, [path, selected]);
+
+  const restore = async () => {
+    if (!version) return;
+    setBusy(true);
+    setError('');
+    try {
+      await onRestore(version.content);
+    } catch (err) {
+      setError((err as Error).message);
+      setBusy(false);
+    }
+  };
+
+  const lines = version ? diffLines(version.diff) : [];
+
+  return (
+    <DialogShell title={`Historial de versiones: ${name}`} error={error} onClose={onClose}>
+      {commits === null ? (
+        !error && <p className="file-dialog-message">Cargando...</p>
+      ) : commits.length === 0 ? (
+        <p className="file-dialog-message">
+          Esta nota todavía no tiene versiones guardadas en git. Aparecerán tras la próxima sincronización.
+        </p>
+      ) : (
+        <div className="history-layout">
+          <ul className="history-list">
+            {commits.map((c, i) => (
+              <li
+                key={c.hash}
+                className={`history-item ${c.hash === selected ? 'active' : ''}`}
+                title={`${c.message}\n${c.author} · ${c.hash.slice(0, 8)}${c.path !== path ? `\n${c.path}` : ''}`}
+                onClick={() => setSelected(c.hash)}
+              >
+                <div className="history-item-date">
+                  {formatCommitDate(c.date)}
+                  {i === 0 && <span className="history-item-badge">última</span>}
+                </div>
+                <div className="history-item-message">{c.message}</div>
+              </li>
+            ))}
+          </ul>
+          <div className="history-preview">
+            <div className="history-tabs">
+              <button className={view === 'diff' ? 'active' : ''} onClick={() => setView('diff')}>
+                Cambios
+              </button>
+              <button className={view === 'content' ? 'active' : ''} onClick={() => setView('content')}>
+                Contenido
+              </button>
+              {version && version.path !== path && <span className="history-old-path">{version.path}</span>}
+            </div>
+            {!version ? (
+              <p className="file-dialog-message">Cargando...</p>
+            ) : view === 'content' ? (
+              <pre className="conflict-text history-text">{version.content}</pre>
+            ) : lines.length === 0 ? (
+              <p className="file-dialog-message">Sin cambios de contenido en esta versión (p. ej. un renombrado).</p>
+            ) : (
+              <pre className="conflict-text history-text">
+                {lines.map((l, i) => (
+                  <div key={i} className={`diff-line diff-${l.kind}`}>
+                    {l.text}
+                  </div>
+                ))}
+              </pre>
+            )}
+          </div>
+        </div>
+      )}
+      <div className="file-dialog-buttons">
+        <button type="button" className="btn-secondary" onClick={onClose}>
+          Cerrar
+        </button>
+        {commits && commits.length > 0 && (
+          <button type="button" disabled={busy || !version} onClick={restore}>
+            Restaurar esta versión
+          </button>
+        )}
       </div>
     </DialogShell>
   );

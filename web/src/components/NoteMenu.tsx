@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { EditorView } from '@codemirror/view';
 import { useStore } from '../store';
-import { filesApi } from '../api';
-import { flushPendingSave, cancelPendingSave, changeNotePath } from './Editor';
+import { filesApi, syncApi, ConflictError } from '../api';
+import { flushPendingSave, cancelPendingSave, changeNotePath, noteVersions, NOTES_CHANGED } from './Editor';
 import { IconMenu } from './Icons';
-import { RenameDialog, MoveDialog, DeleteFileDialog } from './FileDialogs';
+import { RenameDialog, MoveDialog, DeleteFileDialog, HistoryDialog } from './FileDialogs';
 import { isImage } from '../attachments';
 
 const fileName = (path: string) => path.split('/').pop() || path;
@@ -13,7 +13,9 @@ const parentFolder = (path: string) => (path.includes('/') ? path.substring(0, p
 export default function NoteMenu() {
   const [open, setOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [dialog, setDialog] = useState<'rename' | 'move' | 'delete' | null>(null);
+  const [dialog, setDialog] = useState<'rename' | 'move' | 'delete' | 'history' | null>(null);
+  // El historial de versiones sale de git: solo con la sincronización con GitHub activa
+  const [gitSync, setGitSync] = useState(false);
 
   const activeTab = useStore((s) => s.activeTab);
   const tree = useStore((s) => s.tree);
@@ -21,6 +23,14 @@ export default function NoteMenu() {
   const removeTab = useStore((s) => s.removeTab);
 
   const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    syncApi.get().then(
+      (cfg) => setGitSync(cfg.provider === 'github'),
+      () => setGitSync(false)
+    );
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -89,6 +99,24 @@ export default function NoteMenu() {
     setDialog(null);
   };
 
+  // Restaurar una versión antigua es un guardado normal (queda como versión nueva en el
+  // próximo commit). Se parte de la versión conocida para no pisar cambios hechos en otro sitio;
+  // después se avisa para que la nota abierta se recargue con el contenido restaurado
+  const handleRestore = async (content: string) => {
+    await flushPendingSave(activeTab);
+    if (useStore.getState().conflicts.some((c) => c.path === activeTab)) {
+      throw new Error('Resuelve primero el conflicto de la nota');
+    }
+    try {
+      await filesApi.writeFile(activeTab, content, noteVersions.get(activeTab));
+    } catch (err) {
+      if (err instanceof ConflictError) throw new Error('La nota ha cambiado en otro sitio; vuelve a intentarlo');
+      throw err;
+    }
+    window.dispatchEvent(new Event(NOTES_CHANGED));
+    setDialog(null);
+  };
+
   const handleExportPDF = async () => {
     setOpen(false);
     // Abrir antes del await: tras él ya no cuenta como gesto del usuario y se bloquea el popup
@@ -131,6 +159,11 @@ export default function NoteMenu() {
               >
                 Buscar
               </div>
+              {gitSync && (
+                <div className="dropdown-item" onClick={() => openDialog('history')}>
+                  Historial de versiones
+                </div>
+              )}
             </>
           )}
           <hr className="dropdown-divider" />
@@ -154,6 +187,9 @@ export default function NoteMenu() {
           onSubmit={handleMove}
           onClose={() => setDialog(null)}
         />
+      )}
+      {dialog === 'history' && (
+        <HistoryDialog path={activeTab} onRestore={handleRestore} onClose={() => setDialog(null)} />
       )}
       {dialog === 'delete' && (
         <DeleteFileDialog

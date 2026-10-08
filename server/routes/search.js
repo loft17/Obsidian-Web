@@ -1,18 +1,16 @@
 import { Router } from 'express';
-import * as vault from '../vault.js';
+import { snapshot } from '../searchIndex.js';
 import { publicError } from '../security.js';
 import {
   SEARCH_MAX_RESULTS as MAX_RESULTS,
   SEARCH_MAX_MATCHES_PER_FILE as MAX_MATCHES_PER_FILE,
   SEARCH_MAX_QUERY_LENGTH as MAX_QUERY_LENGTH,
-  SEARCH_MAX_FILE_BYTES as MAX_FILE_SIZE,
-  SEARCH_MAX_SCANNED_BYTES as MAX_SCANNED_BYTES,
   SEARCH_RATE_MAX as RATE_MAX,
 } from '../limits.js';
 
 const SNIPPET_RADIUS = 60;
 
-// Los límites (en limits.js) evitan que las búsquedas saturen el servidor: cada una recorre el vault
+// Los límites (en limits.js) evitan que las búsquedas saturen el servidor: cada una recorre el árbol del vault
 const RATE_WINDOW = 60 * 1000;
 
 const recent = new Map(); // ip → marcas de tiempo de sus búsquedas en la última ventana
@@ -30,20 +28,6 @@ const rateLimited = (ip) => {
   if (!limited) times.push(now);
   recent.set(ip, times);
   return limited;
-};
-
-// Lee las notas del vault respetando los límites de tamaño
-const readNotes = (cfg) => {
-  let scanned = 0;
-  return (file) => {
-    if (file.type !== 'file' || file.size > MAX_FILE_SIZE || scanned + file.size > MAX_SCANNED_BYTES) return null;
-    scanned += file.size;
-    try {
-      return vault.readFile(cfg.vaultPath, file.path).split(/\r?\n/);
-    } catch (e) {
-      return null; // Skip unreadable files
-    }
-  };
 };
 
 // Fragmento de la línea centrado en la coincidencia
@@ -100,15 +84,16 @@ function findTags(lines) {
   return found;
 }
 
+// Etiquetas de una nota del índice: se calculan una vez por cada versión de la nota
+const noteTags = (note) => (note.tags ??= findTags(note.lines));
+
 // Todas las etiquetas del vault con las notas en las que aparecen. Sin distinguir
 // mayúsculas, como Obsidian: se muestra la forma de la primera aparición
 function listTags(cfg) {
   const tags = new Map(); // minúsculas → { tag, paths }
-  const read = readNotes(cfg);
-  for (const file of vault.listTree(cfg.vaultPath)) {
-    const lines = read(file);
-    if (!lines) continue;
-    for (const { text } of findTags(lines)) {
+  for (const { file, note } of snapshot(cfg.vaultPath)) {
+    if (!note) continue;
+    for (const { text } of noteTags(note)) {
       const tag = text.replace(/^#/, '').replace(/\/+$/, '');
       if (!tag) continue;
       const key = tag.toLowerCase();
@@ -122,19 +107,17 @@ function listTags(cfg) {
 function searchTag(cfg, tag) {
   const needle = tag.toLowerCase();
   const results = [];
-  const read = readNotes(cfg);
-  for (const file of vault.listTree(cfg.vaultPath)) {
-    const lines = read(file);
-    if (!lines) continue;
+  for (const { file, note } of snapshot(cfg.vaultPath)) {
+    if (!note) continue;
     // Coincide la etiqueta exacta y sus subetiquetas (proyecto → proyecto/web)
-    const hits = findTags(lines).filter(({ text }) => {
+    const hits = noteTags(note).filter(({ text }) => {
       const t = text.replace(/^#/, '').toLowerCase();
       return t === needle || t.startsWith(needle + '/');
     });
     if (hits.length === 0) continue;
     const matches = hits
       .slice(0, MAX_MATCHES_PER_FILE)
-      .map((h) => ({ line: h.line + 1, ...snippet(lines[h.line], Math.max(h.idx, 0), h.text.length) }));
+      .map((h) => ({ line: h.line + 1, ...snippet(note.lines[h.line], Math.max(h.idx, 0), h.text.length) }));
     results.push({ path: file.path, name: file.name, nameMatch: false, total: hits.length, matches });
   }
   results.sort((a, b) => b.total - a.total || a.path.localeCompare(b.path));
@@ -178,18 +161,17 @@ export default (dataDir, getConfig) => {
 
       const needle = q.toLowerCase();
 
-      const files = vault.listTree(cfg.vaultPath).filter((f) => f.type !== 'folder');
       const results = [];
-      const read = readNotes(cfg);
 
-      for (const file of files) {
+      for (const { file, note } of snapshot(cfg.vaultPath)) {
+        if (file.type === 'folder') continue;
         const nameMatch = file.name.toLowerCase().includes(needle);
         const matches = [];
         let total = 0;
 
-        // Solo se busca dentro de las notas markdown
-        const lines = read(file);
-        lines?.forEach((line, i) => {
+        // Solo se busca dentro de las notas markdown. Las que no contienen el texto
+        // se descartan con una sola búsqueda sobre el contenido entero
+        if (note?.lower.includes(needle)) note.lines.forEach((line, i) => {
           const lower = line.toLowerCase();
           let idx = lower.indexOf(needle);
           while (idx >= 0) {
