@@ -9,6 +9,7 @@ import { Annotation, Compartment, EditorState, Transaction } from '@codemirror/s
 import { EditorView, drawSelection, highlightActiveLineGutter, keymap, lineNumbers } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { markdown, markdownKeymap, markdownLanguage } from '@codemirror/lang-markdown';
+import { languages } from '@codemirror/language-data';
 import { livePreview, sourceMode, HighlightSyntax, notePath } from '../livePreview';
 import { imageUpload } from '../imageUpload';
 import { wikilinkCompletion } from '../wikilinkComplete';
@@ -124,7 +125,9 @@ function createState(doc: string, onChange: (doc: string) => void, getPath: () =
       history(),
       drawSelection(),
       EditorView.lineWrapping,
-      markdown({ base: markdownLanguage, extensions: [HighlightSyntax] }),
+      // Los bloques ```lang se resaltan con su lenguaje; cada paquete se descarga
+      // la primera vez que aparece un bloque que lo usa
+      markdown({ base: markdownLanguage, codeLanguages: languages, extensions: [HighlightSyntax] }),
       modeCompartment.of(modeExtension(useStore.getState().editorMode)),
       lineNumbersCompartment.of(lineNumbersExtension(useStore.getState().showLineNumbers)),
       imageUpload(getPath),

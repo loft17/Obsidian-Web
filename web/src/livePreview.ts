@@ -44,6 +44,17 @@ const markdownHighlight = HighlightStyle.define([
   { tag: tags.quote, color: 'var(--text-muted)' },
   { tag: [tags.processingInstruction, tags.contentSeparator, tags.labelName], color: 'var(--text-faint)' },
   { tag: tags.list, color: 'var(--text-faint)' },
+  // Código dentro de los bloques ```lang (mismos colores que la vista de lectura)
+  { tag: [tags.comment, tags.docComment], color: 'var(--text-faint)', fontStyle: 'italic' },
+  { tag: [tags.keyword, tags.bool, tags.null, tags.atom, tags.self], color: 'var(--text-accent)' },
+  { tag: [tags.string, tags.special(tags.string), tags.regexp, tags.inserted], color: 'var(--color-green)' },
+  { tag: [tags.number, tags.standard(tags.variableName)], color: 'var(--color-orange)' },
+  {
+    tag: [tags.function(tags.variableName), tags.function(tags.propertyName), tags.definition(tags.function(tags.variableName)), tags.className],
+    color: 'var(--color-blue)',
+  },
+  { tag: [tags.typeName, tags.propertyName, tags.attributeName, tags.tagName, tags.deleted], color: 'var(--color-red)' },
+  { tag: [tags.meta, tags.punctuation, tags.angleBracket], color: 'var(--text-muted)' },
 ]);
 
 class BulletWidget extends WidgetType {
