@@ -65,7 +65,7 @@ export default function Setup({ onComplete }: Props) {
   return (
     <div className="auth-screen">
       <div className="auth-form">
-        <h1>Configurar Obisidan Web</h1>
+        <h1>Configurar Obsidian Web</h1>
         <p style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '-8px' }}>
           Primer arranque - define tu vault y contraseña
         </p>

@@ -30,7 +30,7 @@ la propia web.
 **[Despliegue](#-despliegue-en-producción)** ·
 **[Sincronización](#-sincronización-con-github)** ·
 **[Seguridad](#-seguridad)** ·
-**[API](#-api)**
+**[Arquitectura](utils/ARQUITECTURA.md)**
 
 </div>
 
@@ -70,9 +70,8 @@ la propia web.
 **Referencia**
 - [🔒 Seguridad](#-seguridad)
 - [📏 Límites](#-límites)
-- [📁 Archivos de datos](#-archivos-de-datos)
 - [💻 Desarrollo](#-desarrollo)
-- [🔌 API](#-api)
+- [🏗️ Arquitectura y API](utils/ARQUITECTURA.md)
 - [🩺 Solución de problemas](#-solución-de-problemas)
 
 </td>
@@ -110,7 +109,7 @@ la propia web.
 ### 📂 Organiza tu vault
 - **Explorador** con carpetas colapsables y menú contextual.
 - **Pestañas**: `Ctrl`/`Cmd` + clic o botón central para abrir en una nueva.
-- Duplica, mueve, renombra (los **enlaces se actualizan** solos) y borra (a la **papelera** `.trash`, nunca de forma definitiva).
+- Duplica, mueve, renombra (los **enlaces se actualizan** solos) y borra a la **papelera** `.trash`, desde donde puedes restaurar.
 - **Adjuntos**: arrastra o pega imágenes; se guardan donde lo hace Obsidian de escritorio.
 - **Notas diarias y plantillas** desde la cinta, con la misma configuración que Obsidian de escritorio.
 
@@ -415,7 +414,7 @@ pm2 logs obsidian-web
 | **`Ctrl`/`Cmd` + clic**, **botón central** o **clic derecho → Abrir en pestaña nueva** | La abre en otra pestaña. |
 | **Clic derecho** sobre archivos o carpetas | Nueva nota, nueva carpeta, duplicar, mover, renombrar, borrar. |
 
-Borrar mueve el archivo a `.trash/` dentro del vault. Para recuperarlo, renómbralo en el servidor quitando el sufijo `.<timestamp>.deleted`.
+Borrar mueve el archivo a la papelera (`.trash/` dentro del vault). Desde el panel **Papelera** de la cinta puedes restaurarlo a su ruta original, borrarlo definitivamente o vaciar la papelera.
 
 ### 🔗 Wikilinks
 
@@ -606,29 +605,6 @@ Todos se cambian con [variables de entorno](#-variables-de-entorno) y requieren 
 
 ---
 
-## 📁 Archivos de datos
-
-La carpeta `data/` se crea sola, está en `.gitignore` y el servidor ajusta sus permisos al arrancar (`700` la carpeta, `600` los archivos).
-
-| Archivo | Contenido |
-| :--- | :--- |
-| `config.json` | `vaultPath`, `passwordHash` (scrypt), `port` y `createdAt`. Se relee en cada petición, así que un cambio de vault se aplica al instante. |
-| `.secret` | Secreto aleatorio que firma las cookies. Si se borra, se genera otro y todas las sesiones dejan de valer. |
-| `sessions.json` | Hashes SHA-256 de las sesiones activas, con su caducidad y última actividad (nunca los tokens en claro). |
-| `sync.json` | Configuración de la sincronización con GitHub, su último estado y el token (si lo hay). |
-
-Dentro del vault, la app solo usa:
-
-| Ruta | Uso |
-| :--- | :--- |
-| `.trash/` | Papelera: lo borrado se mueve aquí como `nombre.ext.<timestamp>.deleted`. |
-| `.obsidian/app.json` | Solo la clave `attachmentFolderPath` (carpeta de adjuntos). |
-| `.obsidian/daily-notes.json` | Claves `folder`, `format` y `template` (notas diarias). |
-| `.obsidian/templates.json` | Claves `folder`, `dateFormat` y `timeFormat` (plantillas). |
-| `.git/` | Solo con la sincronización con GitHub: el repositorio local (se crea si no existe). |
-
----
-
 ## 🧰 Mantenimiento
 
 ### ⬆️ Actualizar
@@ -684,98 +660,7 @@ Esto levanta a la vez **Vite** en `http://localhost:5173` (frontend con *hot rel
 | `npm run web:dev` | Solo el frontend. |
 | `npm run server:dev` | Solo la API, con recarga automática. |
 
-### 🧱 Tecnologías
-
-| Capa | Stack |
-| :--- | :--- |
-| **Backend** | Node.js (ESM), Express 4, `cookie-parser`, `markdown-it` (exportación a PDF), `crypto.scrypt` |
-| **Frontend** | React 18, Vite 6, TypeScript, Zustand |
-| **Editor** | CodeMirror 6 + Lezer Markdown, con extensiones propias de vista previa en vivo, tablas y wikilinks |
-| **Estilos** | CSS propio inspirado en Obsidian (`web/src/styles/obsidian.css`) |
-
-<details>
-<summary><b>🗂️ Estructura del proyecto</b></summary>
-
-<br>
-
-```text
-Obsidian-Web/
-├── server/                  # Backend Node.js + Express
-│   ├── index.js             # Punto de entrada: middleware, autenticación, arranque
-│   ├── security.js          # Cabeceras de seguridad (CSP, HSTS), CSRF, errores públicos
-│   ├── sessions.js          # Sesiones revocables y límite de intentos de login
-│   ├── password.js          # Hash y verificación de contraseñas (scrypt)
-│   ├── vault.js             # Acceso al sistema de archivos y validación de rutas
-│   ├── sync.js              # Sincronización con GitHub (git)
-│   └── routes/
-│       ├── setup.js         # Configuración inicial
-│       ├── auth.js          # Login / logout
-│       ├── files.js         # Árbol, lectura, escritura, subida, PDF…
-│       ├── search.js        # Búsqueda de texto y etiquetas
-│       ├── settings.js      # Vault, contraseña, sesiones, adjuntos
-│       └── sync.js          # Configuración y ejecución de la sincronización
-├── web/                     # Frontend React + Vite + TypeScript
-│   ├── index.html
-│   ├── vite.config.ts
-│   └── src/
-│       ├── components/      # Editor, explorador, pestañas, preferencias…
-│       ├── store.ts         # Estado global (Zustand)
-│       ├── api.ts           # Cliente de la API
-│       ├── livePreview.ts   # Vista previa en vivo (CodeMirror)
-│       ├── liveTables.ts    # Tablas en vivo
-│       ├── wikilinks.ts     # Resolución de wikilinks
-│       └── styles/obsidian.css
-├── utils/                   # Documentación técnica y diagnóstico
-│   ├── ARQUITECTURA.md
-│   ├── TROUBLESHOOTING.md
-│   └── diagnose.sh
-├── data/                    # Configuración y secretos (autogenerado, en .gitignore)
-└── .env.example             # Plantilla de variables de entorno
-```
-
-Para el flujo de datos en detalle, consulta [ARQUITECTURA.md](utils/ARQUITECTURA.md).
-
-</details>
-
----
-
-## 🔌 API
-
-Todas las rutas cuelgan de `/api`. Salvo `setup` y `auth`, exigen una sesión válida (si no, `401`). Las peticiones que no son `GET` pasan la [protección CSRF](#-seguridad). `:filePath` es la ruta relativa al vault, codificada como un solo segmento de URL.
-
-<details>
-<summary><b>Ver todas las rutas</b></summary>
-
-<br>
-
-| Método | Ruta | Descripción |
-| :---: | :--- | :--- |
-| `GET` | `/api/setup/status` | `{ configured }` |
-| `POST` | `/api/setup/init` | Configuración inicial (`setupToken`, `vaultPath`, `password`, `port`) |
-| `POST` | `/api/auth/login` | Inicia sesión (`password`) |
-| `POST` | `/api/auth/logout` | Cierra la sesión actual |
-| `GET` | `/api/files/tree` | Árbol del vault |
-| `GET` | `/api/files/read/:filePath` | Contenido de una nota y su versión (`content`, `version`) |
-| `GET` | `/api/files/raw/:filePath` | Archivo binario (imágenes) |
-| `GET` | `/api/files/export-pdf/:filePath` | Versión imprimible de la nota |
-| `POST` | `/api/files/write/:filePath` | Guarda una nota (`content`, `baseVersion` opcional). `409` con la versión actual si ha cambiado desde `baseVersion` |
-| `POST` | `/api/files/upload?note=…&name=…` | Sube un adjunto (cuerpo binario) |
-| `DELETE` | `/api/files/:filePath` | Mueve a `.trash/` |
-| `POST` | `/api/files/rename` | Renombra o mueve (`oldPath`, `newPath`) y actualiza los enlaces; devuelve las notas modificadas (`updated`) |
-| `POST` | `/api/files/copy` | Duplica (`path`) |
-| `POST` | `/api/files/create-note` | Crea una nota (`path`, `content` opcional) |
-| `POST` | `/api/files/create-folder` | Crea una carpeta (`path`) |
-| `GET` | `/api/search?q=…` | Búsqueda de texto o `tag:` |
-| `GET` `POST` | `/api/settings/vault` | Lee / cambia la ruta del vault (`vaultPath`, `password`) |
-| `POST` | `/api/settings/password` | Cambia la contraseña (`currentPassword`, `newPassword`) |
-| `POST` | `/api/settings/sessions/revoke` | Cierra todas las sesiones |
-| `GET` `POST` | `/api/settings/attachments` | Lee / cambia `attachmentFolderPath` |
-| `GET` `POST` | `/api/settings/notes` | Lee / cambia la configuración de notas diarias (`dailyNotes`) y plantillas (`templates`) |
-| `GET` | `/api/sync` | Configuración y estado de la sincronización (sin el token: solo `hasToken`) |
-| `POST` | `/api/sync/config` | Cambia la configuración (`provider`, `interval`, `github`; `github.token: null` lo borra) |
-| `POST` | `/api/sync/run` | Sincroniza ahora y devuelve el estado al terminar |
-
-</details>
+La estructura del código, las tecnologías, los flujos internos, los archivos de `data/` y la referencia completa de la API están en **[ARQUITECTURA.md](utils/ARQUITECTURA.md)**.
 
 ---
 

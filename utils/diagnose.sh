@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "🔍 Obisidan Web Diagnostic Tool"
+echo "🔍 Obsidian Web Diagnostic Tool"
 echo "========================="
 echo ""
 
@@ -24,10 +24,10 @@ echo "✓ Checking dependencies..."
 if [ ! -d "node_modules" ]; then
     echo "  ⚠️  node_modules not found. Run: npm install"
 fi
-if npm list scrypt-async &> /dev/null; then
-    echo "  ✅ scrypt-async installed"
+if npm list express cookie-parser markdown-it &> /dev/null; then
+    echo "  ✅ Server dependencies installed"
 else
-    echo "  ❌ scrypt-async NOT found"
+    echo "  ❌ Server dependencies missing or broken. Run: npm install"
 fi
 
 # Check config

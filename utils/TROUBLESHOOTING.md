@@ -1,16 +1,16 @@
-# Troubleshooting Obisidan Web
+# Troubleshooting Obsidian Web
 
 ## Error 500 en POST /api/setup/init
 
 ### Causas comunes:
 
-#### 1. **Problemas con scrypt-async**
+#### 1. **Dependencias sin instalar**
 ```bash
-# Verifica que scrypt-async está instalado
-npm list scrypt-async
+# Verifica que las dependencias del servidor están instaladas
+npm list express cookie-parser markdown-it
 
-# Si falta, instálalo:
-npm install scrypt-async
+# Si falta alguna:
+npm install
 ```
 
 #### 2. **Ruta del vault no válida**
@@ -20,11 +20,11 @@ npm install scrypt-async
 
 #### 3. **Permisos en carpeta data/**
 ```bash
-# Asegurar que ObiWEB puede escribir en data/
-chmod 755 /path/to/obiweb/data
+# Asegurar que Obsidian Web puede escribir en data/ (el servidor la deja en 700)
+chmod 700 /path/to/obsidian-web/data
 
 # Si es un usuario específico:
-sudo chown -R app-user:app-user /path/to/obiweb/data
+sudo chown -R app-user:app-user /path/to/obsidian-web/data
 ```
 
 #### 4. **Ver logs del servidor**
@@ -33,7 +33,7 @@ sudo chown -R app-user:app-user /path/to/obiweb/data
 npm start 2>&1 | tee server.log
 
 # Si usas PM2:
-pm2 logs obiweb --lines 50
+pm2 logs obsidian-web --lines 50
 ```
 
 Los logs te dirán exactamente dónde falló.
@@ -64,7 +64,7 @@ Debe verse algo como:
 - Consola: verás si el setup se completó exitosamente
 - Si dice "configured: true" pero `/api/files/tree` falla igual, restart el servidor:
 ```bash
-pm2 restart obiweb
+pm2 restart obsidian-web
 # o Ctrl+C y npm start de nuevo
 ```
 

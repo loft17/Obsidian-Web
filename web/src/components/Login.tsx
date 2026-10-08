@@ -33,7 +33,7 @@ export default function Login({ onComplete }: Props) {
   return (
     <div className="auth-screen">
       <div className="auth-form">
-        <h1>Obisidan Web</h1>
+        <h1>Obsidian Web</h1>
         <p style={{ fontSize: '12px', color: 'var(--text-faint)', marginBottom: '16px' }}>
           Ingresa tu contraseña
         </p>

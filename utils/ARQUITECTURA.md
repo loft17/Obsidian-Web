@@ -1,140 +1,278 @@
-# Arquitectura de Obisidan Web
+# Arquitectura de Obsidian Web
 
-## Estructura del Proyecto
+Documentación técnica para quien quiera entender o modificar el código. Para instalar y usar la app, consulta el [README](../README.md).
 
+## Índice
+
+- [Visión general](#visión-general)
+- [Tecnologías](#tecnologías)
+- [Estructura del proyecto](#estructura-del-proyecto)
+- [Flujos principales](#flujos-principales)
+- [Seguridad en el código](#seguridad-en-el-código)
+- [Archivos de datos](#archivos-de-datos)
+- [API](#api)
+- [Estado del frontend](#estado-del-frontend)
+- [Convenciones de desarrollo](#convenciones-de-desarrollo)
+
+---
+
+## Visión general
+
+Un único proceso de Node.js sirve a la vez la API (`/api/*`) y el frontend ya compilado (`web/dist`). No hay base de datos: las notas son los archivos `.md` del vault, y la configuración de la app vive en `data/`.
+
+```mermaid
+flowchart LR
+    A["React + CodeMirror<br/>(web/src)"] -- "fetch /api (cookie de sesión)" --> B["Express<br/>(server/)"]
+    B --> C[("Vault<br/>archivos .md")]
+    B --> D[("data/<br/>config, sesiones, sync")]
+    B -. "git (sin shell)" .-> E["GitHub"]
 ```
-ObiWEB/
-├── server/                  # Backend Node.js + Express
-│   ├── index.js            # Punto de entrada, middleware, estáticos
-│   ├── vault.js            # Operaciones de filesystem (guardias anti path-traversal)
+
+---
+
+## Tecnologías
+
+| Capa | Stack |
+| :--- | :--- |
+| **Backend** | Node.js ≥ 20 (ESM, sin paso de compilación), Express 4, `cookie-parser`, `markdown-it` (exportación a PDF), `crypto.scrypt` |
+| **Frontend** | React 18, Vite 6, TypeScript, Zustand |
+| **Editor** | CodeMirror 6 + Lezer Markdown, con extensiones propias de vista previa en vivo, tablas y wikilinks |
+| **Lectura** | `markdown-it` con reglas propias: wikilinks, incrustaciones, callouts, `==resaltado==` y `#etiquetas` |
+| **Estilos** | CSS propio inspirado en Obsidian (`web/src/styles/obsidian.css`), con variables para los temas |
+
+Todas las dependencias están en el `package.json` de la raíz. El frontend se compila con Vite en el `postinstall`, por eso las dependencias de desarrollo son necesarias también en producción.
+
+---
+
+## Estructura del proyecto
+
+```text
+Obsidian-Web/
+├── server/                    # Backend Node.js + Express (ESM, sin compilar)
+│   ├── index.js               # Punto de entrada: data/, middleware, montaje de rutas, arranque
+│   ├── env.js                 # Carga el .env (process.loadEnvFile)
+│   ├── limits.js              # Límites configurables por variables de entorno
+│   ├── security.js            # Cabeceras (CSP, HSTS…), protección CSRF, errores públicos
+│   ├── sessions.js            # Sesiones revocables y límite de intentos de login
+│   ├── password.js            # Hash y verificación de contraseñas (scrypt)
+│   ├── vault.js               # Acceso al sistema de archivos: guardPath, papelera, adjuntos, ajustes de .obsidian
+│   ├── links.js               # Reescritura de enlaces al renombrar o mover
+│   ├── sync.js                # Sincronización con GitHub (git) y sincronización periódica
 │   └── routes/
-│       ├── setup.js        # POST /api/setup/init, GET /api/setup/status
-│       ├── auth.js         # POST /api/auth/login, POST /api/auth/logout
-│       ├── files.js        # GET /api/files/tree, read, write, delete, rename
-│       └── search.js       # GET /api/search?q=
-├── web/                     # Frontend React 18 + Vite
-│   ├── index.html
+│       ├── setup.js           # Configuración inicial (token de un solo uso)
+│       ├── auth.js            # Login / logout
+│       ├── files.js           # Árbol, lectura, escritura, subida, papelera, PDF…
+│       ├── search.js          # Búsqueda de texto y etiquetas
+│       ├── settings.js        # Vault, contraseña, sesiones, adjuntos, notas diarias, límites
+│       └── sync.js            # Configuración y ejecución de la sincronización
+├── web/                       # Frontend React + Vite + TypeScript
+│   ├── index.html             # Incluye un script en línea que aplica el tema antes de pintar
+│   ├── public/                # Archivos estáticos copiados tal cual a dist/ (favicon)
 │   ├── vite.config.ts
-│   ├── tsconfig.json
-│   ├── package.json
 │   └── src/
-│       ├── main.tsx        # Entry point React
-│       ├── App.tsx         # Router de estados (setup/login/main)
-│       ├── store.ts        # Zustand store (árbol, tabs, editor mode)
-│       ├── api.ts          # Cliente HTTP (setup, auth, files, search)
+│       ├── main.tsx           # Punto de entrada de React
+│       ├── App.tsx            # Elige pantalla: configuración, login o app
+│       ├── store.ts           # Estado global (Zustand) y preferencias en localStorage
+│       ├── api.ts             # Cliente de la API
+│       ├── frontmatter.ts     # Leer y escribir el frontmatter YAML
+│       ├── wikilinks.ts       # Resolver y seguir [[enlaces]]
+│       ├── wikilinkComplete.ts# Autocompletado de [[ en el editor
+│       ├── noteEmbeds.ts      # Caché de notas incrustadas con ![[nota]]
+│       ├── attachments.ts     # Rutas y tamaños de imágenes y adjuntos
+│       ├── imageUpload.ts     # Pegar / arrastrar imágenes en el editor
+│       ├── templates.ts       # Notas diarias y plantillas ({{date}}, {{title}}…)
+│       ├── livePreview.ts     # Vista previa en vivo (decoraciones de CodeMirror)
+│       ├── liveTables.ts      # Tablas en vivo
 │       ├── components/
-│       │   ├── Setup.tsx   # Asistente de primera configuración
-│       │   ├── Login.tsx   # Pantalla de login
-│       │   ├── MainLayout.tsx
-│       │   ├── Ribbon.tsx
-│       │   ├── FileExplorer.tsx
-│       │   ├── Tabs.tsx
-│       │   ├── Editor.tsx
-│       │   ├── ReadingView.tsx
-│       │   ├── StatusBar.tsx
-│       │   └── RightSidebar.tsx
-│       └── styles/
-│           └── obsidian.css
-├── data/                    # Config y secretos (gitignored)
-│   ├── config.json         # Ruta del vault, hash de contraseña, puerto
-│   └── .secret             # Cookie signing secret
-├── package.json            # Root config (monorepo setup)
-├── .gitignore
-├── README.md
-└── ARQUITECTURA.md
+│       │   ├── MainLayout.tsx # Disposición, atajos globales, carga de notas, cambios externos
+│       │   ├── Editor.tsx     # CodeMirror, autoguardado, versiones y conflictos
+│       │   ├── EditorToolbar.tsx
+│       │   ├── ReadingView.tsx# Modo lectura (markdown-it con reglas propias)
+│       │   ├── Properties.tsx # Editor de propiedades (frontmatter)
+│       │   ├── InlineTitle.tsx# Título editable que renombra la nota
+│       │   ├── FileExplorer.tsx, Tabs.tsx, Ribbon.tsx, StatusBar.tsx
+│       │   ├── SearchPanel.tsx, TagsPanel.tsx, TrashPanel.tsx
+│       │   ├── FileDialogs.tsx# Buscador rápido, diálogo de conflicto, diálogos de archivo
+│       │   ├── NoteMenu.tsx   # Menú de la nota (exportar a PDF, mover, borrar…)
+│       │   ├── SettingsModal.tsx
+│       │   ├── Setup.tsx, Login.tsx, ImageViewer.tsx, Icons.tsx
+│       └── styles/obsidian.css
+├── utils/                     # Documentación técnica y diagnóstico
+│   ├── ARQUITECTURA.md
+│   ├── TROUBLESHOOTING.md
+│   └── diagnose.sh
+├── data/                      # Configuración y secretos (autogenerado, en .gitignore)
+├── .env.example               # Plantilla de variables de entorno
+└── package.json               # Dependencias y scripts de todo el proyecto
 ```
 
-## Flujo de Datos
+---
 
-### Inicialización
-1. Frontend carga `App.tsx` → verifica estado con `setupApi.checkStatus()`
-2. Si no configurado → muestra `Setup.tsx` → POST `/api/setup/init`
-3. Backend crea `data/config.json` con contraseña hasheada (scrypt)
-4. Frontend llama `filesApi.getTree()` y carga el árbol de archivos
-5. Usuario ve `MainLayout.tsx`
+## Flujos principales
 
-### Edición de Archivo
-1. Click en archivo en `FileExplorer.tsx` → `addTab()` + `setActiveTab()` en zustand
-2. `MainLayout.tsx` detecta cambio en `activeTab` → `filesApi.readFile()`
-3. Contenido se renderiza en `Editor.tsx` (textarea simple)
-4. Usuario escribe → `onContentChange()` → debounce 2s → `filesApi.writeFile()`
-5. Si toggle a vista de lectura → `ReadingView.tsx` renderiza con markdown-it
+### Arranque y autenticación
 
-### Autenticación
-- La contraseña se hash en setup con scrypt (16384 iteraciones)
-- Login POST `/api/auth/login` retorna cookie firmada `token`
-- Middleware en server protege `/api/` si hay config
-- Logout borra la cookie
+1. `server/index.js` crea `data/` (permisos `700`/`600`), carga o genera `data/.secret` para firmar las cookies y monta las rutas.
+2. Si no existe `data/config.json`, `routes/setup.js` genera un **token de un solo uso** y lo imprime en la consola.
+3. En el navegador, `App.tsx` llama a `/api/setup/status`:
+   - Sin configurar → `Setup.tsx` → `POST /api/setup/init` con el token, la ruta del vault y la contraseña. El servidor valida la ruta (`vault.checkVaultPath`) y guarda el hash scrypt en `config.json`.
+   - Configurado → intenta `GET /api/files/tree`; si responde `401`, muestra `Login.tsx`.
+4. `POST /api/auth/login` verifica la contraseña (`password.js`) y crea una sesión (`sessions.js`): la cookie firmada `token` lleva un valor aleatorio y en `data/sessions.json` solo se guarda su SHA-256.
+5. Todo `/api` salvo `setup` y `auth` pasa por el middleware de sesión de `index.js`. `getConfig()` relee `config.json` en cada petición, así que un cambio de vault se aplica al instante.
 
-## Guardias de Seguridad
+### Abrir y guardar una nota
 
-### Path Traversal
-`vault.js:guardPath()` previene `../../etc/passwd`:
-- Resuelve ruta con `join(vaultPath, userPath)`
-- Verifica que la ruta resuelta comience con `vaultPath`
-- Lanza error si intenta salir
-
-### Autenticación
-Todas las rutas API exceptuando `/api/setup` y `/api/auth/login` requieren cookie `token` firmada.
-
-## Variables de Estado (Zustand)
-
-```typescript
-{
-  tree: TreeItem[],               // Árbol de archivos (listado plano con tipos)
-  tabs: Tab[],                    // [{ path, name, isDirty }, ...]
-  activeTab: string | null,       // Path de la pestaña activa
-  editMode: boolean,              // true = editor, false = lectura
-  expandedFolders: Set<string>,   // Carpetas abiertas en el árbol
-}
+```mermaid
+sequenceDiagram
+    participant E as Editor.tsx
+    participant S as Servidor
+    E->>S: GET /files/read/:path
+    S-->>E: content + version (SHA-1 del contenido)
+    Note over E: el usuario escribe (2 s de espera)
+    E->>S: POST /files/write/:path {content, baseVersion}
+    alt la nota no ha cambiado en el servidor
+        S-->>E: nueva version
+    else ha cambiado en otro sitio
+        S-->>E: 409 + contenido y versión actuales
+        Note over E: ConflictDialog: conservar la mía o la del servidor
+    end
 ```
 
-## Endpoints API
+- `MainLayout.tsx` carga la nota al cambiar de pestaña y guarda su versión en `noteVersions` (`Editor.tsx`).
+- El autoguardado se lanza a los 2 s sin escribir. `Ctrl+S` (`flushPendingSave`) lo adelanta. Antes de renombrar, mover o borrar se vacían los guardados pendientes.
+- `vault.writeFile` solo escribe si la versión del disco coincide con `baseVersion`. Si no coincide, lanza `ConflictError` y la ruta responde `409`; el cliente abre `ConflictDialog`.
+
+### Cambios hechos fuera de esta pestaña
+
+`MainLayout.tsx` vuelve a leer la nota abierta cada 15 s mientras la pestaña está visible, al volver a ella y al recibir el evento `NOTES_CHANGED`. Si la versión ha cambiado y no hay cambios sin guardar, sustituye el contenido; si los hay, no toca nada y será el guardado el que detecte el conflicto.
+
+### Renombrar y mover
+
+`POST /api/files/rename` llama a `links.prepareLinkUpdate` **antes** de mover: resuelve cada enlace del vault con el árbol antiguo. Después de mover reescribe los que ya no llegan a su destino (`[[wikilinks]]`, `![[incrustaciones]]` y `[enlaces](markdown)`) y devuelve las notas modificadas. El cliente lanza `NOTES_CHANGED` para recargar la nota abierta y las incrustaciones.
+
+> [!IMPORTANT]
+> La resolución de wikilinks está **duplicada** en `web/src/wikilinks.ts` (cliente) y `server/links.js` (servidor), y deben comportarse igual: ruta exacta desde la raíz, relativa a la nota y, por último, por nombre en cualquier carpeta (la más cercana a la nota). Si cambias una, cambia la otra.
+
+### Modo lectura e incrustaciones
+
+`ReadingView.tsx` configura una instancia de `markdown-it` (`html: false`) con reglas propias: `[[wikilinks]]` (atenuados si no existen), `![[imagen]]` con tamaño, `![[nota]]` / `![[nota#encabezado]]`, callouts `> [!tipo]`, `==resaltado==`, `#etiquetas` y bloques de código con botón de copiar.
+
+El render es síncrono, así que las notas incrustadas se piden en segundo plano a `noteEmbeds.ts`. Al llegar, avisa (`useSyncExternalStore`) y la vista se vuelve a pintar. La profundidad máxima de incrustación es 4, y una nota no puede incrustarse a sí misma en bucle.
+
+### Búsqueda y etiquetas
+
+`routes/search.js` recorre el vault en cada consulta, sin índice, dentro de los límites de `limits.js`: tamaño por archivo, total leído, resultados, coincidencias y peticiones por minuto. `tag:` busca en la propiedad `tags` del frontmatter y en las `#etiquetas` del cuerpo, fuera de bloques de código. `GET /api/search/tags` usa el mismo recorrido para el panel de etiquetas.
+
+### Papelera
+
+`vault.deleteFile` mueve el elemento a `.trash/` como `nombre.ext.<timestamp>.deleted` y apunta su ruta original en `.trash/.index.json`. `TrashPanel.tsx` permite restaurarlo a esa ruta, borrarlo definitivamente o vaciar la papelera.
+
+### Sincronización con GitHub
+
+`server/sync.js` ejecuta `git` con `spawn` y sin shell: commit de los cambios locales → `fetch` → `rebase -X theirs` sobre la rama remota (en un conflicto gana la versión del servidor; si aun así falla, `rebase --abort`) → `push`. Toda la configuración de git va en variables `GIT_CONFIG_*` del proceso; el token viaja como cabecera `extraHeader` en ellas, nunca en la URL ni en `.git/config`, y se elimina de los mensajes de error. Un temporizador comprueba cada minuto si toca la sincronización periódica según `interval`.
+
+---
+
+## Seguridad en el código
+
+Qué hace cada medida está en el README ([Seguridad](../README.md#-seguridad)). Aquí, dónde está cada una:
+
+| Medida | Dónde |
+| :--- | :--- |
+| Rutas dentro del vault, sin `../`, sin symlinks hacia fuera, `.obsidian/` y `.git/` protegidas | `vault.js` → `guardPath()`. **Toda** ruta que llega del cliente debe pasar por aquí. |
+| Rutas válidas para un vault (sin carpetas del sistema ni de la app, `VAULTS_ROOT`) | `vault.js` → `checkVaultPath()` |
+| CSP, HSTS y demás cabeceras; hashes CSP de los scripts en línea de `index.html` | `security.js` → `securityHeaders()` |
+| CSRF (`Sec-Fetch-Site` y `Origin`) | `security.js` → `csrfGuard` |
+| Errores sin rutas internas ni trazas | `security.js` → `publicError()` y el manejador de errores de `index.js` |
+| Sesiones revocables y límite de intentos | `sessions.js` |
+| Contraseñas (scrypt, comparación en tiempo constante) | `password.js` |
+| `git` sin hooks ni `core.fsmonitor`, solo `https://github.com/` | `sync.js` |
+| Archivos del vault servidos con CSP *sandbox* (SVG) | `routes/files.js` → `/raw` |
+
+---
+
+## Archivos de datos
+
+La carpeta `data/` se crea sola, está en `.gitignore` y el servidor ajusta sus permisos al arrancar (`700` la carpeta, `600` los archivos).
+
+| Archivo | Contenido |
+| :--- | :--- |
+| `config.json` | `vaultPath`, `passwordHash` (scrypt: 16 bytes de sal + 32 de hash, en hexadecimal), `port` y `createdAt`. Se relee en cada petición. |
+| `.secret` | Secreto aleatorio que firma las cookies. Si se borra, se genera otro y todas las sesiones dejan de valer. |
+| `sessions.json` | Hashes SHA-256 de las sesiones activas, con su caducidad y última actividad (nunca los tokens en claro). La actividad se guarda en disco como mucho una vez por hora. |
+| `sync.json` | Configuración de la sincronización con GitHub, su último estado y el token (si lo hay). |
+
+Dentro del vault, la app solo usa:
+
+| Ruta | Uso |
+| :--- | :--- |
+| `.trash/` | Papelera: `nombre.ext.<timestamp>.deleted`, con las rutas originales en `.trash/.index.json`. |
+| `.obsidian/app.json` | Solo la clave `attachmentFolderPath` (carpeta de adjuntos). |
+| `.obsidian/daily-notes.json` | Claves `folder`, `format` y `template` (notas diarias). |
+| `.obsidian/templates.json` | Claves `folder`, `dateFormat` y `timeFormat` (plantillas). |
+| `.git/` | Solo con la sincronización con GitHub: el repositorio local (se crea si no existe). |
+
+---
+
+## API
+
+Todas las rutas cuelgan de `/api`. Salvo `setup` y `auth`, exigen una sesión válida (si no, `401`). Las peticiones que no son `GET` pasan la protección CSRF. `:filePath` es la ruta relativa al vault, codificada como un solo segmento de URL.
 
 | Método | Ruta | Descripción |
-|--------|------|-------------|
-| GET | `/api/setup/status` | ¿Está configurado? |
-| POST | `/api/setup/init` | Crear config inicial |
-| POST | `/api/auth/login` | Login con contraseña |
-| POST | `/api/auth/logout` | Logout |
-| GET | `/api/files/tree` | Listar árbol |
-| GET | `/api/files/read/:path` | Leer archivo |
-| POST | `/api/files/write/:path` | Guardar archivo |
-| DELETE | `/api/files/:path` | Mover a .trash |
-| GET | `/api/files/trash` | Listar la papelera |
-| POST | `/api/files/trash/restore` | Restaurar a la ruta original |
-| POST | `/api/files/trash/delete` | Borrar definitivamente |
-| POST | `/api/files/trash/empty` | Vaciar la papelera |
-| POST | `/api/files/rename` | Renombrar |
-| GET | `/api/search?q=` | Búsqueda full-text simple |
+| :---: | :--- | :--- |
+| `GET` | `/api/setup/status` | `{ configured }` |
+| `POST` | `/api/setup/init` | Configuración inicial (`setupToken`, `vaultPath`, `password`, `port`) |
+| `POST` | `/api/auth/login` | Inicia sesión (`password`) |
+| `POST` | `/api/auth/logout` | Cierra la sesión actual |
+| `GET` | `/api/files/tree` | Árbol del vault (lista plana de `{ type, path, name }`, y `size` en los archivos) |
+| `GET` | `/api/files/read/:filePath` | Contenido de una nota y su versión (`content`, `version`) |
+| `GET` | `/api/files/raw/:filePath` | Archivo binario (imágenes, adjuntos) |
+| `GET` | `/api/files/export-pdf/:filePath` | Versión imprimible de la nota |
+| `POST` | `/api/files/write/:filePath` | Guarda una nota (`content`, `baseVersion` opcional). `409` con la versión actual si ha cambiado desde `baseVersion` |
+| `POST` | `/api/files/upload?note=…&name=…` | Sube un adjunto (cuerpo binario); devuelve su `path` |
+| `DELETE` | `/api/files/:filePath` | Mueve a `.trash/` |
+| `GET` | `/api/files/trash` | Contenido de la papelera |
+| `POST` | `/api/files/trash/restore` | Restaura a su ruta original (`id`) |
+| `POST` | `/api/files/trash/delete` | Borra definitivamente (`id`) |
+| `POST` | `/api/files/trash/empty` | Vacía la papelera |
+| `POST` | `/api/files/rename` | Renombra o mueve (`oldPath`, `newPath`) y actualiza los enlaces; devuelve las notas modificadas (`updated`) |
+| `POST` | `/api/files/copy` | Duplica (`path`) |
+| `POST` | `/api/files/create-note` | Crea una nota (`path`, `content` opcional) |
+| `POST` | `/api/files/create-folder` | Crea una carpeta (`path`) |
+| `GET` | `/api/search?q=…` | Búsqueda de texto o `tag:` |
+| `GET` | `/api/search/tags` | Todas las etiquetas del vault con las notas que las usan (`{ tag, paths }`) |
+| `GET` `POST` | `/api/settings/vault` | Lee / cambia la ruta del vault (`vaultPath`, `password`) |
+| `GET` | `/api/settings/limits` | Límites actuales del servidor (solo lectura) |
+| `POST` | `/api/settings/password` | Cambia la contraseña (`currentPassword`, `newPassword`) |
+| `POST` | `/api/settings/sessions/revoke` | Cierra todas las sesiones |
+| `GET` `POST` | `/api/settings/attachments` | Lee / cambia `attachmentFolderPath` |
+| `GET` `POST` | `/api/settings/notes` | Lee / cambia la configuración de notas diarias (`dailyNotes`) y plantillas (`templates`) |
+| `GET` | `/api/sync` | Configuración y estado de la sincronización (sin el token: solo `hasToken`) |
+| `POST` | `/api/sync/config` | Cambia la configuración (`provider`, `interval`, `github`; `github.token: null` lo borra) |
+| `POST` | `/api/sync/run` | Sincroniza ahora y devuelve el estado al terminar |
 
-## Próximas Fases
+> [!NOTE]
+> Las acciones de la papelera van por `POST` y no por `DELETE` para no chocar con `DELETE /api/files/:filePath` cuando una nota se llama `trash`.
 
-### Fase 2: Editor Mejorado
-- Reemplazar textarea con CodeMirror 6
-- Sintaxis highlighting para Markdown
-- Wikilinks funcionales `[[note]]`
-- Embeds de imágenes
+---
 
-### Fase 3: Sincronización
-- Nueva ruta: `POST /api/sync/configure`
-- Módulo `server/sync.js` con estrategia (GitHub git / Dropbox)
-- Panel en Settings para tokens
+## Estado del frontend
 
-### Fase 4: Búsqueda Avanzada
-- Índice con `minisearch`
-- Queries: `tag:inbox`, `path:projects`
-- Quick Switcher (Ctrl+O)
+`web/src/store.ts` (Zustand) guarda:
 
-### Fase 5: Graph View
-- Extraer wikilinks con regex
-- D3-force para layout
-- Pixi.js para rendering (opcional, canvas o SVG)
+- **Vault y navegación**: `tree` (lista plana del vault), `tabs` (`{ path, name, isDirty }`), `activeTab`, `expandedFolders`, `sidebarView` (`files`, `search`, `tags` o `trash`) y `searchQuery`.
+- **Edición**: `editMode` (edición o lectura) y `conflicts` (conflictos de guardado pendientes, se muestran de uno en uno).
+- **Preferencias de interfaz**: tema, tamaño de fuente, modo del editor (`preview` / `source`), título en línea, números de línea, longitud de línea legible, cinta, cabecera de pestaña y carpetas ocultas. Se guardan en `localStorage`, así que son **por navegador**.
 
-## Notas de Desarrollo
+Fuera del store, en `Editor.tsx`, viven `noteVersions` (versión conocida de cada nota) y los guardados pendientes y en curso.
 
-- **Sin TypeScript en servidor**: usa ESM (import/export) para evitar build step
-- **Textarea simple**: más ligero que CodeMirror para MVP, se reemplaza en fase 2
-- **Autosave debounced**: 2s sin cambios → POST a `/api/files/write`
-- **Árbol plano**: se renderiza como jerarquía en componente (agrupa por parent)
-- **CSS variables**: fácil para temas (Obsidian por defecto, Light en fase X)
+---
+
+## Convenciones de desarrollo
+
+- **Servidor sin compilar**: JavaScript con ESM (`import`/`export`), se ejecuta tal cual con Node.
+- **Comentarios y mensajes en español**, también los errores que ve el usuario.
+- **Límites en `limits.js`**: cualquier límite nuevo se define ahí con su variable de entorno, se expone en `/api/settings/limits` y se documenta en el README.
+- **Errores al cliente con `publicError()`**: nunca se devuelve `err.message` sin filtrar.
+- **Nuevas rutas con archivos**: usa `withVault` en `routes/files.js` y deja que `guardPath()` valide la ruta.
+- **Desarrollo**: `npm run dev` levanta Vite en `:5173` (con proxy de `/api` a `:3000`) y Express con `node --watch`. Abre siempre `http://localhost:5173`.
