@@ -73,7 +73,8 @@ Todos se ejecutan desde la raíz del proyecto.
 
 ## Convenciones
 
-- **Idioma**: comentarios, mensajes de consola y errores que ve el usuario, en **español**.
+- **Idioma**: comentarios, mensajes de consola y errores del servidor, en **español**.
+- **Textos de la interfaz**: nunca escritos directamente en los componentes; van en los diccionarios de `web/src/i18n/` (ver receta abajo).
 - **Estilo**: imita el del código que rodea al cambio (nombres, densidad de comentarios, estructura). No hay linter ni formateador configurado.
 - **Servidor en ESM**: `import`/`export`, sin TypeScript ni paso de compilación.
 - **Rutas de archivos**: toda ruta que llegue del cliente pasa por `guardPath()` de `server/vault.js`. En `routes/files.js` usa `withVault`.
@@ -105,6 +106,17 @@ Todos se ejecutan desde la raíz del proyecto.
 3. Exponlo en `GET /api/settings/limits` (`routes/settings.js`) para que aparezca en *Preferencias → Variables*.
 4. Añádelo, comentado, a `.env.example`.
 5. Documéntalo en la tabla de [límites de MANTENIMIENTO.md](MANTENIMIENTO.md#límites).
+
+### Añadir o cambiar un texto de la interfaz
+
+1. Añade la clave en `web/src/i18n/es.ts` (la referencia) y en todos los demás idiomas (`en.ts`...). Si falta en alguno, `tsc` da error.
+2. En un componente: `const t = useT();` y `t('clave')`. Fuera de React (alertas, widgets del editor): `import { t } from '../i18n'`.
+3. Variables con `{nombre}`: `t('search.line', { n: 3 })`. Si la variable es un elemento (`<code>`, `<strong>`), usa `<Trans k="clave" values={{ nombre: <code>…</code> }} />`.
+4. Fechas: pasa `getLang()` a `toLocaleString`.
+
+### Añadir un idioma
+
+Copia `web/src/i18n/en.ts` a `xx.ts`, tradúcelo y regístralo en `MESSAGES`, `LANGUAGES` y el tipo `Lang` de `web/src/i18n/index.tsx`. Aparecerá en *Preferencias → Apariencia → Idioma* y en la pantalla de configuración inicial.
 
 ### Añadir una preferencia
 
@@ -176,4 +188,5 @@ Ideas pendientes, por si quieres contribuir:
 
 - **Fórmulas LaTeX y diagramas Mermaid** en el modo lectura. Ahora mismo no se renderizan (el resaltado de sintaxis de los bloques de código sí funciona). Si se añaden, conviene cargarlos con `import()` dinámico como `codeHighlight.ts`.
 - **Rendimiento con vaults muy grandes**: el explorador pinta todo el árbol. La búsqueda ya usa un índice en memoria, pero sigue recorriendo el árbol (`stat` de cada archivo) en cada consulta; vigilar la carpeta con `fs.watch` evitaría ese recorrido.
+- **Traducir los errores del servidor**: la interfaz está en español e inglés (`web/src/i18n/`), pero los errores que devuelve el backend ("Contraseña incorrecta", "Ya existe un archivo con ese nombre"...) y los mensajes de estado de la sincronización siguen saliendo siempre en español. La idea es que el servidor devuelva un código (`{ error, code: 'WRONG_PASSWORD', params }`) y el cliente lo traduzca con sus diccionarios, dejando `error` en español como respaldo.
 - **Tests automáticos**, al menos para `guardPath()`, la resolución de wikilinks y la reescritura de enlaces al renombrar.

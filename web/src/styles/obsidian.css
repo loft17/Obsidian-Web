@@ -1557,7 +1557,8 @@ a:hover {
   margin-bottom: 8px;
 }
 
-.auth-form input {
+.auth-form input,
+.auth-form select {
   width: 100%;
 }
 

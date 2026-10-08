@@ -4,6 +4,7 @@ import Setup from './components/Setup';
 import Login from './components/Login';
 import MainLayout from './components/MainLayout';
 import { useStore } from './store';
+import { t, useT } from './i18n';
 
 type AppState = 'setup' | 'login' | 'main';
 
@@ -12,6 +13,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const setTree = useStore((s) => s.setTree);
+  const tr = useT();
 
   useEffect(() => {
     const init = async () => {
@@ -32,7 +34,7 @@ export default function App() {
         }
       } catch (err: any) {
         console.error('Init error:', err);
-        setError(`Error: ${err.message || 'No se pudo conectar al servidor'}`);
+        setError(`Error: ${err.message || t('app.connectError')}`);
         setAppState('setup');
       } finally {
         setLoading(false);
@@ -73,7 +75,7 @@ export default function App() {
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', flexDirection: 'column', gap: '16px' }}>
-        <div>Cargando...</div>
+        <div>{tr('common.loading')}</div>
         {error && <div style={{ color: 'var(--color-red)', fontSize: '12px' }}>{error}</div>}
       </div>
     );

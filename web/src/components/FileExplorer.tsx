@@ -3,6 +3,7 @@ import { useStore, isUnder, hiddenMatchers, isHiddenPath } from '../store';
 import { filesApi } from '../api';
 import { flushPendingSave, cancelPendingSave, changeNotePath } from './Editor';
 import { RenameDialog, MoveDialog, DeleteFileDialog } from './FileDialogs';
+import { useT } from '../i18n';
 import { IconChevronRight, IconChevronDown, IconCollapseAll, IconFileNew, IconFolderNew } from './Icons';
 
 interface TreeItem {
@@ -139,6 +140,7 @@ export default function FileExplorer() {
     isFolder?: boolean;
   } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const t = useT();
 
   const fileName = (path: string) => path.split('/').pop() || path;
 
@@ -196,7 +198,7 @@ export default function FileExplorer() {
       await filesApi.copyFile(path);
       await refreshTree();
     } catch (err) {
-      alert(`No se pudo copiar: ${(err as Error).message}`);
+      alert(t('file.copyError', { error: (err as Error).message }));
     }
   };
 
@@ -286,7 +288,7 @@ export default function FileExplorer() {
         await handleMove(from, folder);
         if (folder) expandFolder(folder);
       } catch (err) {
-        alert(`No se pudo mover: ${(err as Error).message}`);
+        alert(t('file.moveError', { error: (err as Error).message }));
       }
     },
     onDragEnd: endDrag,
@@ -317,13 +319,13 @@ export default function FileExplorer() {
   return (
     <>
       <div className="sidebar-toolbar">
-        <button className="icon-btn" title="Crear nota" onClick={() => setDialog({ kind: 'new-note', path: '' })}>
+        <button className="icon-btn" title={t('file.createNote')} onClick={() => setDialog({ kind: 'new-note', path: '' })}>
           <IconFileNew size={16} />
         </button>
-        <button className="icon-btn" title="Crear carpeta" onClick={() => setDialog({ kind: 'new-folder', path: '' })}>
+        <button className="icon-btn" title={t('file.createFolder')} onClick={() => setDialog({ kind: 'new-folder', path: '' })}>
           <IconFolderNew size={16} />
         </button>
-        <button className="icon-btn" title="Contraer todo" onClick={collapseAll}>
+        <button className="icon-btn" title={t('file.collapseAll')} onClick={collapseAll}>
           <IconCollapseAll size={16} />
         </button>
       </div>
@@ -358,38 +360,38 @@ export default function FileExplorer() {
           {menu.isFolder ? (
             <>
               <div className="dropdown-item" onClick={() => openDialog('new-note')}>
-                Nueva nota
+                {t('file.newNote')}
               </div>
               <div className="dropdown-item" onClick={() => openDialog('new-folder')}>
-                Nueva carpeta
+                {t('file.newFolder')}
               </div>
             </>
           ) : (
             <div className="dropdown-item" onClick={() => runMenuAction(handleOpenInNewTab)}>
-              Abrir en pestaña nueva
+              {t('file.openInNewTab')}
             </div>
           )}
           <hr className="dropdown-divider" />
           <div className="dropdown-item" onClick={() => runMenuAction(handleCopy)}>
-            Hacer una copia
+            {t('file.makeCopy')}
           </div>
           <div className="dropdown-item" onClick={() => openDialog('move')}>
-            {menu.isFolder ? 'Mover carpeta a...' : 'Mover archivo a...'}
+            {menu.isFolder ? t('file.moveFolder') : t('file.moveFile')}
           </div>
           <div className="dropdown-item" onClick={() => openDialog('rename')}>
-            Renombrar
+            {t('file.rename')}
           </div>
           <hr className="dropdown-divider" />
           <div className="dropdown-item danger" onClick={() => openDialog('delete')}>
-            Borrar
+            {t('common.delete')}
           </div>
         </div>
       )}
       {(dialog?.kind === 'new-note' || dialog?.kind === 'new-folder') && (
         <RenameDialog
-          title={dialog.kind === 'new-note' ? 'Nueva nota' : 'Nueva carpeta'}
-          confirmLabel="Crear"
-          placeholder={dialog.kind === 'new-note' ? 'Nombre de la nota' : 'Nombre de la carpeta'}
+          title={dialog.kind === 'new-note' ? t('file.newNote') : t('file.newFolder')}
+          confirmLabel={t('common.create')}
+          placeholder={dialog.kind === 'new-note' ? t('file.noteName') : t('file.folderName')}
           initialName=""
           onSubmit={(name) =>
             dialog.kind === 'new-note' ? handleNewNote(dialog.path, name) : handleNewFolder(dialog.path, name)
@@ -410,7 +412,7 @@ export default function FileExplorer() {
       )}
       {dialog?.kind === 'move' && (
         <MoveDialog
-          title={dialog.isFolder ? 'Mover carpeta a...' : 'Mover archivo a...'}
+          title={dialog.isFolder ? t('file.moveFolder') : t('file.moveFile')}
           folders={tree
             .filter((i) => i.type === 'folder' && !(dialog.isFolder && isUnder(i.path, dialog.path)))
             .map((i) => i.path)
@@ -424,8 +426,8 @@ export default function FileExplorer() {
         <DeleteFileDialog
           path={dialog.path}
           isFolder={dialog.isFolder}
-          title={dialog.isFolder ? 'Borrar carpeta' : 'Borrar archivo'}
-          confirmLabel="Borrar"
+          title={dialog.isFolder ? t('file.deleteFolder') : t('file.deleteFile')}
+          confirmLabel={t('common.delete')}
           onDelete={(images) => handleDelete(dialog.path, images)}
           onClose={() => setDialog(null)}
         />

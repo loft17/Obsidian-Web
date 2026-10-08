@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useStore, hiddenMatchers, isHiddenPath } from '../store';
 import { searchApi, SearchResult, SearchMatch } from '../api';
+import { useT } from '../i18n';
 import { IconChevronRight, IconChevronDown, IconClose, IconSearch } from './Icons';
 
 function Highlighted({ text, start, length }: Pick<SearchMatch, 'text' | 'start' | 'length'>) {
@@ -30,6 +31,7 @@ export default function SearchPanel() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const t = useT();
 
   useEffect(() => {
     const q = query.trim();
@@ -82,13 +84,13 @@ export default function SearchPanel() {
         <input
           autoFocus
           className="search-input"
-          placeholder="Buscar en nombres y contenido..."
+          placeholder={t('search.placeholder')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === 'Escape' && setQuery('')}
         />
         {query && (
-          <button className="icon-btn search-clear" title="Limpiar" onClick={() => setQuery('')}>
+          <button className="icon-btn search-clear" title={t('common.clear')} onClick={() => setQuery('')}>
             <IconClose size={14} />
           </button>
         )}
@@ -96,16 +98,17 @@ export default function SearchPanel() {
       {q && (
         <div className="search-summary">
           {loading
-            ? 'Buscando...'
+            ? t('search.searching')
             : error
             ? error
-            : `${visible.length} ${visible.length === 1 ? 'archivo' : 'archivos'} · ${totalMatches} ${
-                totalMatches === 1 ? 'coincidencia' : 'coincidencias'
-              } en el contenido`}
+            : `${t(visible.length === 1 ? 'search.file' : 'search.files', { n: visible.length })} · ${t(
+                totalMatches === 1 ? 'search.match' : 'search.matches',
+                { n: totalMatches }
+              )}`}
         </div>
       )}
       <div className="file-explorer search-results">
-        {!loading && q && !error && visible.length === 0 && <div className="dropdown-empty">Sin resultados</div>}
+        {!loading && q && !error && visible.length === 0 && <div className="dropdown-empty">{t('search.noResults')}</div>}
         {visible.map((r) => {
           const isOpen = !collapsed.has(r.path);
           const hasMatches = r.matches.length > 0;
@@ -142,14 +145,14 @@ export default function SearchPanel() {
                     <div
                       key={i}
                       className="search-match"
-                      title={`Línea ${m.line}`}
+                      title={t('search.line', { n: m.line })}
                       onClick={() => openFile(r.path, r.name)}
                     >
                       <Highlighted text={m.text} start={m.start} length={m.length} />
                     </div>
                   ))}
                   {r.total > r.matches.length && (
-                    <div className="search-match-more">y {r.total - r.matches.length} más...</div>
+                    <div className="search-match-more">{t('search.more', { n: r.total - r.matches.length })}</div>
                   )}
                 </div>
               )}

@@ -1,4 +1,5 @@
 import { useStore } from '../store';
+import { useT } from '../i18n';
 import { IconClose, IconPlus, IconSidebar } from './Icons';
 
 export default function Tabs() {
@@ -8,12 +9,13 @@ export default function Tabs() {
   const removeTab = useStore((s) => s.removeTab);
   const showRibbon = useStore((s) => s.showRibbon);
   const toggleSidebar = useStore((s) => s.toggleSidebar);
+  const t = useT();
 
   return (
     <div className="tabs">
       {/* Sin la cinta, este es el único botón para volver a abrir la barra lateral */}
       {!showRibbon && (
-        <button className="icon-btn tabs-sidebar-toggle" title="Mostrar/ocultar barra lateral (Ctrl+B)" onClick={toggleSidebar}>
+        <button className="icon-btn tabs-sidebar-toggle" title={`${t('sidebar.toggle')} (Ctrl+B)`} onClick={toggleSidebar}>
           <IconSidebar size={16} />
         </button>
       )}
@@ -31,13 +33,13 @@ export default function Tabs() {
               e.stopPropagation();
               removeTab(tab.path);
             }}
-            title="Cerrar"
+            title={t('common.close')}
           >
             <IconClose size={14} />
           </div>
         </div>
       ))}
-      <div className="tab-new" title="Nueva pestaña">
+      <div className="tab-new" title={t('tabs.new')}>
         <IconPlus size={16} />
       </div>
     </div>

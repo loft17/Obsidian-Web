@@ -2,21 +2,22 @@ import { useEffect, useState, type CSSProperties } from 'react';
 import { useStore, type EditorMode, type Theme, DEFAULT_FONT_SIZE, MIN_FONT_SIZE, MAX_FONT_SIZE } from '../store';
 import { filesApi, settingsApi, syncApi, type NotesConfig, type NotesConfigUpdate, type ServerLimits, type SyncConfig, type SyncConfigUpdate, type SyncProvider } from '../api';
 import { formatDate as formatMoment, DEFAULT_DAILY_FORMAT, DEFAULT_DATE_FORMAT, DEFAULT_TIME_FORMAT } from '../templates';
+import { getLang, LANGUAGES, Trans, useI18n, useT, type Lang, type MessageKey } from '../i18n';
 import { IconClose, IconEdit, IconEye, IconFolderNew, IconList, IconLock, IconReset, IconSearch, IconSync, IconUserCircle } from './Icons';
 
 interface Props {
   onClose: () => void;
 }
 
-const SECTIONS = [
-  { id: 'about', label: 'Acerca de', Icon: IconUserCircle },
-  { id: 'appearance', label: 'Apariencia', Icon: IconEye },
-  { id: 'editor', label: 'Editor', Icon: IconEdit },
-  { id: 'files', label: 'Archivos', Icon: IconFolderNew },
-  { id: 'sync', label: 'Sincronización', Icon: IconSync },
-  { id: 'security', label: 'Seguridad', Icon: IconLock },
-  { id: 'shortcuts', label: 'Atajos', Icon: IconList },
-  { id: 'variables', label: 'Variables', Icon: IconUserCircle },
+const SECTIONS: { id: string; label: MessageKey; Icon: typeof IconEye }[] = [
+  { id: 'about', label: 'settings.section.about', Icon: IconUserCircle },
+  { id: 'appearance', label: 'settings.section.appearance', Icon: IconEye },
+  { id: 'editor', label: 'settings.section.editor', Icon: IconEdit },
+  { id: 'files', label: 'settings.section.files', Icon: IconFolderNew },
+  { id: 'sync', label: 'settings.section.sync', Icon: IconSync },
+  { id: 'security', label: 'settings.section.security', Icon: IconLock },
+  { id: 'shortcuts', label: 'settings.section.shortcuts', Icon: IconList },
+  { id: 'variables', label: 'settings.section.variables', Icon: IconUserCircle },
 ];
 
 // Los cambios se guardan automáticamente (el store los persiste en localStorage)
@@ -31,29 +32,45 @@ function AppearanceSection() {
   const setShowRibbon = useStore((s) => s.setShowRibbon);
   const quickFontSize = useStore((s) => s.quickFontSize);
   const setQuickFontSize = useStore((s) => s.setQuickFontSize);
+  const lang = useI18n((s) => s.lang);
+  const setLang = useI18n((s) => s.setLang);
+  const t = useT();
   const fontPercent = ((fontSize - MIN_FONT_SIZE) / (MAX_FONT_SIZE - MIN_FONT_SIZE)) * 100;
   return (
     <div className="settings-group">
       <div className="setting-item">
         <div className="setting-info">
-          <div className="setting-name">Tema</div>
-          <div className="setting-desc">Esquema de colores de la aplicación</div>
+          <div className="setting-name">{t('settings.language')}</div>
+          <div className="setting-desc">{t('settings.language.desc')}</div>
         </div>
-        <select value={theme} onChange={(e) => setTheme(e.target.value as Theme)}>
-          <option value="dark">Oscuro</option>
-          <option value="light">Claro</option>
-          <option value="system">Según el sistema</option>
+        <select value={lang} onChange={(e) => setLang(e.target.value as Lang)}>
+          {LANGUAGES.map((l) => (
+            <option key={l.value} value={l.value}>
+              {l.label}
+            </option>
+          ))}
         </select>
       </div>
       <div className="setting-item">
         <div className="setting-info">
-          <div className="setting-name">Tamaño de fuente</div>
-          <div className="setting-desc">Tamaño de fuente en píxeles que afecta al editor y la vista previa.</div>
+          <div className="setting-name">{t('settings.theme')}</div>
+          <div className="setting-desc">{t('settings.theme.desc')}</div>
+        </div>
+        <select value={theme} onChange={(e) => setTheme(e.target.value as Theme)}>
+          <option value="dark">{t('settings.theme.dark')}</option>
+          <option value="light">{t('settings.theme.light')}</option>
+          <option value="system">{t('settings.theme.system')}</option>
+        </select>
+      </div>
+      <div className="setting-item">
+        <div className="setting-info">
+          <div className="setting-name">{t('settings.fontSize')}</div>
+          <div className="setting-desc">{t('settings.fontSize.desc')}</div>
         </div>
         <div className="setting-slider">
           <button
             className="icon-btn"
-            title="Restablecer valor predeterminado"
+            title={t('settings.resetDefault')}
             disabled={fontSize === DEFAULT_FONT_SIZE}
             onClick={() => setFontSize(DEFAULT_FONT_SIZE)}
           >
@@ -73,11 +90,8 @@ function AppearanceSection() {
       </div>
       <div className="setting-item">
         <div className="setting-info">
-          <div className="setting-name">Ajuste rápido del tamaño de fuente</div>
-          <div className="setting-desc">
-            Ajuste el tamaño de la fuente usando Ctrl + Rueda del ratón, o usando el gesto de pellizcar y acercar del
-            trackpad.
-          </div>
+          <div className="setting-name">{t('settings.quickFont')}</div>
+          <div className="setting-desc">{t('settings.quickFont.desc')}</div>
         </div>
         <label className="setting-toggle">
           <input
@@ -90,8 +104,8 @@ function AppearanceSection() {
       </div>
       <div className="setting-item">
         <div className="setting-info">
-          <div className="setting-name">Mostrar la barra de título de pestaña</div>
-          <div className="setting-desc">Mostrar el encabezado en la parte superior de todas las pestañas.</div>
+          <div className="setting-name">{t('settings.tabHeader')}</div>
+          <div className="setting-desc">{t('settings.tabHeader.desc')}</div>
         </div>
         <label className="setting-toggle">
           <input type="checkbox" checked={showTabHeader} onChange={(e) => setShowTabHeader(e.target.checked)} />
@@ -100,11 +114,8 @@ function AppearanceSection() {
       </div>
       <div className="setting-item">
         <div className="setting-info">
-          <div className="setting-name">Mostrar menú de cinta</div>
-          <div className="setting-desc">
-            Muestra una barra de herramientas vertical en el costado de la ventana. Si se oculta, sus botones
-            pasan al pie de la barra lateral.
-          </div>
+          <div className="setting-name">{t('settings.ribbon')}</div>
+          <div className="setting-desc">{t('settings.ribbon.desc')}</div>
         </div>
         <label className="setting-toggle">
           <input type="checkbox" checked={showRibbon} onChange={(e) => setShowRibbon(e.target.checked)} />
@@ -126,44 +137,40 @@ function EditorSection() {
   const setShowLineNumbers = useStore((s) => s.setShowLineNumbers);
   const readableLineLength = useStore((s) => s.readableLineLength);
   const setReadableLineLength = useStore((s) => s.setReadableLineLength);
+  const t = useT();
   return (
     <>
     <div className="settings-group">
       <div className="setting-item">
         <div className="setting-info">
-          <div className="setting-name">Modo por defecto de las notas</div>
-          <div className="setting-desc">Cómo se abren las notas al seleccionarlas</div>
+          <div className="setting-name">{t('settings.defaultMode')}</div>
+          <div className="setting-desc">{t('settings.defaultMode.desc')}</div>
         </div>
         <select
           value={defaultEditMode ? 'edit' : 'view'}
           onChange={(e) => setDefaultEditMode(e.target.value === 'edit')}
         >
-          <option value="view">Modo visor</option>
-          <option value="edit">Modo edición</option>
+          <option value="view">{t('settings.defaultMode.view')}</option>
+          <option value="edit">{t('settings.defaultMode.edit')}</option>
         </select>
       </div>
       <div className="setting-item">
         <div className="setting-info">
-          <div className="setting-name">Modo de edición predeterminado</div>
-          <div className="setting-desc">
-            Vista previa: oculta la sintaxis de markdown salvo en la línea que editas. Fuente: muestra el markdown tal
-            cual.
-          </div>
+          <div className="setting-name">{t('settings.editorMode')}</div>
+          <div className="setting-desc">{t('settings.editorMode.desc')}</div>
         </div>
         <select value={editorMode} onChange={(e) => setEditorMode(e.target.value as EditorMode)}>
-          <option value="preview">Modo vista previa</option>
-          <option value="source">Modo fuente</option>
+          <option value="preview">{t('settings.editorMode.preview')}</option>
+          <option value="source">{t('settings.editorMode.source')}</option>
         </select>
       </div>
     </div>
-    <h3 className="settings-heading">Pantalla</h3>
+    <h3 className="settings-heading">{t('settings.display')}</h3>
     <div className="settings-group">
       <div className="setting-item">
         <div className="setting-info">
-          <div className="setting-name">Título en línea</div>
-          <div className="setting-desc">
-            Mostrar el nombre de archivo como un título editable en línea con el contenido del archivo.
-          </div>
+          <div className="setting-name">{t('settings.inlineTitle')}</div>
+          <div className="setting-desc">{t('settings.inlineTitle.desc')}</div>
         </div>
         <label className="setting-toggle">
           <input type="checkbox" checked={showInlineTitle} onChange={(e) => setShowInlineTitle(e.target.checked)} />
@@ -172,11 +179,8 @@ function EditorSection() {
       </div>
       <div className="setting-item">
         <div className="setting-info">
-          <div className="setting-name">Longitud de línea legible</div>
-          <div className="setting-desc">
-            Limita la longitud de línea máxima. Muestra menos contenido en pantalla, pero los párrafos largos son más
-            legibles.
-          </div>
+          <div className="setting-name">{t('settings.readableLine')}</div>
+          <div className="setting-desc">{t('settings.readableLine.desc')}</div>
         </div>
         <label className="setting-toggle">
           <input
@@ -189,8 +193,8 @@ function EditorSection() {
       </div>
       <div className="setting-item">
         <div className="setting-info">
-          <div className="setting-name">Números de línea</div>
-          <div className="setting-desc">Muestra los números de línea.</div>
+          <div className="setting-name">{t('settings.lineNumbers')}</div>
+          <div className="setting-desc">{t('settings.lineNumbers.desc')}</div>
         </div>
         <label className="setting-toggle">
           <input type="checkbox" checked={showLineNumbers} onChange={(e) => setShowLineNumbers(e.target.checked)} />
@@ -226,6 +230,7 @@ function AttachmentsSetting() {
   const [folder, setFolder] = useState('');
   const [savedFolder, setSavedFolder] = useState('');
   const [error, setError] = useState('');
+  const t = useT();
 
   useEffect(() => {
     settingsApi
@@ -259,8 +264,8 @@ function AttachmentsSetting() {
     <>
       <div className="setting-item">
         <div className="setting-info">
-          <div className="setting-name">Ubicación predeterminada para los archivos adjuntos nuevos</div>
-          <div className="setting-desc">Dónde se ubican los archivos adjuntos recién agregados.</div>
+          <div className="setting-name">{t('settings.attachments')}</div>
+          <div className="setting-desc">{t('settings.attachments.desc')}</div>
           {error && <div className="setting-desc" style={{ color: 'var(--text-error, #e5484d)' }}>{error}</div>}
         </div>
         <select
@@ -268,22 +273,22 @@ function AttachmentsSetting() {
           disabled={!loaded}
           onChange={(e) => save(e.target.value as AttachmentMode, folder)}
         >
-          <option value="root">Carpeta de la bóveda</option>
-          <option value="same">Misma carpeta donde está el archivo</option>
-          <option value="sub">En la subcarpeta de la carpeta actual</option>
-          <option value="folder">En la carpeta especificada abajo</option>
+          <option value="root">{t('settings.attachments.root')}</option>
+          <option value="same">{t('settings.attachments.same')}</option>
+          <option value="sub">{t('settings.attachments.sub')}</option>
+          <option value="folder">{t('settings.attachments.folder')}</option>
         </select>
       </div>
       {(mode === 'sub' || mode === 'folder') && (
         <div className="setting-item">
           <div className="setting-info">
             <div className="setting-name">
-              {mode === 'sub' ? 'Nombre de la subcarpeta' : 'Ruta de la carpeta de archivos adjuntos'}
+              {mode === 'sub' ? t('settings.attachments.subName') : t('settings.attachments.folderPath')}
             </div>
             <div className="setting-desc">
               {mode === 'sub'
-                ? `Si su archivo está en "bóveda/carpeta", y su nombre de la subcarpeta establecida en "${folder || 'adjuntos'}", los archivos adjuntos se guardarán en "bóveda/carpeta/${folder || 'adjuntos'}".`
-                : 'Ruta relativa a la raíz de la bóveda donde se guardarán todos los adjuntos.'}
+                ? t('settings.attachments.subDesc', { folder: folder || 'attachments' })
+                : t('settings.attachments.folderDesc')}
             </div>
           </div>
           <input
@@ -347,6 +352,7 @@ function NotesField({
 function NotesSettings() {
   const [config, setConfig] = useState<NotesConfig | null>(null);
   const [error, setError] = useState('');
+  const t = useT();
 
   useEffect(() => {
     settingsApi
@@ -367,8 +373,10 @@ function NotesSettings() {
   const now = new Date();
   const preview = (format: string, fallback: string) => (
     <>
-      Formato de fecha de moment.js, p. ej. <code>{fallback}</code>. Vista previa:{' '}
-      <strong>{formatMoment(now, format || fallback)}</strong>
+      <Trans
+        k="settings.notes.formatPreview"
+        values={{ example: <code>{fallback}</code>, preview: <strong>{formatMoment(now, format || fallback)}</strong> }}
+      />
     </>
   );
   const disabled = !config;
@@ -377,53 +385,53 @@ function NotesSettings() {
 
   return (
     <>
-      <h3 className="settings-heading">Notas diarias</h3>
+      <h3 className="settings-heading">{t('settings.daily')}</h3>
       {error && <div className="setting-desc" style={{ color: 'var(--text-error, #e5484d)' }}>{error}</div>}
       <NotesField
-        name="Formato de fecha"
-        desc={<>{preview(daily.format, DEFAULT_DAILY_FORMAT)}. Usa / para crear subcarpetas: <code>YYYY/MM/YYYY-MM-DD</code>.</>}
+        name={t('settings.dateFormat')}
+        desc={<>{preview(daily.format, DEFAULT_DAILY_FORMAT)}. <Trans k="settings.daily.subfolders" values={{ example: <code>YYYY/MM/YYYY-MM-DD</code> }} /></>}
         placeholder={DEFAULT_DAILY_FORMAT}
         value={daily.format}
         disabled={disabled}
         onSave={(v) => save('dailyNotes', 'format', v)}
       />
       <NotesField
-        name="Ubicación del archivo nuevo"
-        desc="Carpeta donde se crean las notas diarias. Vacío: la raíz de la bóveda."
-        placeholder="Diario"
+        name={t('settings.daily.folder')}
+        desc={t('settings.daily.folder.desc')}
+        placeholder={t('settings.daily.folder.placeholder')}
         value={daily.folder}
         disabled={disabled}
         onSave={(v) => save('dailyNotes', 'folder', v)}
       />
       <NotesField
-        name="Plantilla"
-        desc="Ruta de la plantilla para las notas diarias nuevas, p. ej. Plantillas/Diario. Vacío: nota en blanco."
-        placeholder="Plantillas/Diario"
+        name={t('settings.daily.template')}
+        desc={t('settings.daily.template.desc')}
+        placeholder={t('settings.daily.template.placeholder')}
         value={daily.template}
         disabled={disabled}
         onSave={(v) => save('dailyNotes', 'template', v)}
       />
 
-      <h3 className="settings-heading">Plantillas</h3>
+      <h3 className="settings-heading">{t('settings.templates')}</h3>
       <NotesField
-        name="Carpeta de plantillas"
-        desc="Las notas de esta carpeta se ofrecen al insertar una plantilla."
-        placeholder="Plantillas"
+        name={t('settings.templates.folder')}
+        desc={t('settings.templates.folder.desc')}
+        placeholder={t('settings.templates.folder.placeholder')}
         value={templates.folder}
         disabled={disabled}
         onSave={(v) => save('templates', 'folder', v)}
       />
       <NotesField
-        name="Formato de fecha"
-        desc={<>{preview(templates.dateFormat, DEFAULT_DATE_FORMAT)}. Se usa en <code>{'{{date}}'}</code>.</>}
+        name={t('settings.dateFormat')}
+        desc={<>{preview(templates.dateFormat, DEFAULT_DATE_FORMAT)}. <Trans k="settings.templates.usedIn" values={{ variable: <code>{'{{date}}'}</code> }} /></>}
         placeholder={DEFAULT_DATE_FORMAT}
         value={templates.dateFormat}
         disabled={disabled}
         onSave={(v) => save('templates', 'dateFormat', v)}
       />
       <NotesField
-        name="Formato de hora"
-        desc={<>{preview(templates.timeFormat, DEFAULT_TIME_FORMAT)}. Se usa en <code>{'{{time}}'}</code>.</>}
+        name={t('settings.timeFormat')}
+        desc={<>{preview(templates.timeFormat, DEFAULT_TIME_FORMAT)}. <Trans k="settings.templates.usedIn" values={{ variable: <code>{'{{time}}'}</code> }} /></>}
         placeholder={DEFAULT_TIME_FORMAT}
         value={templates.timeFormat}
         disabled={disabled}
@@ -441,6 +449,7 @@ function FilesSection() {
   const [vaultPassword, setVaultPassword] = useState('');
   const [vaultError, setVaultError] = useState('');
   const [saving, setSaving] = useState(false);
+  const t = useT();
 
   useEffect(() => {
     settingsApi
@@ -469,11 +478,8 @@ function FilesSection() {
     <div className="settings-group">
       <div className="setting-item">
         <div className="setting-info">
-          <div className="setting-name">Ruta de la bóveda</div>
-          <div className="setting-desc">
-            Ruta absoluta en el servidor. Se creará si no existe. Para cambiarla hace falta la contraseña;
-            al guardar se recargará la aplicación.
-          </div>
+          <div className="setting-name">{t('settings.vaultPath')}</div>
+          <div className="setting-desc">{t('settings.vaultPath.desc')}</div>
           {vaultError && <div className="setting-desc" style={{ color: 'var(--text-error, #e5484d)' }}>{vaultError}</div>}
         </div>
       </div>
@@ -491,7 +497,7 @@ function FilesSection() {
           <input
             className="setting-input"
             type="password"
-            placeholder="Contraseña actual"
+            placeholder={t('password.current')}
             autoComplete="current-password"
             value={vaultPassword}
             onChange={(e) => setVaultPassword(e.target.value)}
@@ -499,24 +505,23 @@ function FilesSection() {
             disabled={saving}
           />
           <button onClick={saveVault} disabled={saving || !vaultPath.trim() || !vaultPassword}>
-            Guardar
+            {t('common.save')}
           </button>
         </div>
       )}
       <AttachmentsSetting />
       <div className="setting-item">
         <div className="setting-info">
-          <div className="setting-name">Ocultar carpetas</div>
+          <div className="setting-name">{t('settings.hiddenFolders')}</div>
           <div className="setting-desc">
-            Un patrón por línea, p. ej. <code>_recursos</code> o <code>_*</code>. Usa * como comodín.
-            Las carpetas que coincidan (y su contenido) no se mostrarán en el árbol.
+            <Trans k="settings.hiddenFolders.desc" values={{ a: <code>{t('settings.hiddenFolders.example')}</code>, b: <code>_*</code> }} />
           </div>
         </div>
       </div>
       <textarea
         className="setting-textarea"
         rows={6}
-        placeholder={'_recursos\n_*'}
+        placeholder={`${t('settings.hiddenFolders.example')}\n_*`}
         value={hiddenFolders}
         onChange={(e) => setHiddenFolders(e.target.value)}
       />
@@ -525,20 +530,20 @@ function FilesSection() {
   );
 }
 
-const INTERVAL_OPTIONS = [
-  { value: 0, label: 'Solo manual' },
-  { value: 5, label: 'Cada 5 minutos' },
-  { value: 15, label: 'Cada 15 minutos' },
-  { value: 30, label: 'Cada 30 minutos' },
-  { value: 60, label: 'Cada hora' },
-  { value: 180, label: 'Cada 3 horas' },
-  { value: 1440, label: 'Una vez al día' },
+const INTERVAL_OPTIONS: { value: number; label: MessageKey; n?: number }[] = [
+  { value: 0, label: 'sync.interval.manual' },
+  { value: 5, label: 'sync.interval.minutes', n: 5 },
+  { value: 15, label: 'sync.interval.minutes', n: 15 },
+  { value: 30, label: 'sync.interval.minutes', n: 30 },
+  { value: 60, label: 'sync.interval.hour' },
+  { value: 180, label: 'sync.interval.hours', n: 3 },
+  { value: 1440, label: 'sync.interval.day' },
 ];
 
 const errorStyle = { color: 'var(--text-error, #e5484d)' };
 const fieldStyle = { flex: '0 1 280px', minWidth: 0 };
 
-const formatDate = (iso: string | null) => (iso ? new Date(iso).toLocaleString() : 'nunca');
+const formatDate = (iso: string | null, never: string) => (iso ? new Date(iso).toLocaleString(getLang()) : never);
 
 // La configuración y el token se guardan en el servidor (data/sync.json);
 // el token nunca vuelve al navegador, solo si está guardado
@@ -552,6 +557,7 @@ function SyncSection() {
   const [githubToken, setGithubToken] = useState('');
   const [message, setMessage] = useState<{ error: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  const t = useT();
 
   const applyConfig = (c: SyncConfig, p: SyncProvider = c.provider) => {
     setConfig(c);
@@ -599,7 +605,7 @@ function SyncSection() {
     if (provider === 'github') changes.github = { repo: repo.trim(), branch: branch.trim(), token: githubToken.trim() };
     try {
       applyConfig(await syncApi.configure(changes));
-      setMessage({ error: false, text: 'Guardado.' });
+      setMessage({ error: false, text: t('common.saved') });
     } catch (err) {
       setMessage({ error: true, text: (err as Error).message });
     }
@@ -642,27 +648,24 @@ function SyncSection() {
       <div className="settings-group">
         <div className="setting-item">
           <div className="setting-info">
-            <div className="setting-name">Servicio</div>
-            <div className="setting-desc">
-              Mantiene la bóveda del servidor sincronizada con un repositorio de GitHub (y, a través de él, con
-              Obsidian de escritorio usando el plugin Obsidian Git).
-            </div>
+            <div className="setting-name">{t('sync.service')}</div>
+            <div className="setting-desc">{t('sync.service.desc')}</div>
           </div>
           <select value={provider} onChange={(e) => changeProvider(e.target.value as SyncProvider)} disabled={busy}>
-            <option value="none">Desactivada</option>
+            <option value="none">{t('sync.disabled')}</option>
             <option value="github">GitHub</option>
           </select>
         </div>
         {provider !== 'none' && (
           <div className="setting-item">
             <div className="setting-info">
-              <div className="setting-name">Sincronización automática</div>
-              <div className="setting-desc">Frecuencia con la que el servidor sincroniza solo.</div>
+              <div className="setting-name">{t('sync.auto')}</div>
+              <div className="setting-desc">{t('sync.auto.desc')}</div>
             </div>
             <select value={interval} onChange={(e) => setIntervalValue(Number(e.target.value))} disabled={busy}>
               {INTERVAL_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
-                  {o.label}
+                  {t(o.label, { n: o.n ?? 0 })}
                 </option>
               ))}
             </select>
@@ -676,16 +679,16 @@ function SyncSection() {
           <div className="settings-group">
             <div className="setting-item">
               <div className="setting-info">
-                <div className="setting-name">Repositorio</div>
+                <div className="setting-name">{t('sync.repo')}</div>
                 <div className="setting-desc">
-                  <code>usuario/repositorio</code> o su URL https. Mejor privado: se suben todas las notas.
+                  <Trans k="sync.repo.desc" values={{ example: <code>{t('sync.repo.example')}</code> }} />
                 </div>
               </div>
               <input
                 className="setting-input"
                 style={fieldStyle}
                 type="text"
-                placeholder="usuario/mi-vault"
+                placeholder={t('sync.repo.placeholder')}
                 value={repo}
                 onChange={(e) => setRepo(e.target.value)}
                 disabled={busy}
@@ -693,7 +696,7 @@ function SyncSection() {
             </div>
             <div className="setting-item">
               <div className="setting-info">
-                <div className="setting-name">Rama</div>
+                <div className="setting-name">{t('sync.branch')}</div>
               </div>
               <input
                 className="setting-input"
@@ -707,11 +710,13 @@ function SyncSection() {
             </div>
             <div className="setting-item">
               <div className="setting-info">
-                <div className="setting-name">Token de acceso personal</div>
+                <div className="setting-name">{t('sync.token')}</div>
                 <div className="setting-desc">
-                  Créalo en GitHub → Settings → Developer settings → <em>Fine-grained tokens</em>, solo para este
-                  repositorio y con permiso <em>Contents: Read and write</em>.
-                  {hasToken && ' Hay un token guardado; escribe otro solo para cambiarlo.'}
+                  <Trans
+                    k="sync.token.desc"
+                    values={{ tokens: <em>Fine-grained tokens</em>, permission: <em>Contents: Read and write</em> }}
+                  />
+                  {hasToken && ` ${t('sync.token.saved')}`}
                 </div>
               </div>
               <input
@@ -719,7 +724,7 @@ function SyncSection() {
                 style={fieldStyle}
                 type="password"
                 autoComplete="off"
-                placeholder={hasToken ? '•••••••• (guardado)' : 'github_pat_…'}
+                placeholder={hasToken ? `•••••••• (${t('sync.token.savedShort')})` : 'github_pat_…'}
                 value={githubToken}
                 onChange={(e) => setGithubToken(e.target.value)}
                 disabled={busy}
@@ -727,8 +732,7 @@ function SyncSection() {
             </div>
           </div>
           <div className="setting-desc" style={{ marginTop: 8 }}>
-            Cada sincronización hace commit de los cambios, integra los del repositorio (si una nota cambió en los dos
-            lados, se queda la versión del servidor) y sube el resultado. La papelera <code>.trash/</code> no se sube.
+            <Trans k="sync.howItWorks" values={{ trash: <code>.trash/</code> }} />
           </div>
         </>
       )}
@@ -745,35 +749,35 @@ function SyncSection() {
         <div style={{ display: 'flex', gap: 8 }}>
           {hasToken && (
             <button onClick={forgetToken} disabled={busy}>
-              Olvidar token
+              {t('sync.forgetToken')}
             </button>
           )}
           <button onClick={save} disabled={busy || !dirty}>
-            Guardar
+            {t('common.save')}
           </button>
         </div>
       </div>
 
       {config.provider !== 'none' && (
         <>
-          <h3 className="settings-heading">Estado</h3>
+          <h3 className="settings-heading">{t('sync.status')}</h3>
           <div className="settings-group">
             <div className="setting-item">
               <div className="setting-info">
                 <div className="setting-name">
-                  {status.running ? 'Sincronizando…' : `Última sincronización: ${formatDate(status.lastSync)}`}
+                  {status.running ? t('sync.running') : t('sync.last', { date: formatDate(status.lastSync, t('sync.never')) })}
                 </div>
                 {!status.running && status.lastError && (
                   <div className="setting-desc" style={errorStyle}>
-                    Error ({formatDate(status.lastAttempt)}): {status.lastError}
+                    Error ({formatDate(status.lastAttempt, t('sync.never'))}): {status.lastError}
                   </div>
                 )}
                 {!status.running && !status.lastError && status.lastMessage && (
                   <div className="setting-desc">{status.lastMessage}</div>
                 )}
               </div>
-              <button onClick={syncNow} disabled={busy || status.running || dirty} title={dirty ? 'Guarda antes los cambios' : undefined}>
-                Sincronizar ahora
+              <button onClick={syncNow} disabled={busy || status.running || dirty} title={dirty ? t('sync.saveFirst') : undefined}>
+                {t('sync.now')}
               </button>
             </div>
           </div>
@@ -801,6 +805,7 @@ function SecuritySection() {
   const [message, setMessage] = useState<{ error: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirmRevoke, setConfirmRevoke] = useState(false);
+  const t = useT();
 
   const mismatch = confirm !== '' && next !== confirm;
   const canSave = !busy && current && next.length >= MIN_PASSWORD_LENGTH && next === confirm;
@@ -813,7 +818,7 @@ function SecuritySection() {
       setCurrent('');
       setNext('');
       setConfirm('');
-      setMessage({ error: false, text: 'Contraseña cambiada. Se han cerrado las demás sesiones.' });
+      setMessage({ error: false, text: t('security.changed') });
     } catch (err) {
       setMessage({ error: true, text: (err as Error).message });
     }
@@ -836,10 +841,8 @@ function SecuritySection() {
       <div className="settings-group">
         <div className="setting-item">
           <div className="setting-info">
-            <div className="setting-name">Cambiar la contraseña</div>
-            <div className="setting-desc">
-              Mínimo {MIN_PASSWORD_LENGTH} caracteres. Se cerrarán las sesiones abiertas en otros dispositivos.
-            </div>
+            <div className="setting-name">{t('security.changePassword')}</div>
+            <div className="setting-desc">{t('security.changePassword.desc', { n: MIN_PASSWORD_LENGTH })}</div>
             {message && (
               <div className="setting-desc" style={message.error ? { color: 'var(--text-error, #e5484d)' } : undefined}>
                 {message.text}
@@ -851,7 +854,7 @@ function SecuritySection() {
           <input
             className="setting-input"
             type="password"
-            placeholder="Contraseña actual"
+            placeholder={t('password.current')}
             autoComplete="current-password"
             value={current}
             onChange={(e) => setCurrent(e.target.value)}
@@ -862,7 +865,7 @@ function SecuritySection() {
           <input
             className="setting-input"
             type="password"
-            placeholder="Contraseña nueva"
+            placeholder={t('password.new')}
             autoComplete="new-password"
             value={next}
             onChange={(e) => setNext(e.target.value)}
@@ -873,7 +876,7 @@ function SecuritySection() {
           <input
             className="setting-input"
             type="password"
-            placeholder={mismatch ? 'Las contraseñas no coinciden' : 'Repite la contraseña nueva'}
+            placeholder={mismatch ? t('password.mismatch') : t('password.repeat')}
             autoComplete="new-password"
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
@@ -882,30 +885,29 @@ function SecuritySection() {
             style={mismatch ? { borderColor: 'var(--text-error, #e5484d)' } : undefined}
           />
           <button onClick={changePassword} disabled={!canSave}>
-            Cambiar
+            {t('security.change')}
           </button>
         </div>
       </div>
       <div className="settings-group">
         <div className="setting-item">
           <div className="setting-info">
-            <div className="setting-name">Cerrar todas las sesiones</div>
+            <div className="setting-name">{t('security.revoke')}</div>
             <div className="setting-desc">
-              Cierra la sesión en todos los dispositivos, también en este. Las sesiones caducan solas a los{' '}
-              {limits?.sessionMaxDays ?? 30} días o tras {limits?.sessionIdleDays ?? 7} días sin usarse.
+              {t('security.revoke.desc', { max: limits?.sessionMaxDays ?? 30, idle: limits?.sessionIdleDays ?? 7 })}
             </div>
           </div>
           {confirmRevoke ? (
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={() => setConfirmRevoke(false)} disabled={busy}>
-                Cancelar
+                {t('common.cancel')}
               </button>
               <button onClick={revokeSessions} disabled={busy}>
-                Confirmar
+                {t('common.confirm')}
               </button>
             </div>
           ) : (
-            <button onClick={() => setConfirmRevoke(true)}>Cerrar todas</button>
+            <button onClick={() => setConfirmRevoke(true)}>{t('security.revokeAll')}</button>
           )}
         </div>
       </div>
@@ -913,63 +915,69 @@ function SecuritySection() {
   );
 }
 
-const SHORTCUT_GROUPS = [
+// Las teclas con nombre propio en cada idioma (Mayús, Retroceso) van como clave de traducción
+const SHIFT: MessageKey = 'key.shift';
+const BACKSPACE: MessageKey = 'key.backspace';
+
+const SHORTCUT_GROUPS: { title: MessageKey; items: { keys: string[]; desc: MessageKey }[] }[] = [
   {
-    title: 'Generales',
+    title: 'shortcuts.general',
     items: [
-      { keys: ['Ctrl', 'P'], desc: 'Abrir nota (buscador rápido)' },
-      { keys: ['Ctrl', 'S'], desc: 'Guardar la nota ahora' },
-      { keys: ['Ctrl', 'E'], desc: 'Alternar entre edición y lectura' },
-      { keys: ['Ctrl', 'B'], desc: 'Mostrar u ocultar la barra lateral' },
-      { keys: ['Esc'], desc: 'Cerrar menús, diálogos y la búsqueda' },
+      { keys: ['Ctrl', 'P'], desc: 'shortcuts.quickOpen' },
+      { keys: ['Ctrl', 'S'], desc: 'shortcuts.save' },
+      { keys: ['Ctrl', 'E'], desc: 'shortcuts.toggleMode' },
+      { keys: ['Ctrl', 'B'], desc: 'shortcuts.toggleSidebar' },
+      { keys: ['Esc'], desc: 'shortcuts.close' },
     ],
   },
   {
-    title: 'Buscar en la nota',
+    title: 'shortcuts.findInNote',
     items: [
-      { keys: ['Ctrl', 'F'], desc: 'Abrir la búsqueda en la nota' },
-      { keys: ['Enter'], desc: 'Siguiente resultado (Mayús para el anterior)' },
-      { keys: ['F3'], desc: 'Siguiente resultado' },
-      { keys: ['Mayús', 'F3'], desc: 'Resultado anterior' },
+      { keys: ['Ctrl', 'F'], desc: 'shortcuts.openFind' },
+      { keys: ['Enter'], desc: 'shortcuts.nextResultShift' },
+      { keys: ['F3'], desc: 'shortcuts.nextResult' },
+      { keys: [SHIFT, 'F3'], desc: 'shortcuts.prevResult' },
     ],
   },
   {
-    title: 'Abrir nota',
+    title: 'quickOpen.title',
     items: [
-      { keys: ['↑', '↓'], desc: 'Moverse por los resultados' },
-      { keys: ['Enter'], desc: 'Abrir la nota seleccionada' },
+      { keys: ['↑', '↓'], desc: 'shortcuts.moveResults' },
+      { keys: ['Enter'], desc: 'shortcuts.openSelected' },
     ],
   },
   {
-    title: 'Propiedades',
+    title: 'props.title',
     items: [
-      { keys: ['Enter'], desc: 'Añadir el valor o la propiedad' },
-      { keys: [','], desc: 'Añadir el valor en listas y etiquetas' },
-      { keys: ['Retroceso'], desc: 'Con el campo vacío, borrar el último valor' },
-      { keys: ['Esc'], desc: 'Cancelar una propiedad nueva' },
+      { keys: ['Enter'], desc: 'shortcuts.addValue' },
+      { keys: [','], desc: 'shortcuts.addListValue' },
+      { keys: [BACKSPACE], desc: 'shortcuts.removeLast' },
+      { keys: ['Esc'], desc: 'shortcuts.cancelProperty' },
     ],
   },
 ];
 
 function ShortcutsSection() {
+  const t = useT();
+  const keyName = (k: string) => (k === SHIFT || k === BACKSPACE ? t(k) : k);
   return (
     <>
       <div className="setting-desc" style={{ marginBottom: 12 }}>
-        En Mac, usa Cmd en lugar de Ctrl.
+        {t('shortcuts.mac')}
       </div>
       {SHORTCUT_GROUPS.map((group) => (
         <div className="settings-group" key={group.title}>
-          <div className="settings-nav-title">{group.title}</div>
+          <div className="settings-nav-title">{t(group.title)}</div>
           {group.items.map((item) => (
             <div className="setting-item" key={item.desc}>
               <div className="setting-info">
-                <div className="setting-name">{item.desc}</div>
+                <div className="setting-name">{t(item.desc)}</div>
               </div>
               <div className="shortcut-keys">
                 {item.keys.map((k, i) => (
                   <span key={i}>
                     {i > 0 && ' + '}
-                    <kbd>{k}</kbd>
+                    <kbd>{keyName(k)}</kbd>
                   </span>
                 ))}
               </div>
@@ -982,18 +990,19 @@ function ShortcutsSection() {
 }
 
 function AboutSection() {
+  const t = useT();
   return (
     <div className="settings-group">
       <div className="setting-item">
         <div className="setting-info">
-          <div className="setting-name">Versión {__APP_VERSION__}</div>
+          <div className="setting-name">{t('about.version', { version: __APP_VERSION__ })}</div>
           <div className="setting-desc">Obsidian Web</div>
         </div>
       </div>
       <div className="setting-item">
         <div className="setting-info">
-          <div className="setting-name">Desarrollado por Jose Luis Romera</div>
-          <div className="setting-desc">Hecho con cariño (y una ayudita de la IA) para todos los Obsidian lovers 💜</div>
+          <div className="setting-name">{t('about.author', { name: 'Jose Luis Romera' })}</div>
+          <div className="setting-desc">{t('about.tagline')}</div>
         </div>
       </div>
     </div>
@@ -1002,19 +1011,20 @@ function AboutSection() {
 
 function VariablesSection() {
   const limits = useServerLimits();
+  const t = useT();
   const rows: [string, string, string][] = limits
     ? [
-        ['Tamaño máximo de una nota', `${limits.maxNoteMB} MB`, 'MAX_NOTE_MB'],
-        ['Tamaño máximo de un adjunto', `${limits.maxUploadMB} MB`, 'MAX_UPLOAD_MB'],
-        ['Longitud mínima de la contraseña', `${limits.minPasswordLength} caracteres`, 'MIN_PASSWORD_LENGTH'],
-        ['Longitud máxima de una búsqueda', `${limits.searchMaxQueryLength} caracteres`, 'SEARCH_MAX_QUERY_LENGTH'],
-        ['Notas omitidas en la búsqueda', `más de ${limits.searchMaxFileMB} MB`, 'SEARCH_MAX_FILE_MB'],
-        ['Notas indexadas para la búsqueda', `${limits.searchMaxScannedMB} MB`, 'SEARCH_MAX_SCANNED_MB'],
-        ['Búsquedas por minuto', `${limits.searchRateMax}`, 'SEARCH_RATE_MAX'],
-        ['Resultados de búsqueda', `${limits.searchMaxResults} archivos`, 'SEARCH_MAX_RESULTS'],
-        ['Coincidencias por archivo', `${limits.searchMaxMatchesPerFile}`, 'SEARCH_MAX_MATCHES_PER_FILE'],
-        ['Duración máxima de la sesión', `${limits.sessionMaxDays} días`, 'SESSION_MAX_DAYS'],
-        ['Caducidad por inactividad', `${limits.sessionIdleDays} días`, 'SESSION_IDLE_DAYS'],
+        [t('limits.maxNote'), `${limits.maxNoteMB} MB`, 'MAX_NOTE_MB'],
+        [t('limits.maxUpload'), `${limits.maxUploadMB} MB`, 'MAX_UPLOAD_MB'],
+        [t('limits.minPassword'), t('limits.chars', { n: limits.minPasswordLength }), 'MIN_PASSWORD_LENGTH'],
+        [t('limits.maxQuery'), t('limits.chars', { n: limits.searchMaxQueryLength }), 'SEARCH_MAX_QUERY_LENGTH'],
+        [t('limits.skippedNotes'), t('limits.moreThanMB', { n: limits.searchMaxFileMB }), 'SEARCH_MAX_FILE_MB'],
+        [t('limits.indexedNotes'), `${limits.searchMaxScannedMB} MB`, 'SEARCH_MAX_SCANNED_MB'],
+        [t('limits.searchRate'), `${limits.searchRateMax}`, 'SEARCH_RATE_MAX'],
+        [t('limits.searchResults'), t('limits.files', { n: limits.searchMaxResults }), 'SEARCH_MAX_RESULTS'],
+        [t('limits.matchesPerFile'), `${limits.searchMaxMatchesPerFile}`, 'SEARCH_MAX_MATCHES_PER_FILE'],
+        [t('limits.sessionMax'), t('limits.days', { n: limits.sessionMaxDays }), 'SESSION_MAX_DAYS'],
+        [t('limits.sessionIdle'), t('limits.days', { n: limits.sessionIdleDays }), 'SESSION_IDLE_DAYS'],
       ]
     : [];
 
@@ -1022,9 +1032,9 @@ function VariablesSection() {
     <>
       {limits && (
         <div className="settings-group">
-          <div className="settings-nav-title">Límites del servidor</div>
+          <div className="settings-nav-title">{t('limits.title')}</div>
           <div className="setting-desc" style={{ marginBottom: 8 }}>
-            Se cambian con variables de entorno en el servidor (ver <code>.env.example</code>) y requieren reiniciarlo.
+            <Trans k="limits.desc" values={{ file: <code>.env.example</code> }} />
           </div>
           {rows.map(([name, value, env]) => (
             <div className="setting-item" key={env}>
@@ -1046,6 +1056,7 @@ function VariablesSection() {
 export default function SettingsModal({ onClose }: Props) {
   const [section, setSection] = useState('about');
   const [query, setQuery] = useState('');
+  const t = useT();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
@@ -1053,14 +1064,14 @@ export default function SettingsModal({ onClose }: Props) {
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  const sections = SECTIONS.filter((s) => s.label.toLowerCase().includes(query.toLowerCase()));
+  const sections = SECTIONS.filter((s) => t(s.label).toLowerCase().includes(query.toLowerCase()));
 
   return (
     <div className="modal-overlay" onMouseDown={onClose}>
       <div className="settings-modal" onMouseDown={(e) => e.stopPropagation()}>
         <div className="settings-titlebar">
-          <span>Preferencias</span>
-          <button className="icon-btn" title="Cerrar" onClick={onClose}>
+          <span>{t('settings.title')}</span>
+          <button className="icon-btn" title={t('common.close')} onClick={onClose}>
             <IconClose size={16} />
           </button>
         </div>
@@ -1069,12 +1080,12 @@ export default function SettingsModal({ onClose }: Props) {
             <div className="settings-search">
               <IconSearch size={14} />
               <input
-                placeholder="Buscar ajustes..."
+                placeholder={t('settings.search')}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
               />
             </div>
-            <div className="settings-nav-title">Opciones</div>
+            <div className="settings-nav-title">{t('settings.options')}</div>
             {sections.map(({ id, label, Icon }) => (
               <div
                 key={id}
@@ -1082,7 +1093,7 @@ export default function SettingsModal({ onClose }: Props) {
                 onClick={() => setSection(id)}
               >
                 <Icon size={16} />
-                <span>{label}</span>
+                <span>{t(label)}</span>
               </div>
             ))}
           </nav>

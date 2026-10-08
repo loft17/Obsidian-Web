@@ -3,6 +3,7 @@
 // y mismas variables en las plantillas: {{title}}, {{date}}, {{time}}, {{date:FORMATO}} y {{time:FORMATO}}
 import { useStore } from './store';
 import { filesApi, settingsApi, type NotesConfig } from './api';
+import { getLang, t } from './i18n';
 
 export const DEFAULT_DAILY_FORMAT = 'YYYY-MM-DD';
 export const DEFAULT_DATE_FORMAT = 'YYYY-MM-DD';
@@ -10,7 +11,8 @@ export const DEFAULT_TIME_FORMAT = 'HH:mm';
 
 const pad = (n: number, width = 2) => String(n).padStart(width, '0');
 
-const locale = () => navigator.language || 'es';
+// Los nombres de meses y días siguen el idioma de la interfaz
+const locale = getLang;
 const monthName = (d: Date, month: 'long' | 'short') => d.toLocaleDateString(locale(), { month });
 const weekdayName = (d: Date, weekday: 'long' | 'short' | 'narrow') => d.toLocaleDateString(locale(), { weekday });
 
@@ -116,7 +118,7 @@ export async function openDailyNote() {
   await filesApi.createNote(path, content);
   setTree(await filesApi.getTree());
   openFile(path, path.split('/').pop() || path);
-  if (missingTemplate) alert(`No se encontró la plantilla "${missingTemplate}": la nota se ha creado vacía.`);
+  if (missingTemplate) alert(t('daily.templateMissing', { template: missingTemplate }));
 }
 
 // Plantillas disponibles: las notas de la carpeta de plantillas (y sus subcarpetas)

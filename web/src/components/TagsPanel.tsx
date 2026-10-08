@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useStore, hiddenMatchers, isHiddenPath } from '../store';
 import { searchApi, type VaultTag } from '../api';
+import { useT } from '../i18n';
 import { IconChevronDown, IconChevronRight, IconClose, IconSearch, IconSortCount, IconSortName, IconSync } from './Icons';
 
 // Nodo del árbol de etiquetas: proyecto → proyecto/web → proyecto/web/front
@@ -93,6 +94,7 @@ export default function TagsPanel() {
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('');
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const t = useT();
   const [sort, setSort] = useState<TagSort>(() => {
     try {
       return localStorage.getItem(SORT_KEY) === 'count' ? 'count' : 'name';
@@ -145,12 +147,12 @@ export default function TagsPanel() {
       <div className="sidebar-toolbar">
         <button
           className="icon-btn"
-          title={sort === 'name' ? 'Ordenar por número de notas' : 'Ordenar por nombre'}
+          title={sort === 'name' ? t('tags.sortByCount') : t('tags.sortByName')}
           onClick={toggleSort}
         >
           {sort === 'name' ? <IconSortName size={16} /> : <IconSortCount size={16} />}
         </button>
-        <button className="icon-btn" title="Actualizar" onClick={load}>
+        <button className="icon-btn" title={t('common.refresh')} onClick={load}>
           <IconSync size={16} />
         </button>
       </div>
@@ -160,13 +162,13 @@ export default function TagsPanel() {
         </span>
         <input
           className="search-input"
-          placeholder="Filtrar etiquetas..."
+          placeholder={t('tags.filter')}
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
           onKeyDown={(e) => e.key === 'Escape' && setFilter('')}
         />
         {filter && (
-          <button className="icon-btn search-clear" title="Limpiar" onClick={() => setFilter('')}>
+          <button className="icon-btn search-clear" title={t('common.clear')} onClick={() => setFilter('')}>
             <IconClose size={14} />
           </button>
         )}
@@ -175,9 +177,9 @@ export default function TagsPanel() {
         {error ? (
           <div className="dropdown-empty">{error}</div>
         ) : tags === null ? (
-          <div className="dropdown-empty">Cargando...</div>
+          <div className="dropdown-empty">{t('common.loading')}</div>
         ) : roots.length === 0 ? (
-          <div className="dropdown-empty">{f ? 'Ninguna etiqueta coincide' : 'No hay etiquetas en el vault'}</div>
+          <div className="dropdown-empty">{f ? t('tags.noMatch') : t('tags.none')}</div>
         ) : (
           roots.map((n) => (
             <TagTreeNode key={n.tag} node={n} depth={0} sort={sort} filter={f} expanded={expanded} onToggle={toggle} />

@@ -16,6 +16,7 @@ import StatusBar from './StatusBar';
 import { isImage } from '../attachments';
 import NoteMenu from './NoteMenu';
 import { IconBook, IconEdit } from './Icons';
+import { useT } from '../i18n';
 
 // Cada cuánto se comprueba si la nota abierta ha cambiado en el servidor (ms)
 const EXTERNAL_CHECK_INTERVAL = 15000;
@@ -37,6 +38,7 @@ export default function MainLayout() {
   const settingsOpen = useStore((s) => s.settingsOpen);
   const setSettingsOpen = useStore((s) => s.setSettingsOpen);
   const conflict = useStore((s) => s.conflicts[0]);
+  const t = useT();
 
   // Atajos globales: Ctrl/Cmd+P abrir nota, +S guardar, +E editar/leer, +B barra lateral, +Shift+F buscar
   useEffect(() => {
@@ -213,7 +215,7 @@ export default function MainLayout() {
                 {!activeIsImage && (
                   <button
                     className="icon-btn"
-                    title={editMode ? 'Cambiar a vista de lectura' : 'Cambiar a edición'}
+                    title={editMode ? t('note.toReading') : t('note.toEditing')}
                     onClick={() => setEditMode(!editMode)}
                   >
                     {editMode ? <IconBook /> : <IconEdit />}
@@ -226,7 +228,7 @@ export default function MainLayout() {
           <div className="editor-wrapper">
             {loading ? (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
-                Cargando...
+                {t('common.loading')}
               </div>
             ) : activeTab ? (
               activeIsImage ? (
@@ -238,7 +240,7 @@ export default function MainLayout() {
               )
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, color: 'var(--text-faint)' }}>
-                Selecciona un archivo para comenzar
+                {t('main.empty')}
               </div>
             )}
           </div>

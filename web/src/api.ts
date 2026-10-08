@@ -1,3 +1,5 @@
+import { t } from './i18n';
+
 const API_URL = '/api';
 
 export interface ServerLimits {
@@ -52,7 +54,7 @@ export const authApi = {
 // La nota ha cambiado en el servidor desde la versión que se leyó: trae la versión actual
 export class ConflictError extends Error {
   constructor(public content: string, public version: string) {
-    super('La nota ha cambiado en otro sitio');
+    super(t('conflict.title'));
   }
 }
 

@@ -1,5 +1,6 @@
 import { useState, type KeyboardEvent } from 'react';
 import { isDateString, type FrontmatterData } from '../frontmatter';
+import { useT } from '../i18n';
 import {
   IconTag,
   IconCalendar,
@@ -61,6 +62,7 @@ function ChipList({
   onItemClick?: (item: string) => void;
 }) {
   const [draft, setDraft] = useState('');
+  const t = useT();
 
   const commit = () => {
     const text = (pill ? draft.replace(/^#/, '') : draft).trim();
@@ -83,7 +85,7 @@ function ChipList({
         <span
           key={`${item}-${i}`}
           className={`${pill ? 'chip chip-pill' : 'chip'}${onItemClick ? ' clickable' : ''}`}
-          title={onItemClick ? `Buscar notas con #${item}` : undefined}
+          title={onItemClick ? t('props.searchTag', { tag: item }) : undefined}
           onClick={onItemClick && (() => onItemClick(item))}
         >
           {item}
@@ -91,7 +93,7 @@ function ChipList({
             <button
               type="button"
               className="chip-remove"
-              title="Quitar"
+              title={t('props.removeValue')}
               onClick={() => onChange(items.filter((_, j) => j !== i))}
             >
               <IconClose size={14} />
@@ -133,6 +135,7 @@ function DateText({ value }: { value: string }) {
 export default function Properties({ data, editable = false, onChange, onTagClick }: Props) {
   const [adding, setAdding] = useState(false);
   const [newKey, setNewKey] = useState('');
+  const t = useT();
 
   const entries = Object.entries(data).filter(
     ([, value]) => editable || (value !== null && value !== undefined && value !== '' && !(Array.isArray(value) && value.length === 0))
@@ -158,7 +161,7 @@ export default function Properties({ data, editable = false, onChange, onTagClic
 
   return (
     <div className="properties">
-      {entries.length > 0 && <div className="properties-heading">Propiedades</div>}
+      {entries.length > 0 && <div className="properties-heading">{t('props.title')}</div>}
       {entries.map(([key, value]) => {
         const kind = kindOf(key, value);
         const Icon = ICONS[kind];
@@ -201,7 +204,7 @@ export default function Properties({ data, editable = false, onChange, onTagClic
               )}
             </div>
             {editable && (
-              <button type="button" className="property-remove" title="Eliminar propiedad" onClick={() => removeKey(key)}>
+              <button type="button" className="property-remove" title={t('props.remove')} onClick={() => removeKey(key)}>
                 <IconClose size={14} />
               </button>
             )}
@@ -214,7 +217,7 @@ export default function Properties({ data, editable = false, onChange, onTagClic
           <input
             className="property-new-key"
             autoFocus
-            placeholder="Nombre de la propiedad"
+            placeholder={t('props.name')}
             value={newKey}
             onChange={(e) => setNewKey(e.target.value)}
             onKeyDown={(e) => {
@@ -229,7 +232,7 @@ export default function Properties({ data, editable = false, onChange, onTagClic
         ) : (
           <button type="button" className="property-add" onClick={() => setAdding(true)}>
             <IconPlus size={16} />
-            Añadir propiedad
+            {t('props.add')}
           </button>
         ))}
     </div>

@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { rawFileUrl } from '../attachments';
+import { useT } from '../i18n';
 
 // Visor de imágenes del vault: ajustada a la ventana; clic para alternar con el tamaño real
 export default function ImageViewer({ filePath }: { filePath: string }) {
   const [actualSize, setActualSize] = useState(false);
   const [size, setSize] = useState<{ w: number; h: number } | null>(null);
   const [error, setError] = useState(false);
+  const t = useT();
 
   useEffect(() => {
     setActualSize(false);
@@ -16,7 +18,7 @@ export default function ImageViewer({ filePath }: { filePath: string }) {
   const url = rawFileUrl(filePath);
 
   if (error) {
-    return <div className="image-viewer-message">No se pudo cargar la imagen</div>;
+    return <div className="image-viewer-message">{t('image.loadError')}</div>;
   }
 
   return (
@@ -24,7 +26,7 @@ export default function ImageViewer({ filePath }: { filePath: string }) {
       <img
         src={url}
         alt={filePath.split('/').pop()}
-        title={actualSize ? 'Clic para ajustar a la ventana' : 'Clic para ver a tamaño real'}
+        title={actualSize ? t('image.fitWindow') : t('image.actualSize')}
         onClick={() => setActualSize(!actualSize)}
         onLoad={(e) => setSize({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })}
         onError={() => setError(true)}
@@ -33,7 +35,7 @@ export default function ImageViewer({ filePath }: { filePath: string }) {
         <div className="image-viewer-info">
           {size.w} × {size.h} px ·{' '}
           <a href={url} target="_blank" rel="noopener noreferrer">
-            Abrir original
+            {t('image.openOriginal')}
           </a>
         </div>
       )}

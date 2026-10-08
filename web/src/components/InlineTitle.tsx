@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store';
 import { filesApi } from '../api';
 import { changeNotePath } from './Editor';
+import { useT } from '../i18n';
 
 const INVALID_CHARS = /[\\/:*?"<>|]/;
 
@@ -13,6 +14,7 @@ export default function InlineTitle({ filePath, onEnter }: { filePath: string; o
   const setTree = useStore((s) => s.setTree);
   const ref = useRef<HTMLDivElement>(null);
   const [error, setError] = useState('');
+  const t = useT();
   const name = baseName(filePath);
 
   // contentEditable no es controlado por React: sincronizar el texto a mano al cambiar de nota
@@ -29,11 +31,11 @@ export default function InlineTitle({ filePath, onEnter }: { filePath: string; o
     const newName = (ref.current?.textContent ?? '').replace(/\s+/g, ' ').trim();
     if (newName === name) return restore();
     if (!newName) {
-      setError('El nombre no puede estar vacío');
+      setError(t('name.empty'));
       return restore();
     }
     if (INVALID_CHARS.test(newName)) {
-      setError('El nombre contiene caracteres no válidos: \\ / : * ? " < > |');
+      setError(t('name.invalid'));
       return restore();
     }
     const folder = parentFolder(filePath);

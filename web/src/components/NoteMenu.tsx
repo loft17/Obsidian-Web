@@ -6,6 +6,7 @@ import { flushPendingSave, cancelPendingSave, changeNotePath, noteVersions, NOTE
 import { IconMenu } from './Icons';
 import { RenameDialog, MoveDialog, DeleteFileDialog, HistoryDialog } from './FileDialogs';
 import { isImage } from '../attachments';
+import { t as translate, useT } from '../i18n';
 
 const fileName = (path: string) => path.split('/').pop() || path;
 const parentFolder = (path: string) => (path.includes('/') ? path.substring(0, path.lastIndexOf('/')) : '');
@@ -23,6 +24,7 @@ export default function NoteMenu() {
   const removeTab = useStore((s) => s.removeTab);
 
   const ref = useRef<HTMLDivElement>(null);
+  const t = useT();
 
   useEffect(() => {
     if (!open) return;
@@ -105,12 +107,12 @@ export default function NoteMenu() {
   const handleRestore = async (content: string) => {
     await flushPendingSave(activeTab);
     if (useStore.getState().conflicts.some((c) => c.path === activeTab)) {
-      throw new Error('Resuelve primero el conflicto de la nota');
+      throw new Error(translate('history.resolveConflictFirst'));
     }
     try {
       await filesApi.writeFile(activeTab, content, noteVersions.get(activeTab));
     } catch (err) {
-      if (err instanceof ConflictError) throw new Error('La nota ha cambiado en otro sitio; vuelve a intentarlo');
+      if (err instanceof ConflictError) throw new Error(translate('history.changedRetry'));
       throw err;
     }
     window.dispatchEvent(new Event(NOTES_CHANGED));
@@ -124,7 +126,7 @@ export default function NoteMenu() {
     await flushPendingSave(activeTab);
     const url = `/api/files/export-pdf/${encodeURIComponent(activeTab)}`;
     if (win) win.location.href = url;
-    else alert('El navegador bloqueó la ventana emergente. Permite ventanas emergentes para exportar a PDF.');
+    else alert(translate('note.popupBlocked'));
   };
 
   const folders = tree
@@ -134,21 +136,21 @@ export default function NoteMenu() {
 
   return (
     <div className="dropdown" ref={ref}>
-      <button className="icon-btn" title="Más opciones" aria-expanded={open} onClick={() => setOpen(!open)}>
+      <button className="icon-btn" title={t('note.moreOptions')} aria-expanded={open} onClick={() => setOpen(!open)}>
         <IconMenu />
       </button>
       {open && (
         <div className="dropdown-menu">
           <div className="dropdown-item" onClick={() => openDialog('rename')}>
-            Renombrar
+            {t('file.rename')}
           </div>
           <div className="dropdown-item" onClick={() => openDialog('move')}>
-            Mover archivo a...
+            {t('file.moveFile')}
           </div>
           {!activeIsImage && (
             <>
               <div className="dropdown-item" onClick={handleExportPDF}>
-                Exportar a PDF
+                {t('note.exportPdf')}
               </div>
               <div
                 className="dropdown-item"
@@ -157,18 +159,18 @@ export default function NoteMenu() {
                   setSearchOpen(true);
                 }}
               >
-                Buscar
+                {t('note.find')}
               </div>
               {gitSync && (
                 <div className="dropdown-item" onClick={() => openDialog('history')}>
-                  Historial de versiones
+                  {t('note.history')}
                 </div>
               )}
             </>
           )}
           <hr className="dropdown-divider" />
           <div className="dropdown-item danger" onClick={() => openDialog('delete')}>
-            Eliminar archivo
+            {t('file.deleteFile')}
           </div>
         </div>
       )}
@@ -194,8 +196,8 @@ export default function NoteMenu() {
       {dialog === 'delete' && (
         <DeleteFileDialog
           path={activeTab}
-          title="Eliminar archivo"
-          confirmLabel="Eliminar"
+          title={t('file.deleteFile')}
+          confirmLabel={t('common.delete')}
           onDelete={handleDelete}
           onClose={() => setDialog(null)}
         />
@@ -237,6 +239,7 @@ function SearchBar({ onClose }: { onClose: () => void }) {
   const [total, setTotal] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const rangesRef = useRef<Range[]>([]);
+  const t = useT();
 
   const getEditor = () => {
     const dom = document.querySelector<HTMLElement>('.editor-cm .cm-editor');
@@ -332,7 +335,7 @@ function SearchBar({ onClose }: { onClose: () => void }) {
       <input
         ref={inputRef}
         type="text"
-        placeholder="Buscar en el documento..."
+        placeholder={t('note.findPlaceholder')}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onKeyDown={(e) => {
@@ -344,13 +347,13 @@ function SearchBar({ onClose }: { onClose: () => void }) {
         }}
       />
       <span className="search-count">{query ? `${total ? index + 1 : 0}/${total}` : ''}</span>
-      <button type="button" title="Anterior (Mayús+F3)" onMouseDown={(e) => e.preventDefault()} onClick={() => step(-1)}>
+      <button type="button" title={`${t('note.findPrev')} (Shift+F3)`} onMouseDown={(e) => e.preventDefault()} onClick={() => step(-1)}>
         ↑
       </button>
-      <button type="button" title="Siguiente (F3)" onMouseDown={(e) => e.preventDefault()} onClick={() => step(1)}>
+      <button type="button" title={`${t('note.findNext')} (F3)`} onMouseDown={(e) => e.preventDefault()} onClick={() => step(1)}>
         ↓
       </button>
-      <button type="button" title="Cerrar" onClick={onClose}>
+      <button type="button" title={t('common.close')} onClick={onClose}>
         ✕
       </button>
     </div>

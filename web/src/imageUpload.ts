@@ -3,6 +3,7 @@ import { EditorView } from '@codemirror/view';
 import { filesApi } from './api';
 import { useStore } from './store';
 import { isImage } from './attachments';
+import { t } from './i18n';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -40,7 +41,7 @@ async function upload(view: EditorView, notePath: string, files: File[], pos: nu
     });
     view.focus();
   } catch (err) {
-    alert(`No se pudo subir la imagen: ${(err as Error).message}`);
+    alert(t('image.uploadError', { error: (err as Error).message }));
   }
 }
 

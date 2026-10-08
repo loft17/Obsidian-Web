@@ -120,6 +120,7 @@ la propia web.
 - **Exportación a PDF** desde el navegador.
 - **Recuento de palabras** y caracteres en la barra de estado.
 - **Tema** oscuro, claro o del sistema, y tamaño de fuente ajustable.
+- **Idioma** de la interfaz: español o inglés (por defecto, el del navegador).
 
 </td>
 </tr>
@@ -472,7 +473,7 @@ Se abren desde el icono ⚙️ de engranaje. Las de interfaz se guardan **en el 
 
 | Sección | Opciones | Se guarda en |
 | :--- | :--- | :---: |
-| 👁️ **Apariencia** | Tema (oscuro / claro / sistema), tamaño de fuente, ajuste rápido con <kbd>Ctrl</kbd>+rueda, barra de título de pestaña, cinta lateral | 🌐 Navegador |
+| 👁️ **Apariencia** | Idioma, tema (oscuro / claro / sistema), tamaño de fuente, ajuste rápido con <kbd>Ctrl</kbd>+rueda, barra de título de pestaña, cinta lateral | 🌐 Navegador |
 | ✏️ **Editor** | Modo por defecto (visor / edición), modo de edición (vista previa / fuente), título en línea, longitud de línea legible, números de línea | 🌐 Navegador |
 | 📂 **Archivos** | Carpeta de adjuntos, ruta del vault (exige la contraseña), carpetas ocultas en el explorador (un patrón por línea, `*` como comodín; esta opción se guarda en el navegador), notas diarias (formato, carpeta, plantilla) y plantillas (carpeta, formatos de fecha y hora) | 🖥️ Servidor |
 | 🔄 **Sincronización** | GitHub: repositorio, rama, token, frecuencia, *Sincronizar ahora* | 🖥️ Servidor |

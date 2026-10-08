@@ -4,6 +4,7 @@
 import { syntaxTree } from '@codemirror/language';
 import { StateField, type EditorState, type Range } from '@codemirror/state';
 import { Decoration, EditorView, WidgetType, type DecorationSet } from '@codemirror/view';
+import { t } from './i18n';
 
 type Align = 'left' | 'center' | 'right' | null;
 
@@ -191,13 +192,13 @@ class TableWidget extends WidgetType {
 
     const addRowBtn = document.createElement('button');
     addRowBtn.className = 'cm-lp-table-add cm-lp-table-add-row';
-    addRowBtn.title = 'Añadir una fila debajo';
+    addRowBtn.title = t('table.addRow');
     addRowBtn.textContent = '+';
     addRowBtn.addEventListener('click', () => addRow(view, wrap));
 
     const addColBtn = document.createElement('button');
     addColBtn.className = 'cm-lp-table-add cm-lp-table-add-col';
-    addColBtn.title = 'Añadir una columna';
+    addColBtn.title = t('table.addColumn');
     addColBtn.textContent = '+';
     addColBtn.addEventListener('click', () => addColumn(view, wrap));
 

@@ -11,6 +11,7 @@ import {
 import { embedSection, getEmbedContent, getEmbedsVersion, refreshEmbeds, subscribeEmbeds } from '../noteEmbeds';
 import { NOTES_CHANGED } from './Editor';
 import { highlightCodeBlocks } from '../codeHighlight';
+import { t, useI18n } from '../i18n';
 
 const md = markdownIt({
   html: false,
@@ -158,14 +159,14 @@ md.renderer.rules.note_embed_block = (tokens, idx, _options, env) => {
   const content = getEmbedContent(path);
   let html: string;
   if (content === undefined) {
-    html = '<div class="internal-embed-status">Cargando…</div>';
+    html = `<div class="internal-embed-status">${md.utils.escapeHtml(t('common.loading'))}</div>`;
   } else if (content === null) {
-    html = '<div class="internal-embed-status">No se pudo cargar la nota</div>';
+    html = `<div class="internal-embed-status">${md.utils.escapeHtml(t('embed.loadError'))}</div>`;
   } else {
     const section = embedSection(parseNote(content).body, heading);
     html =
       section === null
-        ? `<div class="internal-embed-status">No se encuentra «${md.utils.escapeHtml(heading)}» en la nota</div>`
+        ? `<div class="internal-embed-status">${md.utils.escapeHtml(t('embed.headingNotFound', { heading }))}</div>`
         : md.render(section, { notePath: path, embedStack: [...stack, path] });
   }
   return (
@@ -276,10 +277,11 @@ const defaultFence = md.renderer.rules.fence!;
 md.renderer.rules.fence = (tokens, idx, options, env, self) => {
   const lang = tokens[idx].info.trim().split(/\s+/)[0];
   const label = lang ? `<span class="code-block-lang">${md.utils.escapeHtml(lang)}</span>` : '<span></span>';
+  const copy = md.utils.escapeHtml(t('common.copy'));
   return (
     '<div class="code-block">' +
     `<div class="code-block-header">${label}` +
-    `<button type="button" class="code-block-copy" title="Copiar" aria-label="Copiar">${COPY_ICON}</button>` +
+    `<button type="button" class="code-block-copy" title="${copy}" aria-label="${copy}">${COPY_ICON}</button>` +
     '</div>' +
     defaultFence(tokens, idx, options, env, self) +
     '</div>'
@@ -354,6 +356,8 @@ export default function ReadingView({ content, filePath }: Props) {
   // Las rutas de las imágenes se resuelven contra el árbol del vault
   // (y también los [[enlaces]], para marcar los que apuntan a notas inexistentes)
   const tree = useStore((s) => s.tree);
+  // Los textos de la interfaz que van dentro del HTML (Copiar, Cargando…) siguen el idioma
+  const lang = useI18n((s) => s.lang);
   const contentRef = useRef<HTMLDivElement>(null);
   const notePath = filePath ?? '';
 
@@ -364,7 +368,7 @@ export default function ReadingView({ content, filePath }: Props) {
 
   const html = useMemo(
     () => md.render(markdownContent, { notePath }),
-    [markdownContent, notePath, tree, embedsVersion]
+    [markdownContent, notePath, tree, embedsVersion, lang]
   );
 
   // También al volver a la pestaña y cuando el servidor reescribe enlaces

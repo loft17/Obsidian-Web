@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { setupApi } from '../api';
+import { LANGUAGES, useI18n, useT, type Lang } from '../i18n';
 
 interface Props {
   onComplete: () => void;
@@ -13,6 +14,9 @@ export default function Setup({ onComplete }: Props) {
   const [port, setPort] = useState('3000');
   const [error, setError] = useState('');
   const [minPasswordLength, setMinPasswordLength] = useState(12);
+  const t = useT();
+  const lang = useI18n((s) => s.lang);
+  const setLang = useI18n((s) => s.setLang);
 
   useEffect(() => {
     setupApi
@@ -27,19 +31,19 @@ export default function Setup({ onComplete }: Props) {
     setError('');
 
     if (!setupToken.trim()) {
-      setError('El token de configuración es requerido');
+      setError(t('setup.tokenRequired'));
       return;
     }
     if (!vaultPath.trim()) {
-      setError('La ruta del vault es requerida');
+      setError(t('setup.vaultRequired'));
       return;
     }
     if (!password || password.length < minPasswordLength) {
-      setError(`La contraseña debe tener al menos ${minPasswordLength} caracteres`);
+      setError(t('password.tooShort', { n: minPasswordLength }));
       return;
     }
     if (password !== confirmPassword) {
-      setError('Las contraseñas no coinciden');
+      setError(t('password.mismatch'));
       return;
     }
 
@@ -53,10 +57,10 @@ export default function Setup({ onComplete }: Props) {
           window.location.reload();
         }, 500);
       } else {
-        setError(result.error || 'Error al configurar');
+        setError(result.error || t('setup.error'));
       }
     } catch (err: any) {
-      setError(err?.error || 'Error al configurar');
+      setError(err?.error || t('setup.error'));
     } finally {
       setLoading(false);
     }
@@ -65,16 +69,27 @@ export default function Setup({ onComplete }: Props) {
   return (
     <div className="auth-screen">
       <div className="auth-form">
-        <h1>Configurar Obsidian Web</h1>
+        <h1>{t('setup.title')}</h1>
         <p style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '-8px' }}>
-          Primer arranque - define tu vault y contraseña
+          {t('setup.subtitle')}
         </p>
 
         {error && <div className="error">{error}</div>}
 
         <form onSubmit={handleSubmit} className="setup-wizard">
           <div className="setup-wizard-field">
-            <label>Token de configuración</label>
+            <label>{t('settings.language')}</label>
+            <select value={lang} onChange={(e) => setLang(e.target.value as Lang)} disabled={loading}>
+              {LANGUAGES.map((l) => (
+                <option key={l.value} value={l.value}>
+                  {l.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="setup-wizard-field">
+            <label>{t('setup.token')}</label>
             <input
               type="text"
               autoComplete="off"
@@ -83,12 +98,12 @@ export default function Setup({ onComplete }: Props) {
               disabled={loading}
             />
             <small style={{ color: 'var(--text-faint)', fontSize: '11px' }}>
-              Se muestra en la consola del servidor al arrancar.
+              {t('setup.tokenHint')}
             </small>
           </div>
 
           <div className="setup-wizard-field">
-            <label>Ruta del Vault</label>
+            <label>{t('setup.vaultPath')}</label>
             <input
               type="text"
               placeholder="/home/user/my-vault"
@@ -97,15 +112,15 @@ export default function Setup({ onComplete }: Props) {
               disabled={loading}
             />
             <small style={{ color: 'var(--text-faint)', fontSize: '11px' }}>
-              Ruta absoluta en el servidor. Se creará si no existe.
+              {t('setup.vaultHint')}
             </small>
           </div>
 
           <div className="setup-wizard-field">
-            <label>Contraseña</label>
+            <label>{t('common.password')}</label>
             <input
               type="password"
-              placeholder={`Mínimo ${minPasswordLength} caracteres`}
+              placeholder={t('password.min', { n: minPasswordLength })}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
@@ -113,7 +128,7 @@ export default function Setup({ onComplete }: Props) {
           </div>
 
           <div className="setup-wizard-field">
-            <label>Confirmar Contraseña</label>
+            <label>{t('setup.confirmPassword')}</label>
             <input
               type="password"
               value={confirmPassword}
@@ -123,7 +138,7 @@ export default function Setup({ onComplete }: Props) {
           </div>
 
           <div className="setup-wizard-field">
-            <label>Puerto (opcional)</label>
+            <label>{t('setup.port')}</label>
             <input
               type="number"
               value={port}
@@ -133,7 +148,7 @@ export default function Setup({ onComplete }: Props) {
           </div>
 
           <button type="submit" disabled={loading}>
-            {loading ? 'Configurando...' : 'Configurar'}
+            {loading ? t('setup.submitting') : t('setup.submit')}
           </button>
         </form>
       </div>

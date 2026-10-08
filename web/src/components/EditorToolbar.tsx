@@ -19,6 +19,7 @@ import {
   IconTable,
   IconChevronDown,
 } from './Icons';
+import { t as translate, useT } from '../i18n';
 
 // Instantánea del editor sobre la que trabajan las acciones de formato
 interface TA {
@@ -129,7 +130,7 @@ function toggleCode(ta: TA) {
   const { selectionStart: s, selectionEnd: e, value: v } = ta;
   const sel = v.slice(s, e);
   if (!sel.includes('\n')) {
-    toggleInline(ta, '`', 'código');
+    toggleInline(ta, '`', translate('toolbar.placeholder.code'));
     return;
   }
   const before = s > 0 && v[s - 1] !== '\n' ? '\n' : '';
@@ -144,7 +145,7 @@ function insertLink(ta: TA) {
     replaceRange(ta, s, e, `[](${sel})`, s + 1, s + 1);
     return;
   }
-  const label = sel || 'texto';
+  const label = sel || translate('toolbar.placeholder.text');
   const at = s + label.length + 3;
   replaceRange(ta, s, e, `[${label}](url)`, at, at + 3);
 }
@@ -160,7 +161,10 @@ function insertTable(ta: TA) {
   const { selectionEnd: e, value: v } = ta;
   const at = v.indexOf('\n', e) < 0 ? v.length : v.indexOf('\n', e);
   const before = at === 0 ? '' : v[at - 1] === '\n' ? '\n' : '\n\n';
-  const table = '| Columna 1 | Columna 2 |\n| --------- | --------- |\n|           |           |';
+  const [c1, c2] = [1, 2].map((n) => translate('toolbar.column', { n }));
+  const w = Math.max(c1.length, c2.length);
+  const cell = (s: string) => ` ${s.padEnd(w)} `;
+  const table = `|${cell(c1)}|${cell(c2)}|\n|${cell('-'.repeat(w))}|${cell('-'.repeat(w))}|\n|${cell('')}|${cell('')}|`;
   const text = before + table + '\n\n';
   replaceRange(ta, at, at, text, at + text.length, at + text.length);
 }
@@ -260,70 +264,71 @@ export default function EditorToolbar({ viewRef }: { viewRef: RefObject<EditorVi
     if (viewRef.current) fn(snapshot(viewRef.current));
   };
   const heading = (level: number) => <span className="toolbar-heading">H{level}</span>;
+  const t = useT();
 
   return (
-    <div className="editor-toolbar" role="toolbar" aria-label="Formato">
-      <ToolButton title="Deshacer" onClick={act((ta) => historyCommand(ta, undo))}>
+    <div className="editor-toolbar" role="toolbar" aria-label={t('toolbar.format')}>
+      <ToolButton title={t('toolbar.undo')} onClick={act((ta) => historyCommand(ta, undo))}>
         <IconUndo />
       </ToolButton>
-      <ToolButton title="Rehacer" onClick={act((ta) => historyCommand(ta, redo))}>
+      <ToolButton title={t('toolbar.redo')} onClick={act((ta) => historyCommand(ta, redo))}>
         <IconRedo />
       </ToolButton>
-      <ToolButton title="Limpiar formato" onClick={act(clearFormat)}>
+      <ToolButton title={t('toolbar.clearFormat')} onClick={act(clearFormat)}>
         <IconEraser />
       </ToolButton>
       <span className="toolbar-sep" />
       {[1, 2, 3].map((level) => (
-        <ToolButton key={level} title={`Encabezado ${level}`} onClick={act((ta) => setHeading(ta, level))}>
+        <ToolButton key={level} title={t('toolbar.heading', { n: level })} onClick={act((ta) => setHeading(ta, level))}>
           {heading(level)}
         </ToolButton>
       ))}
       <ToolMenu
-        title="Más encabezados"
+        title={t('toolbar.moreHeadings')}
         icon={<span className="toolbar-heading">Hn</span>}
         items={[4, 5, 6].map((level) => ({
           label: heading(level),
-          title: `Encabezado ${level}`,
+          title: t('toolbar.heading', { n: level }),
           run: act((ta) => setHeading(ta, level)),
         }))}
       />
       <span className="toolbar-sep" />
-      <ToolButton title="Negrita" onClick={act((ta) => toggleInline(ta, '**', 'negrita'))}>
+      <ToolButton title={t('toolbar.bold')} onClick={act((ta) => toggleInline(ta, '**', t('toolbar.placeholder.bold')))}>
         <IconBold />
       </ToolButton>
-      <ToolButton title="Cursiva" onClick={act((ta) => toggleInline(ta, '*', 'cursiva'))}>
+      <ToolButton title={t('toolbar.italic')} onClick={act((ta) => toggleInline(ta, '*', t('toolbar.placeholder.italic')))}>
         <IconItalic />
       </ToolButton>
-      <ToolButton title="Tachado" onClick={act((ta) => toggleInline(ta, '~~', 'tachado'))}>
+      <ToolButton title={t('toolbar.strike')} onClick={act((ta) => toggleInline(ta, '~~', t('toolbar.placeholder.strike')))}>
         <IconStrikethrough />
       </ToolButton>
-      <ToolButton title="Resaltado" onClick={act((ta) => toggleInline(ta, '==', 'resaltado'))}>
+      <ToolButton title={t('toolbar.highlight')} onClick={act((ta) => toggleInline(ta, '==', t('toolbar.placeholder.highlight')))}>
         <IconHighlight />
       </ToolButton>
-      <ToolButton title="Código" onClick={act(toggleCode)}>
+      <ToolButton title={t('toolbar.code')} onClick={act(toggleCode)}>
         <IconCode />
       </ToolButton>
       <span className="toolbar-sep" />
-      <ToolButton title="Cita" onClick={act(toggleQuote)}>
+      <ToolButton title={t('toolbar.quote')} onClick={act(toggleQuote)}>
         <IconQuote />
       </ToolButton>
       <ToolMenu
-        title="Listas"
+        title={t('toolbar.lists')}
         icon={<IconListBullet />}
         items={[
-          { label: <IconListBullet size={16} />, title: 'Lista con viñetas', run: act((ta) => toggleList(ta, 'bullet')) },
-          { label: <IconListOrdered size={16} />, title: 'Lista numerada', run: act((ta) => toggleList(ta, 'ordered')) },
-          { label: <IconCheckSquare size={16} />, title: 'Lista de tareas', run: act((ta) => toggleList(ta, 'task')) },
+          { label: <IconListBullet size={16} />, title: t('toolbar.bulletList'), run: act((ta) => toggleList(ta, 'bullet')) },
+          { label: <IconListOrdered size={16} />, title: t('toolbar.orderedList'), run: act((ta) => toggleList(ta, 'ordered')) },
+          { label: <IconCheckSquare size={16} />, title: t('toolbar.taskList'), run: act((ta) => toggleList(ta, 'task')) },
         ]}
       />
       <span className="toolbar-sep" />
-      <ToolButton title="Enlace" onClick={act(insertLink)}>
+      <ToolButton title={t('toolbar.link')} onClick={act(insertLink)}>
         <IconLink />
       </ToolButton>
-      <ToolButton title="Enlace interno [[ ]]" onClick={act(insertWikilink)}>
+      <ToolButton title={`${t('toolbar.wikilink')} [[ ]]`} onClick={act(insertWikilink)}>
         <IconBrackets />
       </ToolButton>
-      <ToolButton title="Insertar tabla" onClick={act(insertTable)}>
+      <ToolButton title={t('toolbar.table')} onClick={act(insertTable)}>
         <IconTable />
       </ToolButton>
     </div>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { authApi } from '../api';
+import { useT } from '../i18n';
 
 interface Props {
   onComplete: () => void;
@@ -9,13 +10,14 @@ export default function Login({ onComplete }: Props) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const t = useT();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
     if (!password) {
-      setError('Contraseña requerida');
+      setError(t('login.required'));
       return;
     }
 
@@ -24,7 +26,7 @@ export default function Login({ onComplete }: Props) {
       await authApi.login(password);
       onComplete();
     } catch (err: any) {
-      setError(err?.error || 'Contraseña incorrecta');
+      setError(err?.error || t('login.wrong'));
     } finally {
       setLoading(false);
     }
@@ -35,7 +37,7 @@ export default function Login({ onComplete }: Props) {
       <div className="auth-form">
         <h1>Obsidian Web</h1>
         <p style={{ fontSize: '12px', color: 'var(--text-faint)', marginBottom: '16px' }}>
-          Ingresa tu contraseña
+          {t('login.prompt')}
         </p>
 
         {error && <div className="error">{error}</div>}
@@ -43,14 +45,14 @@ export default function Login({ onComplete }: Props) {
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <input
             type="password"
-            placeholder="Contraseña"
+            placeholder={t('common.password')}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={loading}
             autoFocus
           />
           <button type="submit" disabled={loading}>
-            {loading ? 'Verificando...' : 'Entrar'}
+            {loading ? t('login.verifying') : t('login.submit')}
           </button>
         </form>
       </div>

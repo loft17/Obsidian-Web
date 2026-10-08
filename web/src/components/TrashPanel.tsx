@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { useStore } from '../store';
 import { filesApi, trashApi, type TrashItem } from '../api';
 import { ConfirmDialog } from './FileDialogs';
+import { getLang, Trans, useT } from '../i18n';
 import { IconClose, IconFile, IconFolderOpen, IconRestore, IconSearch, IconSync, IconTrash } from './Icons';
 
 const formatDate = (ms: number) =>
-  new Date(ms).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
+  new Date(ms).toLocaleString(getLang(), { dateStyle: 'short', timeStyle: 'short' });
 
 // Papelera del vault (.trash): restaurar a la ruta original o borrar definitivamente
 export default function TrashPanel() {
@@ -14,6 +15,7 @@ export default function TrashPanel() {
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('');
   const [busy, setBusy] = useState(false);
+  const t = useT();
   const [confirm, setConfirm] = useState<{ type: 'purge'; item: TrashItem } | { type: 'empty' } | null>(null);
 
   const load = async () => {
@@ -48,12 +50,12 @@ export default function TrashPanel() {
   return (
     <>
       <div className="sidebar-toolbar">
-        <button className="icon-btn" title="Actualizar" onClick={load}>
+        <button className="icon-btn" title={t('common.refresh')} onClick={load}>
           <IconSync size={16} />
         </button>
         <button
           className="icon-btn"
-          title="Vaciar papelera"
+          title={t('trash.empty')}
           disabled={!items?.length}
           onClick={() => setConfirm({ type: 'empty' })}
         >
@@ -66,13 +68,13 @@ export default function TrashPanel() {
         </span>
         <input
           className="search-input"
-          placeholder="Filtrar papelera..."
+          placeholder={t('trash.filter')}
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
           onKeyDown={(e) => e.key === 'Escape' && setFilter('')}
         />
         {filter && (
-          <button className="icon-btn search-clear" title="Limpiar" onClick={() => setFilter('')}>
+          <button className="icon-btn search-clear" title={t('common.clear')} onClick={() => setFilter('')}>
             <IconClose size={14} />
           </button>
         )}
@@ -80,14 +82,14 @@ export default function TrashPanel() {
       {error && <div className="dropdown-empty">{error}</div>}
       <div className="file-explorer">
         {items === null ? (
-          !error && <div className="dropdown-empty">Cargando...</div>
+          !error && <div className="dropdown-empty">{t('common.loading')}</div>
         ) : shown.length === 0 ? (
-          <div className="dropdown-empty">{f ? 'Nada coincide' : 'La papelera está vacía'}</div>
+          <div className="dropdown-empty">{f ? t('trash.noMatch') : t('trash.isEmpty')}</div>
         ) : (
           shown.map((item) => {
             const folder = item.path.split('/').slice(0, -1).join('/');
             return (
-              <div key={item.id} className="tree-item trash-item" title={`${item.path}\nBorrado: ${formatDate(item.deletedAt)}`}>
+              <div key={item.id} className="tree-item trash-item" title={`${item.path}\n${t('trash.deletedAt', { date: formatDate(item.deletedAt) })}`}>
                 <span className="tree-chevron">
                   {item.isFolder ? <IconFolderOpen size={14} /> : <IconFile size={14} />}
                 </span>
@@ -96,12 +98,12 @@ export default function TrashPanel() {
                   <span className="search-result-folder">{folder || '/'}</span>
                 </span>
                 <span className="trash-item-actions">
-                  <button className="icon-btn" title="Restaurar" disabled={busy} onClick={() => restore(item)}>
+                  <button className="icon-btn" title={t('trash.restore')} disabled={busy} onClick={() => restore(item)}>
                     <IconRestore size={14} />
                   </button>
                   <button
                     className="icon-btn"
-                    title="Borrar definitivamente"
+                    title={t('trash.purge')}
                     disabled={busy}
                     onClick={() => setConfirm({ type: 'purge', item })}
                   >
@@ -115,18 +117,18 @@ export default function TrashPanel() {
       </div>
       {confirm && (
         <ConfirmDialog
-          title={confirm.type === 'empty' ? 'Vaciar papelera' : 'Borrar definitivamente'}
+          title={confirm.type === 'empty' ? t('trash.empty') : t('trash.purge')}
           message={
             confirm.type === 'empty' ? (
-              <>¿Borrar definitivamente los {items?.length ?? 0} elementos de la papelera? No se puede deshacer.</>
+              t('trash.confirmEmpty', { n: items?.length ?? 0 })
             ) : (
-              <>
-                ¿Borrar definitivamente <strong>{confirm.item.name}</strong>
-                {confirm.item.isFolder && ' y todo su contenido'}? No se puede deshacer.
-              </>
+              <Trans
+                k={confirm.item.isFolder ? 'trash.confirmPurgeFolder' : 'trash.confirmPurge'}
+                values={{ name: <strong>{confirm.item.name}</strong> }}
+              />
             )
           }
-          confirmLabel="Borrar"
+          confirmLabel={t('common.delete')}
           onConfirm={async () => {
             if (confirm.type === 'empty') await trashApi.empty();
             else await trashApi.purge(confirm.item.id);

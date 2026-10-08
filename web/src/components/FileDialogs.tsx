@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { flushPendingSave } from './Editor';
 import { noteImageUsage } from '../attachments';
 import { syncApi, type NoteCommit } from '../api';
+import { getLang, Trans, useT } from '../i18n';
 
 function useEscape(onClose: () => void) {
   useEffect(() => {
@@ -48,10 +49,11 @@ function DialogButtons({
   disabled?: boolean;
   onCancel: () => void;
 }) {
+  const t = useT();
   return (
     <div className="file-dialog-buttons">
       <button type="button" className="btn-secondary" onClick={onCancel}>
-        Cancelar
+        {t('common.cancel')}
       </button>
       <button type="submit" className={danger ? 'btn-danger' : ''} disabled={disabled}>
         {confirmLabel}
@@ -61,8 +63,8 @@ function DialogButtons({
 }
 
 export function RenameDialog({
-  title = 'Renombrar',
-  confirmLabel = 'Renombrar',
+  title,
+  confirmLabel,
   placeholder,
   initialName,
   onSubmit,
@@ -78,6 +80,7 @@ export function RenameDialog({
   const [name, setName] = useState(initialName);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const t = useT();
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -87,8 +90,8 @@ export function RenameDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = name.trim();
-    if (!trimmed) return setError('El nombre no puede estar vacío');
-    if (/[\\/:*?"<>|]/.test(trimmed)) return setError('El nombre contiene caracteres no válidos: \\ / : * ? " < > |');
+    if (!trimmed) return setError(t('name.empty'));
+    if (/[\\/:*?"<>|]/.test(trimmed)) return setError(t('name.invalid'));
     if (trimmed === initialName) return onClose();
     setBusy(true);
     try {
@@ -100,7 +103,7 @@ export function RenameDialog({
   };
 
   return (
-    <DialogShell title={title} error={error} onClose={onClose}>
+    <DialogShell title={title ?? t('file.rename')} error={error} onClose={onClose}>
       <form onSubmit={handleSubmit}>
         <input
           ref={inputRef}
@@ -109,14 +112,14 @@ export function RenameDialog({
           value={name}
           onChange={(e) => setName(e.target.value)}
         />
-        <DialogButtons confirmLabel={confirmLabel} disabled={busy} onCancel={onClose} />
+        <DialogButtons confirmLabel={confirmLabel ?? t('file.rename')} disabled={busy} onCancel={onClose} />
       </form>
     </DialogShell>
   );
 }
 
 export function MoveDialog({
-  title = 'Mover archivo a...',
+  title,
   folders,
   currentFolder,
   onSubmit,
@@ -131,6 +134,7 @@ export function MoveDialog({
   const [filter, setFilter] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const t = useT();
 
   // '' representa la raíz de la bóveda
   const options = ['', ...folders]
@@ -148,7 +152,7 @@ export function MoveDialog({
   };
 
   return (
-    <DialogShell title={title} error={error} onClose={onClose}>
+    <DialogShell title={title ?? t('file.moveFile')} error={error} onClose={onClose}>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -158,20 +162,20 @@ export function MoveDialog({
         <input
           autoFocus
           className="file-dialog-input"
-          placeholder="Buscar carpeta..."
+          placeholder={t('move.search')}
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
         />
       </form>
       <div className="file-dialog-list">
-        {options.length === 0 && <div className="dropdown-empty">No hay carpetas que coincidan</div>}
+        {options.length === 0 && <div className="dropdown-empty">{t('move.noMatch')}</div>}
         {options.map((folder) => (
           <div
             key={folder || '/'}
             className={`dropdown-item ${busy ? 'disabled' : ''}`}
             onClick={() => !busy && choose(folder)}
           >
-            {folder || '/ (raíz de la bóveda)'}
+            {folder || t('move.root')}
           </div>
         ))}
       </div>
@@ -184,9 +188,9 @@ export function QuickOpenDialog({
   files,
   onSelect,
   onClose,
-  title = 'Abrir nota',
-  placeholder = 'Buscar nota...',
-  emptyText = 'No hay notas que coincidan',
+  title,
+  placeholder,
+  emptyText,
   label = (path) => path.replace(/\.md$/i, ''),
 }: {
   files: { path: string; name: string }[];
@@ -199,6 +203,7 @@ export function QuickOpenDialog({
 }) {
   const [filter, setFilter] = useState('');
   const [selected, setSelected] = useState(0);
+  const t = useT();
 
   const needle = filter.toLowerCase();
   const options = files.filter((f) => label(f.path).toLowerCase().includes(needle)).slice(0, 50);
@@ -212,11 +217,11 @@ export function QuickOpenDialog({
   };
 
   return (
-    <DialogShell title={title} onClose={onClose}>
+    <DialogShell title={title ?? t('quickOpen.title')} onClose={onClose}>
       <input
         autoFocus
         className="file-dialog-input"
-        placeholder={placeholder}
+        placeholder={placeholder ?? t('quickOpen.search')}
         value={filter}
         onChange={(e) => {
           setFilter(e.target.value);
@@ -236,7 +241,7 @@ export function QuickOpenDialog({
         }}
       />
       <div className="file-dialog-list">
-        {options.length === 0 && <div className="dropdown-empty">{emptyText}</div>}
+        {options.length === 0 && <div className="dropdown-empty">{emptyText ?? t('quickOpen.noMatch')}</div>}
         {options.map((f, i) => (
           <div
             key={f.path}
@@ -316,6 +321,7 @@ export function DeleteFileDialog({
   const [usage, setUsage] = useState<{ own: string[]; shared: string[] } | null>(null);
   const [loading, setLoading] = useState(isNote);
   const [deleteImages, setDeleteImages] = useState(true);
+  const t = useT();
 
   useEffect(() => {
     if (!isNote) return;
@@ -344,22 +350,22 @@ export function DeleteFileDialog({
     <ConfirmDialog
       title={title}
       message={
-        <>
-          ¿Seguro que quieres borrar <strong>{name}</strong>
-          {isFolder && ' y todo su contenido'}? Se moverá a la papelera de la bóveda (.trash).
-        </>
+        <Trans
+          k={isFolder ? 'delete.confirmFolder' : 'delete.confirm'}
+          values={{ name: <strong>{name}</strong> }}
+        />
       }
       confirmLabel={confirmLabel}
       disabled={loading}
       onConfirm={() => onDelete(deleteImages ? own : [])}
       onClose={onClose}
     >
-      {loading && <p className="file-dialog-message">Buscando imágenes de la nota…</p>}
+      {loading && <p className="file-dialog-message">{t('delete.findingImages')}</p>}
       {own.length > 0 && (
         <div className="delete-images">
           <label className="delete-images-toggle">
             <input type="checkbox" checked={deleteImages} onChange={(e) => setDeleteImages(e.target.checked)} />
-            Borrar también {own.length === 1 ? 'su imagen' : `sus ${own.length} imágenes`}
+            {own.length === 1 ? t('delete.alsoImage') : t('delete.alsoImages', { n: own.length })}
           </label>
           <ul className="delete-images-list">
             {own.map((p) => (
@@ -372,8 +378,7 @@ export function DeleteFileDialog({
       )}
       {shared.length > 0 && (
         <p className="file-dialog-message">
-          Se conservan {shared.length === 1 ? '1 imagen usada' : `${shared.length} imágenes usadas`} también en otras
-          notas.
+          {shared.length === 1 ? t('delete.sharedImage') : t('delete.sharedImages', { n: shared.length })}
         </p>
       )}
     </ConfirmDialog>
@@ -396,6 +401,7 @@ export function ConflictDialog({
   onKeepTheirs: () => void;
 }) {
   const [busy, setBusy] = useState(false);
+  const t = useT();
   const name = (path.split('/').pop() || path).replace(/\.md$/i, '');
 
   const keepMine = async () => {
@@ -408,27 +414,26 @@ export function ConflictDialog({
   };
 
   return (
-    <DialogShell title="La nota ha cambiado en otro sitio" onClose={() => {}}>
+    <DialogShell title={t('conflict.title')} onClose={() => {}}>
       <p className="file-dialog-message">
-        <strong>{name}</strong> se ha modificado fuera de esta pestaña (otro dispositivo, la sincronización…) mientras
-        la editabas. Elige qué versión conservar; la otra se descartará.
+        <Trans k="conflict.message" values={{ name: <strong>{name}</strong> }} />
       </p>
       <div className="conflict-versions">
         <div>
-          <div className="conflict-label">Tu versión</div>
+          <div className="conflict-label">{t('conflict.mine')}</div>
           <pre className="conflict-text">{mine}</pre>
         </div>
         <div>
-          <div className="conflict-label">Versión del servidor</div>
+          <div className="conflict-label">{t('conflict.theirs')}</div>
           <pre className="conflict-text">{theirs}</pre>
         </div>
       </div>
       <div className="file-dialog-buttons">
         <button type="button" className="btn-secondary" disabled={busy} onClick={onKeepTheirs}>
-          Usar la del servidor
+          {t('conflict.useTheirs')}
         </button>
         <button type="button" disabled={busy} onClick={keepMine}>
-          Conservar la mía
+          {t('conflict.keepMine')}
         </button>
       </div>
     </DialogShell>
@@ -436,7 +441,7 @@ export function ConflictDialog({
 }
 
 const formatCommitDate = (ms: number) =>
-  new Date(ms).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
+  new Date(ms).toLocaleString(getLang(), { dateStyle: 'short', timeStyle: 'short' });
 
 // Solo las líneas de cambios del diff de git (sin las cabeceras), con su tipo
 function diffLines(diff: string) {
@@ -469,6 +474,7 @@ export function HistoryDialog({
   const [view, setView] = useState<'content' | 'diff'>('diff');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const t = useT();
   const name = (path.split('/').pop() || path).replace(/\.md$/i, '');
 
   useEffect(() => {
@@ -509,12 +515,12 @@ export function HistoryDialog({
   const lines = version ? diffLines(version.diff) : [];
 
   return (
-    <DialogShell title={`Historial de versiones: ${name}`} error={error} onClose={onClose}>
+    <DialogShell title={t('history.title', { name })} error={error} onClose={onClose}>
       {commits === null ? (
-        !error && <p className="file-dialog-message">Cargando...</p>
+        !error && <p className="file-dialog-message">{t('common.loading')}</p>
       ) : commits.length === 0 ? (
         <p className="file-dialog-message">
-          Esta nota todavía no tiene versiones guardadas en git. Aparecerán tras la próxima sincronización.
+          {t('history.empty')}
         </p>
       ) : (
         <div className="history-layout">
@@ -528,7 +534,7 @@ export function HistoryDialog({
               >
                 <div className="history-item-date">
                   {formatCommitDate(c.date)}
-                  {i === 0 && <span className="history-item-badge">última</span>}
+                  {i === 0 && <span className="history-item-badge">{t('history.latest')}</span>}
                 </div>
                 <div className="history-item-message">{c.message}</div>
               </li>
@@ -537,19 +543,19 @@ export function HistoryDialog({
           <div className="history-preview">
             <div className="history-tabs">
               <button className={view === 'diff' ? 'active' : ''} onClick={() => setView('diff')}>
-                Cambios
+                {t('history.changes')}
               </button>
               <button className={view === 'content' ? 'active' : ''} onClick={() => setView('content')}>
-                Contenido
+                {t('history.content')}
               </button>
               {version && version.path !== path && <span className="history-old-path">{version.path}</span>}
             </div>
             {!version ? (
-              <p className="file-dialog-message">Cargando...</p>
+              <p className="file-dialog-message">{t('common.loading')}</p>
             ) : view === 'content' ? (
               <pre className="conflict-text history-text">{version.content}</pre>
             ) : lines.length === 0 ? (
-              <p className="file-dialog-message">Sin cambios de contenido en esta versión (p. ej. un renombrado).</p>
+              <p className="file-dialog-message">{t('history.noChanges')}</p>
             ) : (
               <pre className="conflict-text history-text">
                 {lines.map((l, i) => (
@@ -564,11 +570,11 @@ export function HistoryDialog({
       )}
       <div className="file-dialog-buttons">
         <button type="button" className="btn-secondary" onClick={onClose}>
-          Cerrar
+          {t('common.close')}
         </button>
         {commits && commits.length > 0 && (
           <button type="button" disabled={busy || !version} onClick={restore}>
-            Restaurar esta versión
+            {t('history.restore')}
           </button>
         )}
       </div>
