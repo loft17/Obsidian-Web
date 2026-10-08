@@ -5,18 +5,20 @@ import { Fragment, useMemo, type ReactNode } from 'react';
 import { create } from 'zustand';
 import { es } from './es';
 import { en } from './en';
+import { ca } from './ca';
 
-export type Lang = 'es' | 'en';
+export type Lang = 'es' | 'en' | 'ca';
 export type MessageKey = keyof typeof es;
 export type Messages = Record<MessageKey, string>;
 type Params = Record<string, string | number>;
 
-const MESSAGES: Record<Lang, Messages> = { es, en };
+const MESSAGES: Record<Lang, Messages> = { es, en, ca };
 
 // Cada idioma se muestra con su propio nombre en el selector
 export const LANGUAGES: { value: Lang; label: string }[] = [
   { value: 'es', label: 'Español' },
   { value: 'en', label: 'English' },
+  { value: 'ca', label: 'Català' },
 ];
 
 const isLang = (value: unknown): value is Lang => LANGUAGES.some((l) => l.value === value);

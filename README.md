@@ -120,7 +120,7 @@ la propia web.
 - **Exportación a PDF** desde el navegador.
 - **Recuento de palabras** y caracteres en la barra de estado.
 - **Tema** oscuro, claro o del sistema, y tamaño de fuente ajustable.
-- **Idioma** de la interfaz: español o inglés (por defecto, el del navegador).
+- **Idioma** de la interfaz: español, inglés o catalán (por defecto, el del navegador).
 
 </td>
 </tr>

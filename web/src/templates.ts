@@ -27,6 +27,7 @@ const isoWeek = (d: Date) => {
 
 const ordinal = (n: number) => {
   if (locale().toLowerCase().startsWith('es')) return `${n}º`;
+  if (locale().toLowerCase().startsWith('ca')) return n + ({ 1: 'r', 2: 'n', 3: 'r', 4: 't' }[n] ?? 'è');
   const s = ['th', 'st', 'nd', 'rd'];
   const v = n % 100;
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
