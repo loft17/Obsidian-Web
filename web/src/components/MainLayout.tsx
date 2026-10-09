@@ -16,7 +16,10 @@ import StatusBar from './StatusBar';
 import { isImage } from '../attachments';
 import NoteMenu from './NoteMenu';
 import { IconBook, IconEdit } from './Icons';
-import { useT } from '../i18n';
+import { useT, t as translate } from '../i18n';
+import Toasts from './Toasts';
+import { notify } from '../toast';
+import { useSyncNotifications } from '../syncNotify';
 
 // Cada cuánto se comprueba si la nota abierta ha cambiado en el servidor (ms)
 const EXTERNAL_CHECK_INTERVAL = 15000;
@@ -39,6 +42,7 @@ export default function MainLayout() {
   const setSettingsOpen = useStore((s) => s.setSettingsOpen);
   const conflict = useStore((s) => s.conflicts[0]);
   const t = useT();
+  useSyncNotifications();
 
   // Atajos globales: Ctrl/Cmd+P abrir nota, +S guardar, +E editar/leer, +B barra lateral, +Shift+F buscar
   useEffect(() => {
@@ -59,7 +63,10 @@ export default function MainLayout() {
           break;
         case 's':
           e.preventDefault();
-          if (activeTab) flushPendingSave(activeTab);
+          if (!activeTab) break;
+          // Sin nada pendiente no hay guardado que avise: se confirma igualmente
+          if (hasPendingSave(activeTab)) flushPendingSave(activeTab);
+          else if (!isImage(activeTab)) notify('save', translate('toast.saved'));
           break;
         case 'e':
           if (!activeTab || isImage(activeTab)) return;
@@ -247,6 +254,7 @@ export default function MainLayout() {
           {!activeIsImage && <StatusBar content={fileContent} />}
         </div>
       </div>
+      <Toasts />
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
       {conflict && (
         <ConflictDialog

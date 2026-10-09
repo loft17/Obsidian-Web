@@ -1,9 +1,10 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { useStore, type EditorMode, type Theme, DEFAULT_FONT_SIZE, MIN_FONT_SIZE, MAX_FONT_SIZE } from '../store';
-import { filesApi, settingsApi, syncApi, type NotesConfig, type NotesConfigUpdate, type ServerLimits, type SyncConfig, type SyncConfigUpdate, type SyncProvider } from '../api';
+import { settingsApi, syncApi, type NotesConfig, type NotesConfigUpdate, type ServerLimits, type SyncConfig, type SyncConfigUpdate, type SyncProvider } from '../api';
 import { formatDate as formatMoment, DEFAULT_DAILY_FORMAT, DEFAULT_DATE_FORMAT, DEFAULT_TIME_FORMAT } from '../templates';
 import { getLang, LANGUAGES, Trans, useI18n, useT, type Lang, type MessageKey } from '../i18n';
 import { IconClose, IconEdit, IconEye, IconFolderNew, IconList, IconLock, IconReset, IconSearch, IconSync, IconUserCircle } from './Icons';
+import { runSync } from '../syncNotify';
 
 interface Props {
   onClose: () => void;
@@ -548,7 +549,6 @@ const formatDate = (iso: string | null, never: string) => (iso ? new Date(iso).t
 // La configuración y el token se guardan en el servidor (data/sync.json);
 // el token nunca vuelve al navegador, solo si está guardado
 function SyncSection() {
-  const setTree = useStore((s) => s.setTree);
   const [config, setConfig] = useState<SyncConfig | null>(null);
   const [provider, setProvider] = useState<SyncProvider>('none');
   const [interval, setIntervalValue] = useState(0);
@@ -626,10 +626,8 @@ function SyncSection() {
     setBusy(true);
     setConfig((prev) => (prev ? { ...prev, status: { ...prev.status, running: true } } : prev));
     try {
-      const c = await syncApi.run();
-      setConfig(c);
-      // Puede haber traído notas nuevas o cambiadas
-      setTree(await filesApi.getTree());
+      // Avisa del resultado y recarga el árbol, que puede haber traído notas nuevas o cambiadas
+      setConfig(await runSync());
     } catch (err) {
       setMessage({ error: true, text: (err as Error).message });
     }

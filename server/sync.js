@@ -1,5 +1,6 @@
 import { spawn } from 'child_process';
 import { readFileSync, writeFileSync, existsSync, mkdirSync, appendFileSync } from 'fs';
+import { opendir } from 'fs/promises';
 import { join } from 'path';
 
 // Sincronización del vault con un repositorio de GitHub (git).
@@ -85,6 +86,15 @@ const gitEnv = (opts) => {
   return env;
 };
 
+// ¿Hay algún archivo visible en el vault? Se ignoran los ocultos (.git, .obsidian, .trash...)
+const hasVisibleFiles = async (dir) => {
+  for await (const entry of await opendir(dir)) {
+    if (entry.name.startsWith('.')) continue;
+    if (!entry.isDirectory() || (await hasVisibleFiles(join(dir, entry.name)))) return true;
+  }
+  return false;
+};
+
 // commit de los cambios locales → rebase sobre la rama remota → push.
 // En un conflicto gana la versión local (-X theirs en un rebase son los commits propios);
 // si aun así no se puede resolver (p. ej. borrado frente a modificación), se aborta sin tocar nada
@@ -122,8 +132,10 @@ export const syncGithub = async (vaultPath, opts) => {
   if (remoteExists) await git(['fetch', '-q', 'origin', `+refs/heads/${branch}:${remoteRef}`]);
 
   // Primera sincronización contra un repositorio con contenido: se adopta su historial sin
-  // perder nada local (los archivos locales ganan; los que solo están en remoto se recuperan)
-  if (remoteExists && !(await ok(['rev-parse', '-q', '--verify', 'HEAD']))) {
+  // perder nada local (los archivos locales ganan; los que solo están en remoto se recuperan).
+  // Lo mismo si el vault está vacío pero conserva un .git antiguo (p. ej. tras borrar las notas
+  // con `rm -rf *`): sin esto se registraría el borrado de todo y se subiría a GitHub
+  if (remoteExists && (!(await ok(['rev-parse', '-q', '--verify', 'HEAD'])) || !(await hasVisibleFiles(vaultPath)))) {
     await git(['reset', '-q', remoteRef]);
     const missing = await git(['ls-files', '-z', '--deleted']);
     if (missing) await git(['checkout', '--pathspec-from-file=-', '--pathspec-file-nul'], { input: missing });

@@ -14,6 +14,8 @@ import { livePreview, sourceMode, HighlightSyntax, notePath } from '../livePrevi
 import { imageUpload } from '../imageUpload';
 import { wikilinkCompletion } from '../wikilinkComplete';
 import { setEmbedContent } from '../noteEmbeds';
+import { notify } from '../toast';
+import { t } from '../i18n';
 
 interface Props {
   filePath: string;
@@ -69,11 +71,14 @@ export function saveNote(path: string, content: string): Promise<void> {
       // Si se ha seguido escribiendo mientras tanto, queda otro guardado pendiente
       if (!pendingSaves.has(path)) setTabDirty(path, false);
       clearConflict(path);
+      notify('save', t('toast.saved'));
     } catch (err) {
       if (err instanceof ConflictError) {
         setConflict({ path, mine: content, theirs: err.content, version: err.version });
       } else {
         console.error('Autosave failed:', err);
+        const name = path.split('/').pop()!.replace(/\.md$/i, '');
+        notify('save', t('toast.saveError', { name, error: (err as Error).message }), 'error');
       }
     }
   })();
