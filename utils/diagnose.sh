@@ -1,10 +1,10 @@
 #!/bin/bash
-# Diagnóstico de una instalación de Obsidian Web. Se puede lanzar desde cualquier carpeta.
+# Diagnóstico de una instalación de Obsidita. Se puede lanzar desde cualquier carpeta.
 # Ver utils/TROUBLESHOOTING.md
 
 cd "$(dirname "$0")/.." || exit 1
 
-echo "🔍 Diagnóstico de Obsidian Web"
+echo "🔍 Diagnóstico de Obsidita"
 echo "=============================="
 echo "  Carpeta: $(pwd)"
 echo ""
@@ -103,7 +103,7 @@ echo "✓ Puerto..."
 PORT=${PORT_CFG:-${PORT:-3000}}
 if command -v ss &> /dev/null; then
     if ss -ltn "sport = :$PORT" | grep -q LISTEN; then
-        echo "  ℹ️  El puerto $PORT está en uso (si es Obsidian Web, el servidor está en marcha)"
+        echo "  ℹ️  El puerto $PORT está en uso (si es Obsidita, el servidor está en marcha)"
     else
         echo "  ✅ El puerto $PORT está libre (el servidor no está en marcha)"
     fi

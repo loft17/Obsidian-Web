@@ -129,7 +129,7 @@ const port = validPort(getConfig()?.port) ?? validPort(process.env.PORT) ?? 3000
 const host = process.env.HOST || undefined;
 app.listen(port, host, () => {
   const cfg = getConfig();
-  console.log(`Obsidian Web listening on http://${host || 'localhost'}:${port}`);
+  console.log(`Obsidita listening on http://${host || 'localhost'}:${port}`);
   if (cfg) {
     console.log(`Vault: ${cfg.vaultPath}`);
   } else {

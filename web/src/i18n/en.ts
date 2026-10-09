@@ -21,7 +21,7 @@ export const en: Messages = {
   'main.empty': 'Select a file to get started',
 
   // Setup and login
-  'setup.title': 'Set up Obsidian Web',
+  'setup.title': 'Set up Obsidita',
   'setup.subtitle': 'First run - choose your vault and password',
   'setup.token': 'Setup token',
   'setup.tokenHint': 'Shown in the server console at startup.',

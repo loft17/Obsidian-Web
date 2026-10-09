@@ -21,7 +21,7 @@ export const ca: Messages = {
   'main.empty': 'Selecciona un fitxer per començar',
 
   // Configuració inicial i inici de sessió
-  'setup.title': 'Configura Obsidian Web',
+  'setup.title': 'Configura Obsidita',
   'setup.subtitle': 'Primer inici - defineix la teva caixa forta i contrasenya',
   'setup.token': 'Token de configuració',
   'setup.tokenHint': "Es mostra a la consola del servidor en arrencar.",

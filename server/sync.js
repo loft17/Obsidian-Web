@@ -13,7 +13,7 @@ const COMMAND_TIMEOUT = 10 * 60 * 1000;
 const DEFAULTS = {
   provider: 'none',
   interval: 0,
-  github: { repo: '', branch: 'main', token: '', authorName: 'Obsidian Web', authorEmail: 'obsidian-web@localhost' },
+  github: { repo: '', branch: 'main', token: '', authorName: 'Obsidita', authorEmail: 'obsidita@localhost' },
   status: { lastSync: null, lastAttempt: null, lastError: null, lastMessage: null },
 };
 
@@ -145,7 +145,7 @@ export const syncGithub = async (vaultPath, opts) => {
   const changed = !(await ok(['diff', '--cached', '--quiet']));
   if (changed) {
     const date = new Date().toISOString().replace('T', ' ').slice(0, 16);
-    await git(['commit', '-q', '-m', `Obsidian Web: ${date}`]);
+    await git(['commit', '-q', '-m', `Obsidita: ${date}`]);
   }
   if (!(await ok(['rev-parse', '-q', '--verify', 'HEAD']))) return 'Nada que sincronizar';
 

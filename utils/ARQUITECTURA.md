@@ -1,6 +1,6 @@
-# Arquitectura de Obsidian Web
+# Arquitectura de Obsidita
 
-Cómo está hecho Obsidian Web por dentro. Para instalar y usar la app, consulta el [README](../README.md); para preparar el entorno y hacer cambios, [DESARROLLO.md](DESARROLLO.md).
+Cómo está hecho Obsidita por dentro. Para instalar y usar la app, consulta el [README](../README.md); para preparar el entorno y hacer cambios, [DESARROLLO.md](DESARROLLO.md).
 
 ## Índice
 

@@ -994,7 +994,7 @@ function AboutSection() {
       <div className="setting-item">
         <div className="setting-info">
           <div className="setting-name">{t('about.version', { version: __APP_VERSION__ })}</div>
-          <div className="setting-desc">Obsidian Web</div>
+          <div className="setting-desc">Obsidita</div>
         </div>
       </div>
       <div className="setting-item">

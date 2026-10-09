@@ -1,6 +1,6 @@
 # 💻 Guía de desarrollo
 
-Todo lo necesario para trabajar en el código de Obsidian Web. Para entender cómo encaja cada pieza, consulta también [ARQUITECTURA.md](ARQUITECTURA.md).
+Todo lo necesario para trabajar en el código de Obsidita. Para entender cómo encaja cada pieza, consulta también [ARQUITECTURA.md](ARQUITECTURA.md).
 
 ## Índice
 

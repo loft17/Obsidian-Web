@@ -1,6 +1,6 @@
 # 🧰 Documentación técnica
 
-Esta carpeta reúne todo lo necesario para **modificar, mejorar, mantener o actualizar** Obsidian Web. Para instalar y usar la app basta con el [README principal](../README.md).
+Esta carpeta reúne todo lo necesario para **modificar, mejorar, mantener o actualizar** Obsidita. Para instalar y usar la app basta con el [README principal](../README.md).
 
 | Archivo | Para qué sirve | Léelo si… |
 | :--- | :--- | :--- |

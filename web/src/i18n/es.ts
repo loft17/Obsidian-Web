@@ -20,7 +20,7 @@ export const es = {
   'main.empty': 'Selecciona un archivo para comenzar',
 
   // Configuración inicial e inicio de sesión
-  'setup.title': 'Configurar Obsidian Web',
+  'setup.title': 'Configurar Obsidita',
   'setup.subtitle': 'Primer arranque - define tu vault y contraseña',
   'setup.token': 'Token de configuración',
   'setup.tokenHint': 'Se muestra en la consola del servidor al arrancar.',

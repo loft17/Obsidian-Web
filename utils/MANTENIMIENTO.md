@@ -1,6 +1,6 @@
 # 🛠️ Mantenimiento de una instalación
 
-Tareas habituales para administrar Obsidian Web en un servidor. Los ejemplos siguen el despliegue del [README](../README.md#-despliegue-en-producción): app en `/opt/obsidian-web/app`, usuario `obsidian` y servicio systemd `obsidian-web`. Adapta rutas y comandos si lo instalaste de otra forma (con PM2, por ejemplo, `pm2 restart obsidian-web` y `pm2 logs obsidian-web`).
+Tareas habituales para administrar Obsidita en un servidor. Los ejemplos siguen el despliegue del [README](../README.md#-despliegue-en-producción): app en `/opt/obsidian-web/app`, usuario `obsidian` y servicio systemd `obsidian-web`. Adapta rutas y comandos si lo instalaste de otra forma (con PM2, por ejemplo, `pm2 restart obsidian-web` y `pm2 logs obsidian-web`).
 
 ## Índice
 

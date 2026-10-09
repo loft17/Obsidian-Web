@@ -1,13 +1,13 @@
 <div align="center">
 
-# 💎 Obsidian Web
+# 💎 Obsidita
 
 ### Tu vault de Obsidian, en cualquier navegador.
 
 Visor y editor web **ultraligero** y **autoalojado** para tus notas Markdown.<br>
 Instálalo en tu VPS y accede a tu vault desde cualquier dispositivo, con una interfaz fiel a la de Obsidian.
 
-Obsidian Web trabaja directamente sobre la carpeta de tu vault: tus notas siguen siendo archivos `.md`
+Obsidita trabaja directamente sobre la carpeta de tu vault: tus notas siguen siendo archivos `.md`
 normales, sin bases de datos ni formatos propios, y puedes seguir abriéndolas con Obsidian de escritorio.
 Desde el navegador del portátil del trabajo, una tablet o el móvil puedes escribir con vista previa en vivo,
 navegar por tus wikilinks, buscar en todo el vault, editar propiedades y pegar imágenes, y tus cambios se
@@ -239,7 +239,7 @@ proxy_set_header X-Forwarded-Proto $scheme;
 ```mermaid
 flowchart LR
     A["🧑‍💻 Navegador"] -- HTTPS --> B["🛡️ Caddy / nginx<br/>:443"]
-    B -- HTTP --> C["💎 Obsidian Web<br/>127.0.0.1:3000"]
+    B -- HTTP --> C["💎 Obsidita<br/>127.0.0.1:3000"]
     C --> D[("📁 /srv/vaults/mi-vault")]
     C -. sincronización .-> E["🐙 GitHub"]
 ```
@@ -273,7 +273,7 @@ exit
 
 ```ini
 [Unit]
-Description=Obsidian Web
+Description=Obsidita
 After=network.target
 
 [Service]
@@ -500,7 +500,7 @@ Mantén el vault del servidor sincronizado con un repositorio de GitHub y, a tra
 
 | Campo | Valor |
 | :--- | :--- |
-| Token name | `Obsidian Web` |
+| Token name | `Obsidita` |
 | Expiration | La que prefieras. Cuando caduque, crea otro y pégalo. |
 | Repository access | *Only select repositories* → tu repositorio |
 | Permissions → Contents | **Read and write** |
@@ -587,7 +587,7 @@ flowchart LR
 
 ## 📚 Documentación técnica
 
-¿Quieres modificar, mejorar o mantener Obsidian Web? Toda la documentación técnica está en la carpeta [`utils/`](utils/README.md):
+¿Quieres modificar, mejorar o mantener Obsidita? Toda la documentación técnica está en la carpeta [`utils/`](utils/README.md):
 
 | Archivo | Contenido |
 | :--- | :--- |
@@ -601,7 +601,7 @@ flowchart LR
 
 ## 🤖 Desarrollado con IA
 
-Obsidian Web se ha desarrollado con ayuda de **[Claude](https://claude.com/claude-code)**, la IA de Anthropic, usando Claude Code: tanto el código como la documentación se han escrito y revisado en colaboración con ella.
+Obsidita se ha desarrollado con ayuda de **[Claude](https://claude.com/claude-code)**, la IA de Anthropic, usando Claude Code: tanto el código como la documentación se han escrito y revisado en colaboración con ella.
 
 ---
 
@@ -609,12 +609,14 @@ Obsidian Web se ha desarrollado con ayuda de **[Claude](https://claude.com/claud
 
 Distribuido bajo la licencia [MIT](https://opensource.org/licenses/MIT).
 
+Obsidita es un proyecto independiente y no está afiliado, patrocinado ni respaldado por Obsidian ni por Dynalist Inc. «Obsidian» es una marca de sus respectivos propietarios y se menciona aquí solo para indicar compatibilidad.
+
 <div align="center">
 
 <br>
 
 Hecho con 💜 para quienes viven en su vault de Obsidian.
 
-**[⬆ Volver arriba](#-obsidian-web)**
+**[⬆ Volver arriba](#-obsidita)**
 
 </div>
