@@ -169,6 +169,7 @@ export const en: Messages = {
   'toolbar.strike': 'Strikethrough',
   'toolbar.highlight': 'Highlight',
   'toolbar.code': 'Code',
+  'toolbar.codeblock': 'Code block',
   'toolbar.quote': 'Quote',
   'toolbar.lists': 'Lists',
   'toolbar.bulletList': 'Bulleted list',

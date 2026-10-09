@@ -168,6 +168,7 @@ export const es = {
   'toolbar.strike': 'Tachado',
   'toolbar.highlight': 'Resaltado',
   'toolbar.code': 'Código',
+  'toolbar.codeblock': 'Bloque de código',
   'toolbar.quote': 'Cita',
   'toolbar.lists': 'Listas',
   'toolbar.bulletList': 'Lista con viñetas',

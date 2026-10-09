@@ -169,6 +169,7 @@ export const ca: Messages = {
   'toolbar.strike': 'Ratllat',
   'toolbar.highlight': 'Ressaltat',
   'toolbar.code': 'Codi',
+  'toolbar.codeblock': 'Bloc de codi',
   'toolbar.quote': 'Cita',
   'toolbar.lists': 'Llistes',
   'toolbar.bulletList': 'Llista de pics',

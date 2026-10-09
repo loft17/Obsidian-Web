@@ -246,6 +246,12 @@ export const IconHighlight = make(
 );
 export const IconQuote = make(<path d="M17 6H3M21 12H8M21 18H8M3 12v6" />);
 export const IconCode = make(<path d="m16 18 6-6-6-6M8 6l-6 6 6 6" />);
+export const IconCodeBlock = make(
+  <>
+    <rect x="3" y="3" width="18" height="18" rx="2" />
+    <path d="m10 9-3 3 3 3M14 9l3 3-3 3" />
+  </>
+);
 export const IconListBullet = make(<path d="M3 6h.01M3 12h.01M3 18h.01M8 6h13M8 12h13M8 18h13" />);
 export const IconListOrdered = make(
   <path d="M10 6h11M10 12h11M10 18h11M4 6h1v4M4 10h2M6 18H4c0-1 2-2 2-3s-1-1.5-2-1" />

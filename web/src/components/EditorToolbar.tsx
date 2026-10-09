@@ -11,6 +11,7 @@ import {
   IconHighlight,
   IconQuote,
   IconCode,
+  IconCodeBlock,
   IconListBullet,
   IconListOrdered,
   IconCheckSquare,
@@ -136,6 +137,17 @@ function toggleCode(ta: TA) {
   const before = s > 0 && v[s - 1] !== '\n' ? '\n' : '';
   const text = `${before}\`\`\`\n${sel.replace(/\n$/, '')}\n\`\`\`\n`;
   replaceRange(ta, s, e, text, s + before.length + 3, s + before.length + 3);
+}
+
+// Selecciona el nombre del lenguaje para poder sobrescribirlo (bash, java...)
+function insertCodeBlock(ta: TA) {
+  const { selectionStart: s, selectionEnd: e, value: v } = ta;
+  const sel = v.slice(s, e).replace(/\n$/, '');
+  const before = s > 0 && v[s - 1] !== '\n' ? '\n' : '';
+  const lang = translate('toolbar.placeholder.code');
+  const text = `${before}\`\`\`${lang}\n${sel}\n\`\`\`\n`;
+  const at = s + before.length + 3;
+  replaceRange(ta, s, e, text, at, at + lang.length);
 }
 
 function insertLink(ta: TA) {
@@ -307,6 +319,9 @@ export default function EditorToolbar({ viewRef }: { viewRef: RefObject<EditorVi
       </ToolButton>
       <ToolButton title={t('toolbar.code')} onClick={act(toggleCode)}>
         <IconCode />
+      </ToolButton>
+      <ToolButton title={t('toolbar.codeblock')} onClick={act(insertCodeBlock)}>
+        <IconCodeBlock />
       </ToolButton>
       <span className="toolbar-sep" />
       <ToolButton title={t('toolbar.quote')} onClick={act(toggleQuote)}>
