@@ -11,6 +11,8 @@ import {
   IconCheckSquare,
   IconClose,
   IconPlus,
+  IconChevronUp,
+  IconChevronDown,
 } from './Icons';
 
 interface Props {
@@ -23,7 +25,8 @@ interface Props {
 type Kind = 'tags' | 'list' | 'date' | 'number' | 'checkbox' | 'text';
 
 function kindOf(key: string, value: unknown): Kind {
-  if (key === 'tags') return 'tags';
+  // Como en el índice del servidor: `tags`, `tag`, `Tags`...
+  if (/^tags?$/i.test(key)) return 'tags';
   if (key === 'aliases' || Array.isArray(value)) return 'list';
   if (typeof value === 'number') return 'number';
   if (typeof value === 'boolean') return 'checkbox';
@@ -31,7 +34,27 @@ function kindOf(key: string, value: unknown): Kind {
   return 'text';
 }
 
-const toList = (value: unknown): string[] => {
+// Propiedades con significado especial en Obsidian, sugeridas al añadir una
+const KNOWN_KEYS = ['tags', 'aliases', 'cssclasses'];
+
+// Variantes habituales que se escriben por error y se guardan con el nombre que reconoce Obsidian
+const KEY_ALIASES: Record<string, string> = {
+  tag: 'tags',
+  etiqueta: 'tags',
+  etiquetas: 'tags',
+  etiquetes: 'tags',
+  alias: 'aliases',
+  cssclass: 'cssclasses',
+};
+
+function normalizeKey(raw: string): string {
+  const key = raw.trim().replace(/:$/, '').trim();
+  const lower = key.toLowerCase();
+  if (KNOWN_KEYS.includes(lower)) return lower;
+  return KEY_ALIASES[lower] ?? key;
+}
+
+const toList =(value: unknown): string[] => {
   if (Array.isArray(value)) return value.map(String);
   if (value === null || value === undefined || value === '') return [];
   return [String(value)];
@@ -64,14 +87,33 @@ function ChipList({
   const [draft, setDraft] = useState('');
   const t = useT();
 
+  // Los tags no llevan espacios: comas y espacios separan varios de golpe (también al pegar)
+  const add = (text: string) => {
+    const parts = pill ? text.split(/[,\s]+/).map((s) => s.replace(/^#/, '')) : [text];
+    const next = [...items];
+    for (const part of parts.map((s) => s.trim())) if (part && !next.includes(part)) next.push(part);
+    if (next.length > items.length) onChange(next);
+  };
+
   const commit = () => {
-    const text = (pill ? draft.replace(/^#/, '') : draft).trim();
     setDraft('');
-    if (text && !items.includes(text)) onChange([...items, text]);
+    add(draft);
+  };
+
+  // Los teclados móviles no siempre envían `key === ','` mientras componen la palabra:
+  // el separador se detecta en el propio texto
+  const onInput = (value: string) => {
+    if (pill && /[,\s]/.test(value)) {
+      const done = value.replace(/[^,\s]*$/, '');
+      add(done);
+      setDraft(value.slice(done.length));
+    } else {
+      setDraft(value);
+    }
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' || (pill && e.key === ',')) {
+    if (e.key === 'Enter' || e.keyCode === 13) {
       e.preventDefault();
       commit();
     } else if (e.key === 'Backspace' && draft === '' && items.length > 0) {
@@ -102,14 +144,24 @@ function ChipList({
         </span>
       ))}
       {editable && (
-        <input
-          className="chip-input"
-          value={draft}
-          size={Math.max(draft.length, 1)}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={onKeyDown}
-          onBlur={commit}
-        />
+        // En un form, la tecla "Intro" de los teclados móviles llega siempre como submit
+        <form
+          className="chip-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            commit();
+          }}
+        >
+          <input
+            className="chip-input"
+            value={draft}
+            size={Math.max(draft.length, 1)}
+            enterKeyHint="done"
+            onChange={(e) => onInput(e.target.value)}
+            onKeyDown={onKeyDown}
+            onBlur={commit}
+          />
+        </form>
       )}
     </div>
   );
@@ -151,18 +203,28 @@ export default function Properties({ data, editable = false, onChange, onTagClic
     onChange?.(next);
   };
 
+  // El orden de las claves del objeto es el orden en que se escriben en el frontmatter
+  const moveKey = (key: string, delta: number) => {
+    const keys = Object.keys(data);
+    const from = keys.indexOf(key);
+    const to = from + delta;
+    if (from < 0 || to < 0 || to >= keys.length) return;
+    keys.splice(to, 0, ...keys.splice(from, 1));
+    onChange?.(Object.fromEntries(keys.map((k) => [k, data[k]])));
+  };
+
   const addProperty = () => {
-    const key = newKey.trim();
+    const key = normalizeKey(newKey);
     setAdding(false);
     setNewKey('');
-    if (!key || key in data) return;
-    onChange?.({ ...data, [key]: key === 'tags' || key === 'aliases' ? [] : '' });
+    if (!key || Object.keys(data).some((k) => k.toLowerCase() === key.toLowerCase())) return;
+    onChange?.({ ...data, [key]: kindOf(key, '') === 'tags' || key === 'aliases' ? [] : '' });
   };
 
   return (
     <div className="properties">
       {entries.length > 0 && <div className="properties-heading">{t('props.title')}</div>}
-      {entries.map(([key, value]) => {
+      {entries.map(([key, value], index) => {
         const kind = kindOf(key, value);
         const Icon = ICONS[kind];
         return (
@@ -204,9 +266,34 @@ export default function Properties({ data, editable = false, onChange, onTagClic
               )}
             </div>
             {editable && (
-              <button type="button" className="property-remove" title={t('props.remove')} onClick={() => removeKey(key)}>
-                <IconClose size={14} />
-              </button>
+              <div className="property-actions">
+                <button
+                  type="button"
+                  className="property-action"
+                  title={t('props.moveUp')}
+                  disabled={index === 0}
+                  onClick={() => moveKey(key, -1)}
+                >
+                  <IconChevronUp size={14} />
+                </button>
+                <button
+                  type="button"
+                  className="property-action"
+                  title={t('props.moveDown')}
+                  disabled={index === entries.length - 1}
+                  onClick={() => moveKey(key, 1)}
+                >
+                  <IconChevronDown size={14} />
+                </button>
+                <button
+                  type="button"
+                  className="property-action property-remove"
+                  title={t('props.remove')}
+                  onClick={() => removeKey(key)}
+                >
+                  <IconClose size={14} />
+                </button>
+              </div>
             )}
           </div>
         );
@@ -217,6 +304,7 @@ export default function Properties({ data, editable = false, onChange, onTagClic
           <input
             className="property-new-key"
             autoFocus
+            list="property-known-keys"
             placeholder={t('props.name')}
             value={newKey}
             onChange={(e) => setNewKey(e.target.value)}
@@ -235,6 +323,13 @@ export default function Properties({ data, editable = false, onChange, onTagClic
             {t('props.add')}
           </button>
         ))}
+      {editable && adding && (
+        <datalist id="property-known-keys">
+          {KNOWN_KEYS.filter((k) => !Object.keys(data).some((d) => normalizeKey(d) === k)).map((k) => (
+            <option key={k} value={k} />
+          ))}
+        </datalist>
+      )}
     </div>
   );
 }

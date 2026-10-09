@@ -974,23 +974,44 @@ a:hover {
   background: var(--interactive-normal);
 }
 
-.property-remove {
+.property-actions {
   flex: none;
+  display: flex;
+  opacity: 0;
+}
+
+.property-row:hover .property-actions,
+.property-row:focus-within .property-actions {
+  opacity: 1;
+}
+
+/* En pantallas táctiles no hay hover: los botones se ven siempre */
+@media (hover: none) {
+  .property-actions {
+    opacity: 1;
+  }
+}
+
+.property-action {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 24px;
   height: 28px;
+  padding: 0;
   border: none;
   background: transparent;
   color: var(--text-faint);
   cursor: pointer;
-  opacity: 0;
 }
 
-.property-row:hover .property-remove,
-.property-row:focus-within .property-remove {
-  opacity: 1;
+.property-action:hover:not(:disabled) {
+  color: var(--text-normal);
+}
+
+.property-action:disabled {
+  opacity: 0.3;
+  cursor: default;
 }
 
 .property-remove:hover {
@@ -1076,6 +1097,10 @@ a:hover {
 
 .chip-remove:hover {
   color: var(--text-normal);
+}
+
+.chip-form {
+  display: contents;
 }
 
 .chip-input {

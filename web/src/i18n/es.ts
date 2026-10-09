@@ -153,6 +153,8 @@ export const es = {
   'props.add': 'Añadir propiedad',
   'props.name': 'Nombre de la propiedad',
   'props.remove': 'Eliminar propiedad',
+  'props.moveUp': 'Subir',
+  'props.moveDown': 'Bajar',
   'props.removeValue': 'Quitar',
   'props.searchTag': 'Buscar notas con #{tag}',
 

@@ -154,6 +154,8 @@ export const en: Messages = {
   'props.add': 'Add property',
   'props.name': 'Property name',
   'props.remove': 'Remove property',
+  'props.moveUp': 'Move up',
+  'props.moveDown': 'Move down',
   'props.removeValue': 'Remove',
   'props.searchTag': 'Search notes with #{tag}',
 
