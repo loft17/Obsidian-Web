@@ -39,6 +39,9 @@ interface AppStore {
   setTabDirty: (path: string, isDirty: boolean) => void;
   editMode: boolean;
   setEditMode: (mode: boolean) => void;
+  // Editar el archivo como texto plano, sin formato ni panel de propiedades
+  rawMode: boolean;
+  setRawMode: (raw: boolean) => void;
   defaultEditMode: boolean;
   setDefaultEditMode: (mode: boolean) => void;
   theme: Theme;
@@ -271,7 +274,9 @@ export const useStore =create<AppStore>((set) => ({
       tabs: state.tabs.map((t) => (t.path === path ? { ...t, isDirty } : t)),
     })),
   editMode: initialDefaultEditMode,
-  setEditMode: (mode) => set({ editMode: mode }),
+  setEditMode: (mode) => set(mode ? { editMode: mode } : { editMode: mode, rawMode: false }),
+  rawMode: false,
+  setRawMode: (raw) => set({ rawMode: raw }),
   defaultEditMode: initialDefaultEditMode,
   setDefaultEditMode: (mode) => {
     try {

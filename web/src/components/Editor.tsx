@@ -154,6 +154,7 @@ export default function Editor({ filePath, content, onContentChange }: Props) {
   const editorMode = useStore((s) => s.editorMode);
   const showLineNumbers = useStore((s) => s.showLineNumbers);
   const showInlineTitle = useStore((s) => s.showInlineTitle);
+  const rawMode = useStore((s) => s.rawMode);
   const note = useMemo(() => parseNote(content), [content]);
   // Con un frontmatter inválido se edita el texto completo, sin panel de propiedades
   const body = note.valid ? note.body : content;
@@ -285,10 +286,21 @@ export default function Editor({ filePath, content, onContentChange }: Props) {
     pendingSaves.set(filePath, { timer: window.setTimeout(run, AUTOSAVE_DELAY), run });
   };
 
+  // En texto plano el editor CodeMirror sigue montado pero oculto: así conserva el cursor y
+  // el historial, y se mantiene al día con lo que se escribe en el área de texto
   return (
     <>
-      <EditorToolbar viewRef={viewRef} />
-      <div className="editor-scroll">
+      {rawMode && (
+        <textarea
+          className="editor-raw"
+          value={content}
+          spellCheck={false}
+          autoFocus
+          onChange={(e) => commit(e.target.value)}
+        />
+      )}
+      {!rawMode && <EditorToolbar viewRef={viewRef} />}
+      <div className="editor-scroll" hidden={rawMode}>
         {showInlineTitle && <InlineTitle filePath={filePath} onEnter={() => viewRef.current?.focus()} />}
         {note.valid && (
           <div className="editor-properties">

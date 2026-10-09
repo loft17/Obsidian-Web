@@ -123,6 +123,8 @@ export const en: Messages = {
   'note.toEditing': 'Switch to editing',
   'note.moreOptions': 'More options',
   'note.exportPdf': 'Export to PDF',
+  'note.rawMode': 'Show plain text',
+  'note.exitRawMode': 'Back to editor',
   'note.find': 'Find',
   'note.history': 'Version history',
   'note.popupBlocked': 'The browser blocked the pop-up window. Allow pop-ups to export to PDF.',

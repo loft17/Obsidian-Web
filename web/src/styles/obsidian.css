@@ -1131,6 +1131,28 @@ a:hover {
   color: var(--text-faint);
 }
 
+/* Edición del archivo como texto plano */
+.editor-raw {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  padding: 16px 24px;
+  border: none;
+  outline: none;
+  resize: none;
+  font-family: var(--font-monospace, monospace);
+  font-size: var(--font-text-size, 15px);
+  line-height: 1.6;
+  color: var(--text-normal);
+  background-color: var(--background-primary);
+  white-space: pre-wrap;
+  tab-size: 4;
+}
+
+.editor-scroll[hidden] {
+  display: none;
+}
+
 /* Editor with properties */
 .editor-scroll {
   flex: 1;

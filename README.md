@@ -90,6 +90,7 @@ la propia web.
 - **Modo lectura** con Markdown renderizado, resaltado de sintaxis en los bloques de código y **diagramas Mermaid**.
 - **Autoguardado** mientras escribes (y `Ctrl+S` para forzarlo). Si la nota cambia en otro dispositivo, se recarga sola; si además tenías cambios sin guardar, eliges qué versión conservar.
 - **Propiedades** (frontmatter YAML) editables, con `tags` y `aliases` como listas.
+- **Texto sin formato**: edita el archivo tal cual, como en un bloc de notas, frontmatter incluido.
 
 </td>
 <td width="50%" valign="top">
@@ -139,6 +140,7 @@ la propia web.
 | Necesitas | Detalle |
 | :--- | :--- |
 | 🟢 **Node.js** | **20 o superior** (20.12+ para que se cargue el `.env`) y el `npm` que trae. |
+| 🐙 **git** | **2.31 o superior**, solo si vas a usar la [sincronización con GitHub](#-sincronización-con-github) (también sirve para el `git clone`). Compruébalo con `git --version`. |
 | 📁 **Un vault** | Una carpeta del servidor: un vault existente o una carpeta vacía (si no existe, se crea). |
 | 🔐 **En producción** | Un dominio y un proxy inverso con HTTPS (Caddy o nginx). Muy recomendado. |
 
@@ -441,6 +443,10 @@ Funcionan como los plugins del mismo nombre de Obsidian de escritorio y comparte
 - **Nota diaria** (icono de calendario en la cinta): abre la nota de hoy y, si no existe, la crea en la carpeta configurada con la plantilla elegida. El nombre sale del formato de fecha (sintaxis de moment.js, por defecto `YYYY-MM-DD`); una `/` en el formato crea subcarpetas, por ejemplo `YYYY/MM/YYYY-MM-DD`.
 - **Insertar plantilla** (icono de documentos): elige una nota de la carpeta de plantillas y se inserta en el cursor de la nota abierta. Si la plantilla tiene propiedades, se añaden a las de la nota sin cambiar las que ya tenía.
 - **Variables**: `{{title}}` (nombre de la nota), `{{date}}` y `{{time}}` (con los formatos configurados), y `{{date:FORMATO}}` / `{{time:FORMATO}}` con un formato propio, por ejemplo `{{date:dddd, D [de] MMMM}}`.
+
+### 📄 Texto sin formato
+
+En modo edición, en el menú de la nota (⋯ → *Ver texto sin formato*): la nota se muestra como texto plano, igual que si abrieras el `.md` con un bloc de notas, con el frontmatter `---` incluido y sin ningún formato. Puedes escribir, copiar y pegar; los cambios se guardan con el autoguardado de siempre. Para salir, ⋯ → *Volver al editor* o pasa a modo lectura.
 
 ### 🖨️ Exportar a PDF
 

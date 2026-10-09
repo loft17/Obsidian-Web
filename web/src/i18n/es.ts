@@ -122,6 +122,8 @@ export const es = {
   'note.toEditing': 'Cambiar a edición',
   'note.moreOptions': 'Más opciones',
   'note.exportPdf': 'Exportar a PDF',
+  'note.rawMode': 'Ver texto sin formato',
+  'note.exitRawMode': 'Volver al editor',
   'note.find': 'Buscar',
   'note.history': 'Historial de versiones',
   'note.popupBlocked': 'El navegador bloqueó la ventana emergente. Permite ventanas emergentes para exportar a PDF.',

@@ -123,6 +123,8 @@ export const ca: Messages = {
   'note.toEditing': "Canvia a l'edició",
   'note.moreOptions': 'Més opcions',
   'note.exportPdf': 'Exporta a PDF',
+  'note.rawMode': 'Mostra el text sense format',
+  'note.exitRawMode': "Torna a l'editor",
   'note.find': 'Cerca',
   'note.history': 'Historial de versions',
   'note.popupBlocked': 'El navegador ha bloquejat la finestra emergent. Permet les finestres emergents per exportar a PDF.',

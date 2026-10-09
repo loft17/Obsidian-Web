@@ -22,6 +22,9 @@ export default function NoteMenu() {
   const tree = useStore((s) => s.tree);
   const setTree = useStore((s) => s.setTree);
   const removeTab = useStore((s) => s.removeTab);
+  const editMode = useStore((s) => s.editMode);
+  const rawMode = useStore((s) => s.rawMode);
+  const setRawMode = useStore((s) => s.setRawMode);
 
   const ref = useRef<HTMLDivElement>(null);
   const t = useT();
@@ -149,6 +152,17 @@ export default function NoteMenu() {
           </div>
           {!activeIsImage && (
             <>
+              {editMode && (
+                <div
+                  className="dropdown-item"
+                  onClick={() => {
+                    setOpen(false);
+                    setRawMode(!rawMode);
+                  }}
+                >
+                  {rawMode ? t('note.exitRawMode') : t('note.rawMode')}
+                </div>
+              )}
               <div className="dropdown-item" onClick={handleExportPDF}>
                 {t('note.exportPdf')}
               </div>
