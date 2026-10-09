@@ -9,15 +9,16 @@ export default (dataDir, sessions, limiter) => {
   const configPath = join(dataDir, 'config.json');
 
   router.post('/login', async (req, res) => {
-    const ip = req.ip;
-    const wait = limiter.retryAfter(ip);
+    const attempt = limiter.begin(req.ip);
+    const { wait } = attempt;
     if (wait) {
       res.set('Retry-After', String(wait));
       return res.status(429).json({ error: `Demasiados intentos. Prueba de nuevo en ${Math.ceil(wait / 60)} min` });
     }
 
-    const { password } = req.body;
+    const { password } = req.body ?? {};
     if (!password || typeof password !== 'string') {
+      attempt.release();
       return res.status(400).json({ error: 'Missing password' });
     }
 
@@ -25,10 +26,10 @@ export default (dataDir, sessions, limiter) => {
       const config = JSON.parse(readFileSync(configPath, 'utf8'));
 
       if (!(await verifyPassword(password, config.passwordHash))) {
-        limiter.fail(ip);
+        attempt.fail();
         return res.status(401).json({ error: 'Contraseña incorrecta' });
       }
-      limiter.succeed(ip);
+      attempt.succeed();
 
       // Set signed cookie with a fresh, revocable session token
       res.cookie('token', sessions.create(), sessionCookie(req));
@@ -37,6 +38,8 @@ export default (dataDir, sessions, limiter) => {
     } catch (err) {
       console.error('[Auth] Login error:', err);
       res.status(500).json({ error: 'Error al iniciar sesión' });
+    } finally {
+      attempt.release();
     }
   });
 

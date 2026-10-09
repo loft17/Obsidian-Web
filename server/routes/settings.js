@@ -38,23 +38,25 @@ export default (dataDir, getConfig, limiter, sessions) => {
   // Cambiar el vault da acceso a otra carpeta del servidor, así que además de la sesión
   // exige la contraseña actual (con el mismo límite de intentos que el login)
   router.post('/vault', async (req, res) => {
-    // Sin configurar, esta ruta no exige sesión: no puede crear un config.json sin contraseña
     const cfg = getConfig();
     if (!cfg) return res.status(400).json({ error: 'Not configured' });
-    const wait = limiter.retryAfter(req.ip);
+    const attempt = limiter.begin(req.ip);
+    const { wait } = attempt;
     if (wait) {
       res.set('Retry-After', String(wait));
       return res.status(429).json({ error: `Demasiados intentos. Prueba de nuevo en ${Math.ceil(wait / 60)} min` });
     }
     try {
       if (!(await verifyPassword(req.body?.password, cfg.passwordHash))) {
-        limiter.fail(req.ip);
+        attempt.fail();
         return res.status(403).json({ error: 'Contraseña incorrecta' });
       }
+      attempt.succeed();
     } catch (err) {
       return res.status(500).json({ error: publicError(err, 'No se pudo cambiar la ruta') });
+    } finally {
+      attempt.release();
     }
-    limiter.succeed(req.ip);
     let full;
     try {
       full = vault.checkVaultPath(req.body?.vaultPath, dataDir);
@@ -78,7 +80,8 @@ export default (dataDir, getConfig, limiter, sessions) => {
   router.post('/password', async (req, res) => {
     const cfg = getConfig();
     if (!cfg) return res.status(400).json({ error: 'Not configured' });
-    const wait = limiter.retryAfter(req.ip);
+    const attempt = limiter.begin(req.ip);
+    const { wait } = attempt;
     if (wait) {
       res.set('Retry-After', String(wait));
       return res.status(429).json({ error: `Demasiados intentos. Prueba de nuevo en ${Math.ceil(wait / 60)} min` });
@@ -86,10 +89,10 @@ export default (dataDir, getConfig, limiter, sessions) => {
     const { currentPassword, newPassword } = req.body ?? {};
     try {
       if (!(await verifyPassword(currentPassword, cfg.passwordHash))) {
-        limiter.fail(req.ip);
+        attempt.fail();
         return res.status(403).json({ error: 'Contraseña incorrecta' });
       }
-      limiter.succeed(req.ip);
+      attempt.succeed();
       if (typeof newPassword !== 'string' || newPassword.length < MIN_PASSWORD_LENGTH) {
         return res.status(400).json({ error: `La contraseña nueva debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres` });
       }
@@ -100,6 +103,8 @@ export default (dataDir, getConfig, limiter, sessions) => {
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ error: publicError(err, 'No se pudo cambiar la contraseña') });
+    } finally {
+      attempt.release();
     }
   });
 

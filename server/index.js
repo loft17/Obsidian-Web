@@ -56,8 +56,13 @@ const distPath = join(__dirname, '..', 'web', 'dist');
 app.disable('x-powered-by');
 app.use(securityHeaders(distPath));
 app.use('/api', csrfGuard);
-// Las notas se guardan como JSON: el límite por defecto (100 KB) se queda corto
-app.use(express.json({ limit: MAX_NOTE_MB * 1024 * 1024 }));
+// El JSON se lee antes de comprobar la sesión, así que por defecto solo se aceptan cuerpos
+// pequeños. Las notas (/api/files) pueden ser grandes: se leen con MAX_NOTE_MB más abajo,
+// después de la comprobación de sesión
+const apiPath = (req) => req.originalUrl.split('?')[0].toLowerCase();
+const isFilesApi = (req) => apiPath(req).startsWith('/api/files/');
+const smallJson = express.json({ limit: '100kb' });
+app.use((req, res, next) => (isFilesApi(req) ? next() : smallJson(req, res, next)));
 app.use(cookieParser(cookieSecret));
 
 // Check if configured
@@ -83,11 +88,14 @@ if (existsSync(distPath)) {
 app.use('/api/setup', setupRoutes(dataDir, sessions));
 app.use('/api/auth', authRoutes(dataDir, sessions, loginLimiter));
 
-// Protected routes (require login if configured)
+// Protected routes (require login)
 // Montado en '/api' (Express no distingue mayúsculas, así que también cubre '/API/...').
-// /api/setup y /api/auth ya respondieron arriba; todo lo demás de la API exige sesión
+// /api/setup y /api/auth ya respondieron arriba; todo lo demás de la API exige sesión.
+// Sin configurar tampoco se deja pasar: alguien podría dejar preparada, p. ej., la
+// sincronización con su repositorio de GitHub antes de que hagas el setup
 app.use('/api', (req, res, next) => {
-  if (getConfig() && !sessions.isValid(req.signedCookies.token)) {
+  if (!getConfig()) return res.status(503).json({ error: 'Not configured' });
+  if (!sessions.isValid(req.signedCookies.token)) {
     console.log(`[Auth] Unauthorized access attempt to ${req.method} ${req.originalUrl}`);
     return res.status(401).json({ error: 'Unauthorized' });
   }
@@ -95,7 +103,7 @@ app.use('/api', (req, res, next) => {
 });
 
 app.use('/api/settings', settingsRoutes(dataDir, getConfig, loginLimiter, sessions));
-app.use('/api/files', filesRoutes(dataDir, getConfig));
+app.use('/api/files', express.json({ limit: MAX_NOTE_MB * 1024 * 1024 }), filesRoutes(dataDir, getConfig));
 app.use('/api/search', searchRoutes(dataDir, getConfig));
 app.use('/api/sync', syncRoutes(syncManager, getConfig));
 
@@ -112,7 +120,8 @@ app.use((err, req, res, next) => {
   const status = err.status || err.statusCode || 500;
   if (status >= 500) console.error('[Error]', err);
   if (status === 413) {
-    const max = req.originalUrl.startsWith('/api/files/upload') ? MAX_UPLOAD_MB : MAX_NOTE_MB;
+    if (!isFilesApi(req)) return res.status(413).json({ error: 'Petición demasiado grande' });
+    const max = apiPath(req).startsWith('/api/files/upload') ? MAX_UPLOAD_MB : MAX_NOTE_MB;
     return res.status(413).json({ error: `Demasiado grande (máximo ${max} MB)` });
   }
   res.status(status).json({ error: status >= 500 ? 'Error interno' : 'Petición no válida' });

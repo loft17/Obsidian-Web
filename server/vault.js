@@ -268,10 +268,12 @@ export const copyFile = (vaultPath, filePath) => {
   const base = basename(srcFull, ext);
   let n = 1;
   let destFull;
+  // entryExists y no existsSync: un enlace simbólico roto cuenta como ocupado (si no, se
+  // escribiría a través de él, fuera del vault)
   do {
     destFull = join(dirname(srcFull), `${base} ${n}${ext}`);
     n++;
-  } while (existsSync(destFull));
+  } while (entryExists(destFull));
   if (isDir) cpSync(srcFull, destFull, { recursive: true });
   else copyFileSync(srcFull, destFull);
   return toVaultPath(vaultPath, destFull);
@@ -325,7 +327,8 @@ export const saveAttachment = (vaultPath, folder, fileName, data) => {
   const ext = extname(safeName);
   const base = basename(safeName, ext);
   let fullPath = guardPath(vaultPath, folder ? `${folder}/${safeName}` : safeName);
-  for (let n = 1; existsSync(fullPath); n++) {
+  // Con entryExists, un enlace simbólico roto cuenta como ocupado y no se escribe a través de él
+  for (let n = 1; entryExists(fullPath); n++) {
     fullPath = join(dirname(fullPath), `${base} ${n}${ext}`);
   }
   mkdirSync(dirname(fullPath), { recursive: true });

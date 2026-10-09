@@ -121,41 +121,79 @@ export const createLoginLimiter = () => {
     }
   }, WINDOW).unref();
 
+  // Intentos en curso (comprobando la contraseña): cuentan para el límite antes de saber
+  // si fallan, para que muchas peticiones simultáneas no puedan colarse todas a la vez
+  const pending = new Map(); // ip → intentos en curso
+  let globalPending = 0;
+
+  // Segundos que faltan para poder reintentar (0 si no está bloqueada)
+  const retryAfter = (ip) => {
+    const now = Date.now();
+    const until = Math.max(attempts.get(ipKey(ip))?.lockedUntil ?? 0, global.lockedUntil);
+    return until > now ? Math.ceil((until - now) / 1000) : 0;
+  };
+
+  // Registra un fallo de `key` (IP ya agrupada con ipKey)
+  const recordFail = (key) => {
+    const now = Date.now();
+    if (now - global.first > WINDOW) {
+      global.fails = 0;
+      global.first = now;
+    }
+    if (++global.fails >= GLOBAL_MAX_FAILS) {
+      global.lockedUntil = now + GLOBAL_LOCK;
+      global.fails = 0;
+      global.first = now;
+      console.warn('[Auth] Demasiados intentos fallidos en total: login bloqueado temporalmente para todos');
+    }
+    let a = attempts.get(key);
+    if (!a || now - a.first > WINDOW) {
+      a = { fails: 0, first: now, lockedUntil: 0, locks: a?.locks ?? 0 };
+      attempts.set(key, a);
+    }
+    a.fails++;
+    if (a.fails >= MAX_FAILS) {
+      a.lockedUntil = now + Math.min(LOCK * 2 ** a.locks, MAX_LOCK);
+      a.locks++;
+      a.fails = 0;
+      a.first = now;
+    }
+  };
+
   return {
-    // Segundos que faltan para poder reintentar (0 si no está bloqueada)
-    retryAfter(ip) {
+    // Empieza un intento de contraseña. Devuelve { wait } (segundos) si hay que esperar; si no,
+    // { wait: 0, fail, succeed, release }. Hay que llamar a fail() o succeed() según el resultado,
+    // y a release() al terminar (p. ej. en un finally) por si hubo un error antes
+    begin(ip) {
+      const wait = retryAfter(ip);
+      if (wait) return { wait };
+      const key = ipKey(ip);
       const now = Date.now();
-      const until = Math.max(attempts.get(ipKey(ip))?.lockedUntil ?? 0, global.lockedUntil);
-      return until > now ? Math.ceil((until - now) / 1000) : 0;
-    },
-    fail(ip) {
-      ip = ipKey(ip);
-      const now = Date.now();
-      if (now - global.first > WINDOW) {
-        global.fails = 0;
-        global.first = now;
-      }
-      if (++global.fails >= GLOBAL_MAX_FAILS) {
-        global.lockedUntil = now + GLOBAL_LOCK;
-        global.fails = 0;
-        global.first = now;
-        console.warn('[Auth] Demasiados intentos fallidos en total: login bloqueado temporalmente para todos');
-      }
-      let a = attempts.get(ip);
-      if (!a || now - a.first > WINDOW) {
-        a = { fails: 0, first: now, lockedUntil: 0, locks: a?.locks ?? 0 };
-        attempts.set(ip, a);
-      }
-      a.fails++;
-      if (a.fails >= MAX_FAILS) {
-        a.lockedUntil = now + Math.min(LOCK * 2 ** a.locks, MAX_LOCK);
-        a.locks++;
-        a.fails = 0;
-        a.first = now;
-      }
-    },
-    succeed(ip) {
-      attempts.delete(ipKey(ip));
+      const a = attempts.get(key);
+      const fails = a && now - a.first <= WINDOW ? a.fails : 0;
+      const globalFails = now - global.first <= WINDOW ? global.fails : 0;
+      const mine = pending.get(key) ?? 0;
+      // Si todos los intentos en curso fallaran se llegaría al bloqueo: no se admiten más
+      if (fails + mine >= MAX_FAILS || globalFails + globalPending >= GLOBAL_MAX_FAILS) return { wait: 1 };
+      pending.set(key, mine + 1);
+      globalPending++;
+
+      let open = true;
+      const release = () => {
+        if (!open) return false;
+        open = false;
+        globalPending--;
+        const left = pending.get(key) - 1;
+        if (left > 0) pending.set(key, left);
+        else pending.delete(key);
+        return true;
+      };
+      return {
+        wait: 0,
+        fail: () => release() && recordFail(key),
+        succeed: () => release() && attempts.delete(key),
+        release,
+      };
     },
   };
 };

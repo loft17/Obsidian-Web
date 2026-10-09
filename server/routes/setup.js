@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, rmSync } from 'fs';
 import { join } from 'path';
 import crypto from 'crypto';
 import { checkVaultPath } from '../vault.js';
@@ -98,6 +98,8 @@ export default (dataDir, sessions) => {
       setupToken = null;
       // Las sesiones de una configuración anterior no valen para la nueva
       sessions.destroyAll();
+      // Ni su sincronización (repositorio y token de GitHub): se configura de nuevo con sesión
+      rmSync(join(dataDir, 'sync.json'), { force: true });
       console.log(`[Setup] Configuration saved successfully`);
 
       res.json({ success: true });
