@@ -141,6 +141,7 @@ export const es = {
   'toast.syncing': 'Sincronizando con GitHub…',
   'toast.synced': 'Sincronizado con GitHub',
   'toast.syncError': 'Error al sincronizar con GitHub: {error}',
+  'toast.updateAvailable': 'Nueva versión {version} disponible. Más información en Preferencias → Acerca de',
   'embed.loadError': 'No se pudo cargar la nota',
   'embed.headingNotFound': 'No se encuentra «{heading}» en la nota',
   'mermaid.error': 'Error en el diagrama',
@@ -374,6 +375,12 @@ export const es = {
 
   // Acerca de y variables
   'about.version': 'Versión {version}',
+  'about.updateAvailable': 'Nueva versión disponible: {version}',
+  'about.updateDesc': 'Actualiza con git pull, npm install y reinicia el servidor.',
+  'about.viewOnGithub': 'Ver en GitHub',
+  'about.upToDate': 'Estás usando la última versión',
+  'about.updateUnknown': 'No se pudo comprobar si hay una versión nueva',
+  'about.updateDisabled': 'Comprobación de versiones desactivada (UPDATE_CHECK)',
   'about.developedBy': 'Desarrollado por',
   'about.tagline': 'Hecho con cariño (y una ayudita de la IA) para todos los Obsidian lovers 💜',
   'limits.title': 'Límites del servidor',

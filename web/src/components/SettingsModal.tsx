@@ -1,6 +1,6 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { useStore, type EditorMode, type Theme, DEFAULT_FONT_SIZE, MIN_FONT_SIZE, MAX_FONT_SIZE } from '../store';
-import { settingsApi, syncApi, type NotesConfig, type NotesConfigUpdate, type ServerLimits, type SyncConfig, type SyncConfigUpdate, type SyncProvider } from '../api';
+import { settingsApi, syncApi, type NotesConfig, type NotesConfigUpdate, type ServerLimits, type SyncConfig, type SyncConfigUpdate, type SyncProvider, type UpdateStatus } from '../api';
 import { formatDate as formatMoment, DEFAULT_DAILY_FORMAT, DEFAULT_DATE_FORMAT, DEFAULT_TIME_FORMAT } from '../templates';
 import { getLang, LANGUAGES, Trans, useI18n, useT, type Lang, type MessageKey } from '../i18n';
 import { IconClose, IconEdit, IconEye, IconFolderNew, IconList, IconLock, IconReset, IconSearch, IconSync, IconUserCircle } from './Icons';
@@ -1043,14 +1043,40 @@ function ShortcutsSection() {
 
 function AboutSection() {
   const t = useT();
+  const [update, setUpdate] = useState<UpdateStatus | null>(null);
+  useEffect(() => {
+    settingsApi.getUpdate().then(setUpdate).catch(() => {});
+  }, []);
+
+  const updateText = !update
+    ? null
+    : !update.enabled
+      ? t('about.updateDisabled')
+      : !update.latest
+        ? t('about.updateUnknown')
+        : update.updateAvailable
+          ? null
+          : t('about.upToDate');
+
   return (
     <div className="settings-group">
       <div className="setting-item">
         <div className="setting-info">
           <div className="setting-name">{t('about.version', { version: __APP_VERSION__ })}</div>
-          <div className="setting-desc">Obsidita</div>
+          <div className="setting-desc">Obsidita{updateText && ` · ${updateText}`}</div>
         </div>
       </div>
+      {update?.updateAvailable && update.latest && (
+        <div className="setting-item">
+          <div className="setting-info">
+            <div className="setting-name" style={{ color: 'var(--interactive-accent)' }}>
+              {t('about.updateAvailable', { version: update.latest })}
+            </div>
+            <div className="setting-desc">{t('about.updateDesc')}</div>
+          </div>
+          <button onClick={() => window.open(update.url, '_blank', 'noopener,noreferrer')}>{t('about.viewOnGithub')}</button>
+        </div>
+      )}
       <div className="setting-item">
         <div className="setting-info">
           <div className="setting-name">

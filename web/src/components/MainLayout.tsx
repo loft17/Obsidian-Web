@@ -20,6 +20,7 @@ import { useT, t as translate } from '../i18n';
 import Toasts from './Toasts';
 import { notify } from '../toast';
 import { useSyncNotifications } from '../syncNotify';
+import { useUpdateNotification } from '../updateNotify';
 
 // Cada cuánto se comprueba si la nota abierta ha cambiado en el servidor (ms)
 const EXTERNAL_CHECK_INTERVAL = 15000;
@@ -43,6 +44,7 @@ export default function MainLayout() {
   const conflict = useStore((s) => s.conflicts[0]);
   const t = useT();
   useSyncNotifications();
+  useUpdateNotification();
 
   // Atajos globales: Ctrl/Cmd+P abrir nota, +S guardar, +E editar/leer, +B barra lateral, +Shift+F buscar
   useEffect(() => {

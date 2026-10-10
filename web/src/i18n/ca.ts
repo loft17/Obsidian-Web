@@ -142,6 +142,7 @@ export const ca: Messages = {
   'toast.syncing': 'Sincronitzant amb GitHub…',
   'toast.synced': 'Sincronitzat amb GitHub',
   'toast.syncError': 'Error en sincronitzar amb GitHub: {error}',
+  'toast.updateAvailable': 'Nova versió {version} disponible. Més informació a Preferències → Quant a',
   'embed.loadError': "No s'ha pogut carregar la nota",
   'embed.headingNotFound': "No es troba «{heading}» a la nota",
   'mermaid.error': 'Error al diagrama',
@@ -375,6 +376,12 @@ export const ca: Messages = {
 
   // Quant a i variables
   'about.version': 'Versió {version}',
+  'about.updateAvailable': 'Nova versió disponible: {version}',
+  'about.updateDesc': 'Actualitza amb git pull, npm install i reinicia el servidor.',
+  'about.viewOnGithub': 'Veure a GitHub',
+  'about.upToDate': "Estàs fent servir l'última versió",
+  'about.updateUnknown': "No s'ha pogut comprovar si hi ha una versió nova",
+  'about.updateDisabled': 'Comprovació de versions desactivada (UPDATE_CHECK)',
   'about.developedBy': 'Desenvolupat per',
   'about.tagline': "Fet amb carinyo (i una ajudeta de la IA) per a tots els Obsidian lovers 💜",
   'limits.title': 'Límits del servidor',

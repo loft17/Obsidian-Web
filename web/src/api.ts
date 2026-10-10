@@ -183,7 +183,20 @@ export interface NotesConfigUpdate {
   templates?: Partial<NotesConfig['templates']>;
 }
 
+export interface UpdateStatus {
+  enabled: boolean;
+  current: string;
+  latest: string | null;
+  updateAvailable: boolean;
+  url: string;
+}
+
 export const settingsApi = {
+  getUpdate: async (): Promise<UpdateStatus> => {
+    const res = await fetch(`${API_URL}/settings/update`);
+    if (!res.ok) throw new Error((await res.json()).error);
+    return res.json();
+  },
   getNotes: async (): Promise<NotesConfig> => {
     const res = await fetch(`${API_URL}/settings/notes`);
     if (!res.ok) throw new Error((await res.json()).error);

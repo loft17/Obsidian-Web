@@ -214,6 +214,7 @@ También puedes definirlas en la shell, en la unidad de systemd o en PM2: **esas
 | `TRUST_PROXY` | desactivada | **Obligatoria detrás de un proxy inverso** (normalmente `1`). Ver [abajo](#trust_proxy). |
 | `VAULTS_ROOT` | sin límite | El vault solo podrá estar dentro de esta carpeta, también al cambiarlo desde *Preferencias*. Ej.: `/srv/vaults`. |
 | `PORT` | `3000` | Solo se usa si `data/config.json` no define un puerto, es decir, antes de la configuración inicial. |
+| `UPDATE_CHECK` | activada | Comprueba cada 6 h si hay una versión nueva en GitHub y avisa al entrar y en *Preferencias → Acerca de*. Con `0` el servidor no se conecta a GitHub. |
 | `REMOTE_IMAGES` | desactivada | Con `1` se cargan imágenes `https:` externas en las notas. Ver [Seguridad](#-seguridad). |
 | `MAX_UPLOAD_MB`, `MIN_PASSWORD_LENGTH`… | ver [Límites](utils/MANTENIMIENTO.md#límites) | Tamaño de notas y adjuntos (20 MB y 50 MB), contraseña, búsqueda y sesiones. |
 

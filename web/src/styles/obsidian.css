@@ -1691,6 +1691,18 @@ a:hover {
   pointer-events: none;
 }
 
+/* Avisos generales (nueva versión): esquina superior derecha, bajo la cabecera de pestañas */
+.toasts-top {
+  top: 48px;
+  bottom: auto;
+}
+
+.toasts-top .toast {
+  font-size: 13px;
+  padding: 8px 13px;
+  animation-name: toast-in-top;
+}
+
 .toast {
   display: flex;
   align-items: center;
@@ -1743,8 +1755,16 @@ a:hover {
   }
 }
 
+@keyframes toast-in-top {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .toast {
+  .toast,
+  .toasts-top .toast {
     animation: none;
   }
 }

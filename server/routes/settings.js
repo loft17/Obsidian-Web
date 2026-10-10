@@ -7,6 +7,7 @@ import { publicError } from '../security.js';
 import { verifyPassword, hashPassword, MIN_PASSWORD_LENGTH } from '../password.js';
 import { sessionCookie } from '../sessions.js';
 import * as limits from '../limits.js';
+import { getUpdateStatus } from '../updates.js';
 
 export default (dataDir, getConfig, limiter, sessions) => {
   const router = Router();
@@ -33,6 +34,11 @@ export default (dataDir, getConfig, limiter, sessions) => {
       sessionMaxDays: limits.SESSION_MAX_AGE / DAY,
       sessionIdleDays: limits.SESSION_IDLE / DAY,
     });
+  });
+
+  // ¿Hay una versión nueva en GitHub? Se muestra en "Acerca de" y como aviso al entrar
+  router.get('/update', async (req, res) => {
+    res.json(await getUpdateStatus());
   });
 
   // getConfig relee config.json en cada petición, así que el cambio se aplica al instante.

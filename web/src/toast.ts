@@ -11,6 +11,8 @@ export interface Toast {
   text: string;
   kind: ToastKind;
   id: number;
+  // Esquina superior derecha en vez de la inferior (avisos generales, no de una acción)
+  top?: boolean;
 }
 
 const DURATION: Record<ToastKind, number> = { success: 1800, info: 2500, error: 6000 };
@@ -27,10 +29,16 @@ export const dismissToast = (key: string) => {
 };
 
 // `duration` 0: se queda hasta que otro aviso con la misma clave lo sustituya o se cierre
-export const notify = (key: string, text: string, kind: ToastKind = 'success', duration = DURATION[kind]) => {
+export const notify = (
+  key: string,
+  text: string,
+  kind: ToastKind = 'success',
+  duration = DURATION[kind],
+  top = false
+) => {
   clearTimeout(timers.get(key));
   timers.delete(key);
-  const toast = { key, text, kind, id: nextId++ };
+  const toast = { key, text, kind, id: nextId++, top };
   useToasts.setState((s) => {
     const i = s.toasts.findIndex((t) => t.key === key);
     if (i === -1) return { toasts: [...s.toasts, toast] };

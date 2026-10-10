@@ -142,6 +142,7 @@ export const en: Messages = {
   'toast.syncing': 'Syncing with GitHub…',
   'toast.synced': 'Synced with GitHub',
   'toast.syncError': 'GitHub sync failed: {error}',
+  'toast.updateAvailable': 'New version {version} available. More info in Settings → About',
   'embed.loadError': 'Could not load the note',
   'embed.headingNotFound': '“{heading}” was not found in the note',
   'mermaid.error': 'Diagram error',
@@ -372,6 +373,12 @@ export const en: Messages = {
 
   // About and variables
   'about.version': 'Version {version}',
+  'about.updateAvailable': 'New version available: {version}',
+  'about.updateDesc': 'Update with git pull, npm install and restart the server.',
+  'about.viewOnGithub': 'View on GitHub',
+  'about.upToDate': 'You are using the latest version',
+  'about.updateUnknown': 'Could not check for a new version',
+  'about.updateDisabled': 'Version check disabled (UPDATE_CHECK)',
   'about.developedBy': 'Developed by',
   'about.tagline': 'Made with love (and a little help from AI) for all Obsidian lovers 💜',
   'limits.title': 'Server limits',
