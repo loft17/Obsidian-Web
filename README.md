@@ -59,7 +59,7 @@ la propia web.
 <td valign="top" width="33%">
 
 **Usar**
-- [📝 Uso](#-uso)
+- [📝 Uso](utils/USO.md)
 - [⚡ Atajos de teclado](#-atajos-de-teclado)
 - [🎨 Preferencias](#-preferencias)
 - [🔄 Sincronización con GitHub](#-sincronización-con-github)
@@ -408,50 +408,16 @@ Para actualizar, hacer copias de seguridad o recuperar la contraseña, consulta 
 
 ## 📝 Uso
 
-### 📂 Explorador y pestañas
+Todo lo que puedes hacer en la web está explicado en la **[guía de uso](utils/USO.md)**:
 
-| Acción | Resultado |
+| | |
 | :--- | :--- |
-| **Clic** en una nota | La abre en la pestaña activa. |
-| **`Ctrl`/`Cmd` + clic**, **botón central** o **clic derecho → Abrir en pestaña nueva** | La abre en otra pestaña. |
-| **Clic derecho** sobre archivos o carpetas | Nueva nota, nueva carpeta, duplicar, mover, renombrar, borrar. |
-
-Borrar mueve el archivo a la papelera (`.trash/` dentro del vault). Desde el panel **Papelera** de la cinta puedes restaurarlo a su ruta original, borrarlo definitivamente o vaciar la papelera.
-
-### 🔗 Wikilinks
-
-| Sintaxis | Resultado |
-| :--- | :--- |
-| `[[Nota]]` | Enlace a `Nota.md`. |
-| `[[Nota\|Texto]]` | Enlace con texto alternativo. |
-| `[[Nota#Encabezado]]` | Enlace a una sección. |
-
-Un enlace a una nota que no existe se muestra atenuado y, al pulsarlo, se crea la nota. En el editor, `Ctrl`/`Cmd` + clic o el botón central lo abren en otra pestaña.
-
-### 🔍 Búsqueda
-
-- **Texto libre**: busca, sin distinguir mayúsculas, en nombres de archivo y en el contenido. Primero salen las coincidencias por nombre y después las que más apariciones tienen.
-- **`tag:proyecto`** o **`tag:#proyecto`**: notas con esa etiqueta, en el frontmatter (`tags:`) o en el texto (`#proyecto`).
-
-### 🖼️ Adjuntos
-
-Arrastra o pega una imagen en el editor. Se guarda en la carpeta de *Preferencias → Archivos* y se inserta el enlace en la nota. Esa carpeta se guarda en `.obsidian/app.json` como `attachmentFolderPath`, igual que en Obsidian de escritorio.
-
-### 📅 Notas diarias y plantillas
-
-Funcionan como los plugins del mismo nombre de Obsidian de escritorio y comparten su configuración, que se cambia en *Preferencias → Archivos* y se guarda en `.obsidian/daily-notes.json` y `.obsidian/templates.json`.
-
-- **Nota diaria** (icono de calendario en la cinta): abre la nota de hoy y, si no existe, la crea en la carpeta configurada con la plantilla elegida. El nombre sale del formato de fecha (sintaxis de moment.js, por defecto `YYYY-MM-DD`); una `/` en el formato crea subcarpetas, por ejemplo `YYYY/MM/YYYY-MM-DD`.
-- **Insertar plantilla** (icono de documentos): elige una nota de la carpeta de plantillas y se inserta en el cursor de la nota abierta. Si la plantilla tiene propiedades, se añaden a las de la nota sin cambiar las que ya tenía.
-- **Variables**: `{{title}}` (nombre de la nota), `{{date}}` y `{{time}}` (con los formatos configurados), y `{{date:FORMATO}}` / `{{time:FORMATO}}` con un formato propio, por ejemplo `{{date:dddd, D [de] MMMM}}`.
-
-### 📄 Texto sin formato
-
-En modo edición, en el menú de la nota (⋯ → *Ver texto sin formato*): la nota se muestra como texto plano, igual que si abrieras el `.md` con un bloc de notas, con el frontmatter `---` incluido y sin ningún formato. Puedes escribir, copiar y pegar; los cambios se guardan con el autoguardado de siempre. Para salir, ⋯ → *Volver al editor* o pasa a modo lectura.
-
-### 🖨️ Exportar a PDF
-
-En el menú de la nota: se abre una versión limpia de la nota (sin frontmatter) y el diálogo de impresión del navegador → *Guardar como PDF*.
+| 📂 [Explorador y pestañas](utils/USO.md#-explorador-y-pestañas) | ✍️ [Editar notas](utils/USO.md#️-editar-notas): vista previa, tablas, barra de formato |
+| 👁️ [Modo lectura](utils/USO.md#️-modo-lectura): callouts, Mermaid, código | 🔗 [Wikilinks e incrustaciones](utils/USO.md#-wikilinks-e-incrustaciones) |
+| 🏷️ [Propiedades](utils/USO.md#️-propiedades) | 🔍 [Búsqueda y etiquetas](utils/USO.md#-búsqueda-y-etiquetas) |
+| 🖼️ [Adjuntos e imágenes](utils/USO.md#️-adjuntos-e-imágenes) | 📅 [Notas diarias y plantillas](utils/USO.md#-notas-diarias-y-plantillas) |
+| 🗑️ [Papelera](utils/USO.md#️-papelera) | ⋯ [Menú de la nota](utils/USO.md#-menú-de-la-nota): historial, PDF, texto sin formato |
+| 🔀 [Cambios desde otro dispositivo](utils/USO.md#-cambios-desde-otro-dispositivo) | 💾 [Descargar el vault](utils/USO.md#-descargar-el-vault) |
 
 ---
 
@@ -592,6 +558,7 @@ flowchart LR
 
 | Archivo | Contenido |
 | :--- | :--- |
+| 📝 [USO.md](utils/USO.md) | Guía de uso completa: editor, wikilinks, propiedades, búsqueda, etiquetas, plantillas, papelera, historial… |
 | 💻 [DESARROLLO.md](utils/DESARROLLO.md) | Entorno de desarrollo, scripts, convenciones, recetas para cambios habituales y hoja de ruta. **Empieza por aquí.** |
 | 🏗️ [ARQUITECTURA.md](utils/ARQUITECTURA.md) | Estructura del código, flujos internos, archivos de `data/` y referencia de la API. |
 | 🧰 [MANTENIMIENTO.md](utils/MANTENIMIENTO.md) | Actualizar, copias de seguridad, recuperar la contraseña, variables de entorno y límites. |
