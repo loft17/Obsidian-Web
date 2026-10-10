@@ -94,7 +94,7 @@ export const dailyNotePath = (config: NotesConfig['dailyNotes'], date = new Date
 
 // Abre la nota diaria de hoy; si no existe la crea (con la plantilla configurada, si hay)
 export async function openDailyNote() {
-  const { setTree, openFile } = useStore.getState();
+  const { setTree, openFile, setEditMode } = useStore.getState();
   const config = await settingsApi.getNotes();
   const path = dailyNotePath(config.dailyNotes);
   // El árbol se relee: la nota puede haberse creado en otro dispositivo
@@ -119,6 +119,8 @@ export async function openDailyNote() {
   await filesApi.createNote(path, content);
   setTree(await filesApi.getTree());
   openFile(path, path.split('/').pop() || path);
+  // Recién creada: se abre en modo edición
+  setEditMode(true);
   if (missingTemplate) alert(t('daily.templateMissing', { template: missingTemplate }));
 }
 

@@ -182,6 +182,8 @@ export default function FileExplorer() {
     await refreshTree();
     if (folder) expandFolder(folder);
     openFile(path, fileName(path));
+    // Una nota recién creada se abre en modo edición, lista para escribir
+    useStore.getState().setEditMode(true);
     setDialog(null);
   };
 

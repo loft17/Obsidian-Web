@@ -76,6 +76,7 @@ export function scrollToHeading(container: HTMLElement, heading: string) {
 export async function followWikilink(inner: string, notePath: string, newTab = false) {
   const { target, heading } = parseWikilink(inner);
   let path = resolveWikilink(target, notePath);
+  const created = !path;
   if (!path) {
     path = target.replace(/^\/+/, '').replace(/\.md$/i, '') + '.md';
     try {
@@ -88,11 +89,13 @@ export async function followWikilink(inner: string, notePath: string, newTab = f
   }
   pendingHeading = heading ? { path, heading } : null;
   const name = path.split('/').pop() || path;
-  const { addTab, setActiveTab, openFile } = useStore.getState();
+  const { addTab, setActiveTab, openFile, setEditMode } = useStore.getState();
   if (newTab) {
     addTab(path, name);
     setActiveTab(path);
   } else {
     openFile(path, name);
   }
+  // Recién creada: se abre en modo edición
+  if (created) setEditMode(true);
 }
