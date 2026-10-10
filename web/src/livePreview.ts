@@ -40,7 +40,7 @@ const markdownHighlight = HighlightStyle.define([
   { tag: tags.strikethrough, textDecoration: 'line-through', color: 'var(--text-muted)' },
   { tag: highlightTag, backgroundColor: 'rgba(255, 208, 0, 0.35)', borderRadius: '2px' },
   { tag: [tags.link, tags.url], color: 'var(--interactive-accent)' },
-  { tag: tags.monospace, fontFamily: "'Consolas', 'Menlo', monospace", fontSize: '0.92em' },
+  { tag: tags.monospace, fontFamily: 'var(--font-monospace)', fontSize: '0.92em' },
   { tag: tags.quote, color: 'var(--text-muted)' },
   { tag: [tags.processingInstruction, tags.contentSeparator, tags.labelName], color: 'var(--text-faint)' },
   { tag: tags.list, color: 'var(--text-faint)' },

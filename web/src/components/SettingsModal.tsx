@@ -1,10 +1,11 @@
 import { useEffect, useState, type CSSProperties } from 'react';
-import { useStore, type EditorMode, type Theme, DEFAULT_FONT_SIZE, MIN_FONT_SIZE, MAX_FONT_SIZE } from '../store';
+import { useStore, type EditorMode, type FontKind, type Theme, DEFAULT_FONT_SIZE, MIN_FONT_SIZE, MAX_FONT_SIZE } from '../store';
 import { settingsApi, syncApi, type NotesConfig, type NotesConfigUpdate, type ServerLimits, type SyncConfig, type SyncConfigUpdate, type SyncProvider, type UpdateStatus } from '../api';
 import { formatDate as formatMoment, DEFAULT_DAILY_FORMAT, DEFAULT_DATE_FORMAT, DEFAULT_TIME_FORMAT } from '../templates';
 import { getLang, LANGUAGES, Trans, useI18n, useT, type Lang, type MessageKey } from '../i18n';
 import { IconClose, IconEdit, IconEye, IconFolderNew, IconList, IconLock, IconReset, IconSearch, IconSync, IconUserCircle } from './Icons';
 import { runSync } from '../syncNotify';
+import { BUNDLED_FONTS, isBundledFont, type FontCategory } from '../fonts';
 
 interface Props {
   onClose: () => void;
@@ -20,6 +21,103 @@ const SECTIONS: { id: string; label: MessageKey; Icon: typeof IconEye }[] = [
   { id: 'shortcuts', label: 'settings.section.shortcuts', Icon: IconList },
   { id: 'variables', label: 'settings.section.variables', Icon: IconUserCircle },
 ];
+
+// Orden de los grupos del desplegable: primero los que mejor encajan con cada uso
+const FONT_GROUPS: Record<FontKind, FontCategory[]> = {
+  interface: ['sans', 'serif', 'mono'],
+  text: ['sans', 'serif', 'mono'],
+  monospace: ['mono', 'sans', 'serif'],
+};
+
+const FONT_CATEGORY_LABELS: Record<FontCategory, MessageKey> = {
+  sans: 'settings.font.sans',
+  serif: 'settings.font.serif',
+  mono: 'settings.font.mono',
+};
+
+const FONT_LABELS: Record<FontKind, MessageKey> = {
+  interface: 'settings.font.interface',
+  text: 'settings.font.text',
+  monospace: 'settings.font.monospace',
+};
+
+const DEFAULT_OPTION = '';
+const CUSTOM_OPTION = '__custom__';
+const fontStack = (name: string, kind: FontKind) =>
+  name.trim() ? `"${name.replace(/["\\]/g, '')}", var(--font-${kind}-default, var(--font-interface-default))` : undefined;
+
+// Una de las fuentes incluidas o, con "Otra fuente instalada", el nombre de cualquier fuente del equipo
+function FontSetting({ kind }: { kind: FontKind }) {
+  const font = useStore((s) => s.fonts[kind]);
+  const setFont = useStore((s) => s.setFont);
+  const [custom, setCustom] = useState(() => font !== '' && !isBundledFont(font));
+  const [text, setText] = useState(font);
+  const t = useT();
+  useEffect(() => {
+    setText(font);
+    if (font && !isBundledFont(font)) setCustom(true);
+  }, [font]);
+  const save = () => text.trim() !== font && setFont(kind, text);
+
+  const choose = (value: string) => {
+    if (value === CUSTOM_OPTION) {
+      setCustom(true);
+      setText(isBundledFont(font) ? '' : font);
+      return;
+    }
+    setCustom(false);
+    setFont(kind, value);
+  };
+
+  return (
+    <div className="setting-item">
+      <div className="setting-info">
+        <div className="setting-name">{t(FONT_LABELS[kind])}</div>
+        <div className="setting-desc">{t(`${FONT_LABELS[kind]}.desc` as MessageKey)}</div>
+      </div>
+      <div className="setting-slider">
+        <button
+          className="icon-btn"
+          title={t('settings.resetDefault')}
+          disabled={!font && !custom}
+          onClick={() => choose(DEFAULT_OPTION)}
+        >
+          <IconReset size={16} />
+        </button>
+        {custom && (
+          <input
+            className="setting-input setting-font-input"
+            type="text"
+            autoFocus={!font}
+            placeholder={t('settings.font.customPlaceholder')}
+            value={text}
+            style={{ fontFamily: fontStack(text, kind) }}
+            onChange={(e) => setText(e.target.value)}
+            onBlur={save}
+            onKeyDown={(e) => e.key === 'Enter' && save()}
+          />
+        )}
+        <select
+          value={custom ? CUSTOM_OPTION : font}
+          style={{ fontFamily: custom ? undefined : fontStack(font, kind) }}
+          onChange={(e) => choose(e.target.value)}
+        >
+          <option value={DEFAULT_OPTION}>{t('settings.font.default')}</option>
+          {FONT_GROUPS[kind].map((category) => (
+            <optgroup key={category} label={t(FONT_CATEGORY_LABELS[category])}>
+              {BUNDLED_FONTS[category].map((name) => (
+                <option key={name} value={name} style={{ fontFamily: fontStack(name, kind) }}>
+                  {name}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+          <option value={CUSTOM_OPTION}>{t('settings.font.custom')}</option>
+        </select>
+      </div>
+    </div>
+  );
+}
 
 // Los cambios se guardan automáticamente (el store los persiste en localStorage)
 function AppearanceSection() {
@@ -38,6 +136,7 @@ function AppearanceSection() {
   const t = useT();
   const fontPercent = ((fontSize - MIN_FONT_SIZE) / (MAX_FONT_SIZE - MIN_FONT_SIZE)) * 100;
   return (
+    <>
     <div className="settings-group">
       <div className="setting-item">
         <div className="setting-info">
@@ -63,6 +162,32 @@ function AppearanceSection() {
           <option value="system">{t('settings.theme.system')}</option>
         </select>
       </div>
+      <div className="setting-item">
+        <div className="setting-info">
+          <div className="setting-name">{t('settings.tabHeader')}</div>
+          <div className="setting-desc">{t('settings.tabHeader.desc')}</div>
+        </div>
+        <label className="setting-toggle">
+          <input type="checkbox" checked={showTabHeader} onChange={(e) => setShowTabHeader(e.target.checked)} />
+          <span />
+        </label>
+      </div>
+      <div className="setting-item">
+        <div className="setting-info">
+          <div className="setting-name">{t('settings.ribbon')}</div>
+          <div className="setting-desc">{t('settings.ribbon.desc')}</div>
+        </div>
+        <label className="setting-toggle">
+          <input type="checkbox" checked={showRibbon} onChange={(e) => setShowRibbon(e.target.checked)} />
+          <span />
+        </label>
+      </div>
+    </div>
+    <h3 className="settings-heading">{t('settings.font')}</h3>
+    <div className="settings-group">
+      <FontSetting kind="interface" />
+      <FontSetting kind="text" />
+      <FontSetting kind="monospace" />
       <div className="setting-item">
         <div className="setting-info">
           <div className="setting-name">{t('settings.fontSize')}</div>
@@ -103,27 +228,8 @@ function AppearanceSection() {
           <span />
         </label>
       </div>
-      <div className="setting-item">
-        <div className="setting-info">
-          <div className="setting-name">{t('settings.tabHeader')}</div>
-          <div className="setting-desc">{t('settings.tabHeader.desc')}</div>
-        </div>
-        <label className="setting-toggle">
-          <input type="checkbox" checked={showTabHeader} onChange={(e) => setShowTabHeader(e.target.checked)} />
-          <span />
-        </label>
-      </div>
-      <div className="setting-item">
-        <div className="setting-info">
-          <div className="setting-name">{t('settings.ribbon')}</div>
-          <div className="setting-desc">{t('settings.ribbon.desc')}</div>
-        </div>
-        <label className="setting-toggle">
-          <input type="checkbox" checked={showRibbon} onChange={(e) => setShowRibbon(e.target.checked)} />
-          <span />
-        </label>
-      </div>
     </div>
+    </>
   );
 }
 

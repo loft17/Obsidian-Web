@@ -48,6 +48,8 @@ interface AppStore {
   setTheme: (theme: Theme) => void;
   fontSize: number;
   setFontSize: (size: number) => void;
+  fonts: Fonts;
+  setFont: (kind: FontKind, name: string) => void;
   quickFontSize: boolean;
   setQuickFontSize: (enabled: boolean) => void;
   editorMode: EditorMode;
@@ -145,6 +147,39 @@ const applyFontSize = (size: number) =>
   document.documentElement.style.setProperty('--font-text-size', `${size}px`);
 
 applyFontSize(initialFontSize);
+
+// Fuentes de la interfaz, del texto de las notas y monoespaciada (código). Vacío = la predeterminada;
+// se aplican con las variables CSS --font-interface, --font-text y --font-monospace
+export type FontKind = 'interface' | 'text' | 'monospace';
+export type Fonts = Record<FontKind, string>;
+const FONT_KEYS: Record<FontKind, string> = {
+  interface: 'fontInterface',
+  text: 'fontText',
+  monospace: 'fontMonospace',
+};
+// Si la fuente elegida no está instalada, el navegador pasa a la predeterminada
+const FONT_FALLBACKS: Record<FontKind, string> = {
+  interface: 'var(--font-interface-default)',
+  text: 'var(--font-interface)',
+  monospace: 'var(--font-monospace-default)',
+};
+const cleanFont = (name: string) => name.replace(/["\\;{}]/g, '').trim();
+const initialFonts = (Object.keys(FONT_KEYS) as FontKind[]).reduce((fonts, kind) => {
+  try {
+    fonts[kind] = cleanFont(localStorage.getItem(FONT_KEYS[kind]) ?? '');
+  } catch {
+    fonts[kind] = '';
+  }
+  return fonts;
+}, {} as Fonts);
+
+const applyFont = (kind: FontKind, name: string) => {
+  const style = document.documentElement.style;
+  if (name) style.setProperty(`--font-${kind}`, `"${name}", ${FONT_FALLBACKS[kind]}`);
+  else style.removeProperty(`--font-${kind}`);
+};
+
+(Object.keys(initialFonts) as FontKind[]).forEach((kind) => applyFont(kind, initialFonts[kind]));
 
 // Ctrl + rueda del ratón (o pellizcar en el trackpad) sobre la nota cambia el tamaño de fuente
 const QUICK_FONT_SIZE_KEY = 'quickFontSize';
@@ -306,6 +341,18 @@ export const useStore =create<AppStore>((set) => ({
     }
     applyFontSize(value);
     set({ fontSize: value });
+  },
+  fonts: initialFonts,
+  setFont: (kind, name) => {
+    const value = cleanFont(name);
+    try {
+      if (value) localStorage.setItem(FONT_KEYS[kind], value);
+      else localStorage.removeItem(FONT_KEYS[kind]);
+    } catch {
+      // almacenamiento no disponible: la preferencia solo dura la sesión
+    }
+    applyFont(kind, value);
+    set((state) => ({ fonts: { ...state.fonts, [kind]: value } }));
   },
   quickFontSize: initialQuickFontSize,
   setQuickFontSize: (enabled) => {

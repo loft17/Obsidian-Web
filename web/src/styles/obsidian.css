@@ -1,4 +1,10 @@
 ﻿:root {
+  /* Fuentes por defecto; Ajustes > Apariencia antepone la elegida por el usuario */
+  --font-interface-default: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-monospace-default: 'Consolas', 'Menlo', monospace;
+  --font-interface: var(--font-interface-default);
+  --font-text: var(--font-interface);
+  --font-monospace: var(--font-monospace-default);
   --background-primary: #1a1a1a;
   --background-secondary: #1e1e1e;
   --background-secondary-alt: #252525;
@@ -61,7 +67,7 @@ html, body, #root {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: var(--font-interface);
   font-size: 13px;
   line-height: 1.5;
   color: var(--text-normal);
@@ -562,6 +568,7 @@ a:hover {
 
 .cm-editor {
   flex: 1;
+  font-family: var(--font-text);
   font-size: var(--font-text-size, 15px);
   line-height: 1.7;
   color: var(--text-normal);
@@ -677,7 +684,7 @@ a:hover {
 
 .cm-lp-codeblock {
   background-color: var(--background-secondary-alt);
-  font-family: 'Consolas', 'Menlo', monospace;
+  font-family: var(--font-monospace);
   font-size: 0.9em;
   line-height: 1.6;
   padding: 0 18px !important;
@@ -914,6 +921,7 @@ a:hover {
 .reading-view {
   flex: 1;
   overflow-y: auto;
+  font-family: var(--font-text);
   font-size: var(--font-text-size, 15px);
   line-height: 1.7;
 }
@@ -931,6 +939,7 @@ a:hover {
   max-width: var(--line-width, 720px);
   margin: 0 auto;
   padding: 24px 32px 0;
+  font-family: var(--font-text);
   font-size: var(--font-text-size, 15px);
 }
 
@@ -1192,7 +1201,7 @@ a:hover {
   border: none;
   outline: none;
   resize: none;
-  font-family: var(--font-monospace, monospace);
+  font-family: var(--font-monospace);
   font-size: var(--font-text-size, 15px);
   line-height: 1.6;
   color: var(--text-normal);
@@ -1388,7 +1397,7 @@ a:hover {
   background-color: var(--background-secondary);
   padding: 2px 4px;
   border-radius: 3px;
-  font-family: 'Consolas', 'Menlo', monospace;
+  font-family: var(--font-monospace);
   font-size: 0.85em;
 }
 
@@ -1437,7 +1446,7 @@ a:hover {
 }
 
 .reading-view .code-block-lang {
-  font-family: 'Consolas', 'Menlo', monospace;
+  font-family: var(--font-monospace);
   font-size: 11px;
   color: var(--text-faint);
   text-transform: lowercase;
@@ -1511,7 +1520,7 @@ a:hover {
 
 .reading-view .mermaid-error-message {
   margin-bottom: 6px;
-  font-family: 'Consolas', 'Menlo', monospace;
+  font-family: var(--font-monospace);
   font-size: 0.85em;
   color: var(--color-red);
   white-space: pre-wrap;
@@ -2461,6 +2470,12 @@ a:hover {
   border-radius: 6px;
 }
 
+.setting-font-input {
+  flex: none;
+  width: 160px;
+  min-width: 0;
+}
+
 .setting-input:focus {
   outline: none;
   border-color: var(--interactive-accent);
@@ -2476,7 +2491,7 @@ a:hover {
   color: var(--text-normal);
   border: 1px solid var(--background-modifier-border);
   border-radius: 6px;
-  font-family: var(--font-monospace, monospace);
+  font-family: var(--font-monospace);
   font-size: 13px;
 }
 
