@@ -13,6 +13,7 @@ export const es = {
   'common.save': 'Guardar',
   'common.saved': 'Guardado.',
   'common.password': 'Contraseña',
+  'common.download': 'Descargar',
   'key.shift': 'Mayús',
   'key.backspace': 'Retroceso',
 
@@ -294,6 +295,7 @@ export const es = {
   'settings.vaultPath': 'Ruta de la bóveda',
   'settings.vaultPath.desc':
     'Ruta absoluta en el servidor. Se creará si no existe. Para cambiarla hace falta la contraseña; al guardar se recargará la aplicación.',
+  'settings.download.desc': 'Descarga toda tu bóveda como un archivo ZIP comprimido. Incluye todas las notas, adjuntos y la carpeta de configuración .obsidian.',
   'settings.hiddenFolders': 'Ocultar carpetas',
   'settings.hiddenFolders.example': '_recursos',
   'settings.hiddenFolders.desc':

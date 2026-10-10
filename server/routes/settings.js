@@ -1,6 +1,7 @@
 import { Router } from 'express';
-import { writeFileSync, mkdirSync, existsSync, statSync } from 'fs';
+import { writeFileSync, mkdirSync, existsSync, statSync, createReadStream, readdirSync } from 'fs';
 import { join } from 'path';
+import archiver from 'archiver';
 import * as vault from '../vault.js';
 import { publicError } from '../security.js';
 import { verifyPassword, hashPassword, MIN_PASSWORD_LENGTH } from '../password.js';
@@ -191,6 +192,55 @@ export default (dataDir, getConfig, limiter, sessions) => {
       res.json(readNotesConfig(cfg.vaultPath));
     } catch (err) {
       res.status(400).json({ error: publicError(err, 'No se pudo guardar') });
+    }
+  });
+
+  // Descargar el vault completo como ZIP
+  router.get('/download-vault', (req, res) => {
+    const cfg = getConfig();
+    if (!cfg) return res.status(400).json({ error: 'Not configured' });
+
+    try {
+      const vaultPath = cfg.vaultPath;
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+      const filename = `vault-${timestamp}.zip`;
+
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+      const archive = archiver('zip', { zlib: { level: 9 } });
+
+      archive.on('error', (err) => {
+        console.error('Archiver error:', err);
+        if (!res.headersSent) {
+          res.status(500).json({ error: publicError(err, 'No se pudo crear el archivo ZIP') });
+        }
+      });
+
+      archive.pipe(res);
+
+      // Función recursiva para agregar archivos y carpetas
+      const addDirToArchive = (dirPath, arcPath = '') => {
+        const entries = readdirSync(dirPath, { withFileTypes: true });
+
+        for (const entry of entries) {
+          const fullPath = join(dirPath, entry.name);
+          const archivePath = arcPath ? `${arcPath}/${entry.name}` : entry.name;
+
+          if (entry.isDirectory()) {
+            addDirToArchive(fullPath, archivePath);
+          } else {
+            archive.file(fullPath, { name: archivePath });
+          }
+        }
+      };
+
+      addDirToArchive(vaultPath);
+      archive.finalize();
+    } catch (err) {
+      if (!res.headersSent) {
+        res.status(500).json({ error: publicError(err, 'No se pudo descargar el vault') });
+      }
     }
   });
 

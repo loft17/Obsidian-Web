@@ -14,6 +14,7 @@ export const en: Messages = {
   'common.save': 'Save',
   'common.saved': 'Saved.',
   'common.password': 'Password',
+  'common.download': 'Download',
   'key.shift': 'Shift',
   'key.backspace': 'Backspace',
 
@@ -293,6 +294,7 @@ export const en: Messages = {
   'settings.vaultPath': 'Vault path',
   'settings.vaultPath.desc':
     "Absolute path on the server. It will be created if it doesn't exist. Changing it requires your password; the app reloads after saving.",
+  'settings.download.desc': 'Download your entire vault as a compressed ZIP file. Includes all notes, attachments, and the .obsidian configuration folder.',
   'settings.hiddenFolders': 'Hidden folders',
   'settings.hiddenFolders.example': '_resources',
   'settings.hiddenFolders.desc':

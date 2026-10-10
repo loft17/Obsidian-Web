@@ -14,6 +14,7 @@ export const ca: Messages = {
   'common.save': 'Desa',
   'common.saved': 'Desat.',
   'common.password': 'Contrasenya',
+  'common.download': 'Descarrega',
   'key.shift': 'Maj',
   'key.backspace': 'Retrocés',
 
@@ -295,6 +296,7 @@ export const ca: Messages = {
   'settings.vaultPath': 'Ruta de la caixa forta',
   'settings.vaultPath.desc':
     "Ruta absoluta al servidor. Es crearà si no existeix. Per canviar-la cal la contrasenya; en desar es tornarà a carregar l'aplicació.",
+  'settings.download.desc': "Descarrega tota la teva caixa forta com a fitxer ZIP comprimit. Inclou totes les notes, adjunts i la carpeta de configuració .obsidian.",
   'settings.hiddenFolders': 'Amaga carpetes',
   'settings.hiddenFolders.example': '_recursos',
   'settings.hiddenFolders.desc':

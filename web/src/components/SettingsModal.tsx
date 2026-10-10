@@ -450,6 +450,8 @@ function FilesSection() {
   const [vaultPassword, setVaultPassword] = useState('');
   const [vaultError, setVaultError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState('');
   const t = useT();
 
   useEffect(() => {
@@ -475,6 +477,26 @@ function FilesSection() {
     }
   };
 
+  const downloadVault = async () => {
+    setDownloadError('');
+    setDownloading(true);
+    try {
+      const blob = await settingsApi.downloadVault();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = blob.name || `vault-${new Date().toISOString().split('T')[0]}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setDownloadError((err as Error).message);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <div className="settings-group">
       <div className="setting-item">
@@ -482,6 +504,7 @@ function FilesSection() {
           <div className="setting-name">{t('settings.vaultPath')}</div>
           <div className="setting-desc">{t('settings.vaultPath.desc')}</div>
           {vaultError && <div className="setting-desc" style={{ color: 'var(--text-error, #e5484d)' }}>{vaultError}</div>}
+          {downloadError && <div className="setting-desc" style={{ color: 'var(--text-error, #e5484d)' }}>{downloadError}</div>}
         </div>
       </div>
       <div className="setting-item">
@@ -492,6 +515,15 @@ function FilesSection() {
           onChange={(e) => setVaultPath(e.target.value)}
           disabled={saving}
         />
+      </div>
+      <div className="setting-item">
+        <div className="setting-info">
+          <div className="setting-name">{t('common.download') || 'Descargar vault'}</div>
+          <div className="setting-desc">{t('settings.download.desc') || 'Descarga todo el contenido del vault como archivo ZIP comprimido'}</div>
+        </div>
+        <button onClick={downloadVault} disabled={downloading}>
+          {downloading ? t('common.loading') || 'Descargando...' : t('common.download') || 'Descargar'}
+        </button>
       </div>
       {vaultPath.trim() !== savedPath && (
         <div className="setting-item">

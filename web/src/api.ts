@@ -240,6 +240,11 @@ export const settingsApi = {
     if (!res.ok) throw new Error((await res.json()).error);
     return res.json();
   },
+  downloadVault: async () => {
+    const res = await fetch(`${API_URL}/settings/download-vault`);
+    if (!res.ok) throw new Error((await res.json()).error);
+    return res.blob();
+  },
 };
 
 export type SyncProvider = 'none' | 'github';
