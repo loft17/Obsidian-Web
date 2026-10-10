@@ -296,7 +296,11 @@ export const ca: Messages = {
   'settings.vaultPath': 'Ruta de la caixa forta',
   'settings.vaultPath.desc':
     "Ruta absoluta al servidor. Es crearà si no existeix. Per canviar-la cal la contrasenya; en desar es tornarà a carregar l'aplicació.",
-  'settings.download.desc': "Descarrega tota la teva caixa forta com a fitxer ZIP comprimit. Inclou totes les notes, adjunts i la carpeta de configuració .obsidian.",
+  'settings.download.desc': "Descarrega la teva caixa forta com a fitxer ZIP comprimit, amb les notes, els adjunts i la carpeta de configuració .obsidian.",
+  'settings.download.git': 'Inclou la carpeta .git',
+  'settings.download.git.desc': "Historial de la sincronització amb GitHub. Pot ocupar molt.",
+  'settings.download.trash': 'Inclou la paperera',
+  'settings.download.trash.desc': "Afegeix al ZIP els elements esborrats de la carpeta .trash.",
   'settings.hiddenFolders': 'Amaga carpetes',
   'settings.hiddenFolders.example': '_recursos',
   'settings.hiddenFolders.desc':

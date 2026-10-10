@@ -450,8 +450,8 @@ function FilesSection() {
   const [vaultPassword, setVaultPassword] = useState('');
   const [vaultError, setVaultError] = useState('');
   const [saving, setSaving] = useState(false);
-  const [downloading, setDownloading] = useState(false);
-  const [downloadError, setDownloadError] = useState('');
+  const [includeGit, setIncludeGit] = useState(false);
+  const [includeTrash, setIncludeTrash] = useState(false);
   const t = useT();
 
   useEffect(() => {
@@ -477,25 +477,8 @@ function FilesSection() {
     }
   };
 
-  const downloadVault = async () => {
-    setDownloadError('');
-    setDownloading(true);
-    try {
-      const blob = await settingsApi.downloadVault();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = blob.name || `vault-${new Date().toISOString().split('T')[0]}.zip`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      setDownloadError((err as Error).message);
-    } finally {
-      setDownloading(false);
-    }
-  };
+  // Enlace directo: el navegador descarga el ZIP por streaming sin guardarlo en memoria
+  const downloadUrl = settingsApi.downloadVaultUrl({ git: includeGit, trash: includeTrash });
 
   return (
     <div className="settings-group">
@@ -504,7 +487,6 @@ function FilesSection() {
           <div className="setting-name">{t('settings.vaultPath')}</div>
           <div className="setting-desc">{t('settings.vaultPath.desc')}</div>
           {vaultError && <div className="setting-desc" style={{ color: 'var(--text-error, #e5484d)' }}>{vaultError}</div>}
-          {downloadError && <div className="setting-desc" style={{ color: 'var(--text-error, #e5484d)' }}>{downloadError}</div>}
         </div>
       </div>
       <div className="setting-item">
@@ -521,9 +503,29 @@ function FilesSection() {
           <div className="setting-name">{t('common.download') || 'Descargar vault'}</div>
           <div className="setting-desc">{t('settings.download.desc') || 'Descarga todo el contenido del vault como archivo ZIP comprimido'}</div>
         </div>
-        <button onClick={downloadVault} disabled={downloading}>
-          {downloading ? t('common.loading') || 'Descargando...' : t('common.download') || 'Descargar'}
-        </button>
+        <a className="button" href={downloadUrl} download>
+          {t('common.download')}
+        </a>
+      </div>
+      <div className="setting-item">
+        <div className="setting-info">
+          <div className="setting-name">{t('settings.download.git')}</div>
+          <div className="setting-desc">{t('settings.download.git.desc')}</div>
+        </div>
+        <label className="setting-toggle">
+          <input type="checkbox" checked={includeGit} onChange={(e) => setIncludeGit(e.target.checked)} />
+          <span />
+        </label>
+      </div>
+      <div className="setting-item">
+        <div className="setting-info">
+          <div className="setting-name">{t('settings.download.trash')}</div>
+          <div className="setting-desc">{t('settings.download.trash.desc')}</div>
+        </div>
+        <label className="setting-toggle">
+          <input type="checkbox" checked={includeTrash} onChange={(e) => setIncludeTrash(e.target.checked)} />
+          <span />
+        </label>
       </div>
       {vaultPath.trim() !== savedPath && (
         <div className="setting-item">

@@ -294,7 +294,11 @@ export const en: Messages = {
   'settings.vaultPath': 'Vault path',
   'settings.vaultPath.desc':
     "Absolute path on the server. It will be created if it doesn't exist. Changing it requires your password; the app reloads after saving.",
-  'settings.download.desc': 'Download your entire vault as a compressed ZIP file. Includes all notes, attachments, and the .obsidian configuration folder.',
+  'settings.download.desc': 'Download your vault as a compressed ZIP file, with notes, attachments and the .obsidian configuration folder.',
+  'settings.download.git': 'Include .git folder',
+  'settings.download.git.desc': 'GitHub sync history. It can be large.',
+  'settings.download.trash': 'Include trash',
+  'settings.download.trash.desc': 'Adds deleted items from the .trash folder to the ZIP.',
   'settings.hiddenFolders': 'Hidden folders',
   'settings.hiddenFolders.example': '_resources',
   'settings.hiddenFolders.desc':

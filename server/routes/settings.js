@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { writeFileSync, mkdirSync, existsSync, statSync, createReadStream, readdirSync } from 'fs';
+import { writeFileSync, mkdirSync, existsSync, statSync, readdirSync } from 'fs';
 import { join } from 'path';
-import archiver from 'archiver';
+import { ZipArchive } from 'archiver';
 import * as vault from '../vault.js';
 import { publicError } from '../security.js';
 import { verifyPassword, hashPassword, MIN_PASSWORD_LENGTH } from '../password.js';
@@ -195,10 +195,15 @@ export default (dataDir, getConfig, limiter, sessions) => {
     }
   });
 
-  // Descargar el vault completo como ZIP
+  // Descargar el vault completo como ZIP. Se envía por streaming: el navegador lo guarda
+  // directamente sin cargarlo en memoria. .git y .trash se excluyen salvo ?git=1 / ?trash=1
   router.get('/download-vault', (req, res) => {
     const cfg = getConfig();
     if (!cfg) return res.status(400).json({ error: 'Not configured' });
+
+    const excluded = new Set();
+    if (req.query.git !== '1') excluded.add('.git');
+    if (req.query.trash !== '1') excluded.add('.trash');
 
     try {
       const vaultPath = cfg.vaultPath;
@@ -208,13 +213,21 @@ export default (dataDir, getConfig, limiter, sessions) => {
       res.setHeader('Content-Type', 'application/zip');
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
 
-      const archive = archiver('zip', { zlib: { level: 9 } });
+      const archive = new ZipArchive({ zlib: { level: 9 } });
 
       archive.on('error', (err) => {
         console.error('Archiver error:', err);
         if (!res.headersSent) {
           res.status(500).json({ error: publicError(err, 'No se pudo crear el archivo ZIP') });
+        } else {
+          // Ya se envió parte del ZIP: cortar la conexión para que la descarga falle en vez de quedar corrupta
+          res.destroy(err);
         }
+      });
+
+      // Si el usuario cancela la descarga, dejar de comprimir
+      res.on('close', () => {
+        if (!res.writableFinished) archive.abort();
       });
 
       archive.pipe(res);
@@ -224,12 +237,16 @@ export default (dataDir, getConfig, limiter, sessions) => {
         const entries = readdirSync(dirPath, { withFileTypes: true });
 
         for (const entry of entries) {
+          // Los enlaces simbólicos podrían sacar la descarga fuera del vault
+          if (entry.isSymbolicLink()) continue;
+          if (!arcPath && excluded.has(entry.name)) continue;
+
           const fullPath = join(dirPath, entry.name);
           const archivePath = arcPath ? `${arcPath}/${entry.name}` : entry.name;
 
           if (entry.isDirectory()) {
             addDirToArchive(fullPath, archivePath);
-          } else {
+          } else if (entry.isFile()) {
             archive.file(fullPath, { name: archivePath });
           }
         }

@@ -295,7 +295,11 @@ export const es = {
   'settings.vaultPath': 'Ruta de la bóveda',
   'settings.vaultPath.desc':
     'Ruta absoluta en el servidor. Se creará si no existe. Para cambiarla hace falta la contraseña; al guardar se recargará la aplicación.',
-  'settings.download.desc': 'Descarga toda tu bóveda como un archivo ZIP comprimido. Incluye todas las notas, adjuntos y la carpeta de configuración .obsidian.',
+  'settings.download.desc': 'Descarga tu bóveda como un archivo ZIP comprimido, con las notas, los adjuntos y la carpeta de configuración .obsidian.',
+  'settings.download.git': 'Incluir carpeta .git',
+  'settings.download.git.desc': 'Historial de la sincronización con GitHub. Puede ocupar mucho.',
+  'settings.download.trash': 'Incluir papelera',
+  'settings.download.trash.desc': 'Añade al ZIP los elementos borrados de la carpeta .trash.',
   'settings.hiddenFolders': 'Ocultar carpetas',
   'settings.hiddenFolders.example': '_recursos',
   'settings.hiddenFolders.desc':

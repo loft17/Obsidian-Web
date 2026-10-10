@@ -240,10 +240,12 @@ export const settingsApi = {
     if (!res.ok) throw new Error((await res.json()).error);
     return res.json();
   },
-  downloadVault: async () => {
-    const res = await fetch(`${API_URL}/settings/download-vault`);
-    if (!res.ok) throw new Error((await res.json()).error);
-    return res.blob();
+  downloadVaultUrl: (opts: { git?: boolean; trash?: boolean } = {}) => {
+    const params = new URLSearchParams();
+    if (opts.git) params.set('git', '1');
+    if (opts.trash) params.set('trash', '1');
+    const qs = params.toString();
+    return `${API_URL}/settings/download-vault${qs ? `?${qs}` : ''}`;
   },
 };
 

@@ -107,7 +107,8 @@ input:focus, textarea:focus {
   box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
 }
 
-button {
+button,
+a.button {
   background-color: var(--interactive-accent);
   border: none;
   padding: 6px 12px;
@@ -117,11 +118,19 @@ button {
   color: white;
 }
 
-button:hover {
+a.button {
+  display: inline-block;
+  text-decoration: none;
+  font-size: inherit;
+}
+
+button:hover,
+a.button:hover {
   background-color: var(--interactive-accent-hover);
 }
 
-button:active {
+button:active,
+a.button:active {
   background-color: var(--interactive-accent-active);
 }
 
