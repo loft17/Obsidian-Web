@@ -130,6 +130,7 @@ function createState(doc: string, onChange: (doc: string) => void, getPath: () =
       history(),
       drawSelection(),
       EditorView.lineWrapping,
+      EditorView.contentAttributes.of({ spellcheck: 'true' }),
       // Los bloques ```lang se resaltan con su lenguaje; cada paquete se descarga
       // la primera vez que aparece un bloque que lo usa
       markdown({ base: markdownLanguage, codeLanguages: languages, extensions: [HighlightSyntax] }),
@@ -294,7 +295,7 @@ export default function Editor({ filePath, content, onContentChange }: Props) {
         <textarea
           className="editor-raw"
           value={content}
-          spellCheck={false}
+          spellCheck={true}
           autoFocus
           onChange={(e) => commit(e.target.value)}
         />

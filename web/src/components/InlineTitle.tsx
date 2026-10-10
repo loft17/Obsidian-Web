@@ -57,7 +57,7 @@ export default function InlineTitle({ filePath, onEnter }: { filePath: string; o
         ref={ref}
         className="inline-title"
         contentEditable="plaintext-only"
-        spellCheck={false}
+        spellCheck={true}
         suppressContentEditableWarning
         onBlur={commit}
         onInput={() => error && setError('')}
