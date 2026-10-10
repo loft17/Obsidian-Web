@@ -122,6 +122,7 @@ export const es = {
   'note.toEditing': 'Cambiar a edición',
   'note.moreOptions': 'Más opciones',
   'note.exportPdf': 'Exportar a PDF',
+  'note.downloadMd': 'Descargar .md',
   'note.rawMode': 'Ver texto sin formato',
   'note.exitRawMode': 'Volver al editor',
   'note.find': 'Buscar',
@@ -363,7 +364,7 @@ export const es = {
 
   // Acerca de y variables
   'about.version': 'Versión {version}',
-  'about.author': 'Desarrollado por {name}',
+  'about.developedBy': 'Desarrollado por',
   'about.tagline': 'Hecho con cariño (y una ayudita de la IA) para todos los Obsidian lovers 💜',
   'limits.title': 'Límites del servidor',
   'limits.desc': 'Se cambian con variables de entorno en el servidor (ver {file}) y requieren reiniciarlo.',

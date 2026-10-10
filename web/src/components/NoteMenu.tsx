@@ -122,6 +122,26 @@ export default function NoteMenu() {
     setDialog(null);
   };
 
+  const handleDownloadMd = async () => {
+    setOpen(false);
+    try {
+      await flushPendingSave(activeTab);
+      const data = await filesApi.readFile(activeTab);
+
+      const blob = new Blob([data.content], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName(activeTab);
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Error downloading markdown:', err);
+    }
+  };
+
   const handleExportPDF = async () => {
     setOpen(false);
     // Abrir antes del await: tras él ya no cuenta como gesto del usuario y se bloquea el popup
@@ -165,6 +185,9 @@ export default function NoteMenu() {
               )}
               <div className="dropdown-item" onClick={handleExportPDF}>
                 {t('note.exportPdf')}
+              </div>
+              <div className="dropdown-item" onClick={handleDownloadMd}>
+                {t('note.downloadMd')}
               </div>
               <div
                 className="dropdown-item"

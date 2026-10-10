@@ -999,7 +999,9 @@ function AboutSection() {
       </div>
       <div className="setting-item">
         <div className="setting-info">
-          <div className="setting-name">{t('about.author', { name: 'Jose Luis Romera' })}</div>
+          <div className="setting-name">
+            {t('about.developedBy')} <a href="https://github.com/loft17" target="_blank" rel="noopener noreferrer"><strong>Jose Luis Romera</strong></a>
+          </div>
           <div className="setting-desc">{t('about.tagline')}</div>
         </div>
       </div>

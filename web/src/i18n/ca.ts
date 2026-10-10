@@ -123,6 +123,7 @@ export const ca: Messages = {
   'note.toEditing': "Canvia a l'edició",
   'note.moreOptions': 'Més opcions',
   'note.exportPdf': 'Exporta a PDF',
+  'note.downloadMd': 'Descarrega .md',
   'note.rawMode': 'Mostra el text sense format',
   'note.exitRawMode': "Torna a l'editor",
   'note.find': 'Cerca',
@@ -364,7 +365,7 @@ export const ca: Messages = {
 
   // Quant a i variables
   'about.version': 'Versió {version}',
-  'about.author': 'Desenvolupat per {name}',
+  'about.developedBy': 'Desenvolupat per',
   'about.tagline': "Fet amb carinyo (i una ajudeta de la IA) per a tots els Obsidian lovers 💜",
   'limits.title': 'Límits del servidor',
   'limits.desc': "Es canvien amb variables d'entorn al servidor (vegeu {file}) i cal reiniciar-lo.",

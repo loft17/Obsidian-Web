@@ -123,6 +123,7 @@ export const en: Messages = {
   'note.toEditing': 'Switch to editing',
   'note.moreOptions': 'More options',
   'note.exportPdf': 'Export to PDF',
+  'note.downloadMd': 'Download .md',
   'note.rawMode': 'Show plain text',
   'note.exitRawMode': 'Back to editor',
   'note.find': 'Find',
@@ -361,7 +362,7 @@ export const en: Messages = {
 
   // About and variables
   'about.version': 'Version {version}',
-  'about.author': 'Developed by {name}',
+  'about.developedBy': 'Developed by',
   'about.tagline': 'Made with love (and a little help from AI) for all Obsidian lovers 💜',
   'limits.title': 'Server limits',
   'limits.desc': 'Changed with environment variables on the server (see {file}); requires a restart.',
