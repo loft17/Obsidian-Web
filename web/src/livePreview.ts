@@ -187,7 +187,7 @@ function build(view: EditorView): DecorationSet {
             return;
           case 'FencedCode':
           case 'CodeBlock':
-            eachLine(node.from, node.to, 'cm-lp-codeblock');
+            // El aspecto del bloque lo pone codeBlocks; su contenido se deja tal cual
             return false;
           case 'Image': {
             // ![alt](url "título")
@@ -287,6 +287,50 @@ const livePreviewPlugin = ViewPlugin.fromClass(
   { decorations: (v) => v.decorations }
 );
 
+// Fondo y fuente monoespaciada de los bloques de código, en los dos modos del editor
+function buildCodeBlocks(view: EditorView): DecorationSet {
+  const { doc } = view.state;
+  const decos: Range<Decoration>[] = [];
+  for (const { from, to } of view.visibleRanges) {
+    syntaxTree(view.state).iterate({
+      from,
+      to,
+      enter: (node) => {
+        if (node.name !== 'FencedCode' && node.name !== 'CodeBlock') return;
+        const first = doc.lineAt(node.from).number;
+        const last = doc.lineAt(node.to).number;
+        // Las vallas ```lang se ven con el color del texto, no atenuadas
+        const fences = new Set(node.node.getChildren('CodeMark').map((m) => doc.lineAt(m.from).number));
+        for (let n = first; n <= last; n++) {
+          // La primera y la última línea redondean las esquinas del bloque, como en la vista de lectura
+          let cls = 'cm-lp-codeblock';
+          if (n === first) cls += ' cm-lp-codeblock-first';
+          if (n === last && last !== first) cls += ' cm-lp-codeblock-last';
+          if (fences.has(n)) cls += ' cm-lp-codefence';
+          decos.push(line(cls).range(doc.line(n).from));
+        }
+        return false;
+      },
+    });
+  }
+  return Decoration.set(decos, true);
+}
+
+const codeBlocks = ViewPlugin.fromClass(
+  class {
+    decorations: DecorationSet;
+    constructor(view: EditorView) {
+      this.decorations = buildCodeBlocks(view);
+    }
+    update(u: ViewUpdate) {
+      if (u.docChanged || u.viewportChanged || syntaxTree(u.startState) !== syntaxTree(u.state)) {
+        this.decorations = buildCodeBlocks(u.view);
+      }
+    }
+  },
+  { decorations: (v) => v.decorations }
+);
+
 // Clic en un [[enlace]] ya renderizado (fuera de la línea del cursor) o Ctrl/Cmd+clic
 // en cualquiera: abre la nota. Ctrl/Cmd o botón central → pestaña nueva.
 const wikilinkClicks = EditorView.domEventHandlers({
@@ -302,7 +346,7 @@ const wikilinkClicks = EditorView.domEventHandlers({
   },
 });
 
-export const livePreview = [syntaxHighlighting(markdownHighlight), livePreviewPlugin, liveTables, wikilinkClicks];
+export const livePreview = [syntaxHighlighting(markdownHighlight), codeBlocks, livePreviewPlugin, liveTables, wikilinkClicks];
 
-// Modo fuente: el markdown se ve tal cual, solo con el coloreado de sintaxis
-export const sourceMode = [syntaxHighlighting(markdownHighlight)];
+// Modo fuente: el markdown se ve tal cual, solo con el coloreado de sintaxis y los bloques de código
+export const sourceMode = [syntaxHighlighting(markdownHighlight), codeBlocks];

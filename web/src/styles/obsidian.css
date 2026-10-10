@@ -667,10 +667,33 @@ a:hover {
 }
 
 .cm-lp-codeblock {
-  background-color: var(--background-secondary);
+  background-color: var(--background-secondary-alt);
   font-family: 'Consolas', 'Menlo', monospace;
-  font-size: 0.87em;
-  padding-left: 14px !important;
+  font-size: 0.9em;
+  line-height: 1.6;
+  padding: 0 18px !important;
+}
+
+/* El estilo de código en línea (0.92em) no debe encoger además el texto del bloque */
+.cm-lp-codeblock span {
+  font-size: inherit;
+}
+
+.cm-lp-codeblock-first {
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+  padding-top: 8px !important;
+}
+
+.cm-lp-codeblock-last {
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+  padding-bottom: 10px !important;
+}
+
+.cm-lp-codefence,
+.cm-lp-codefence * {
+  color: var(--text-normal) !important;
 }
 
 .cm-lp-bullet {
@@ -1363,22 +1386,25 @@ a:hover {
 }
 
 .reading-view .code-block {
-  background-color: var(--background-secondary);
-  border-radius: 6px;
+  background-color: var(--background-secondary-alt);
+  border-radius: 5px;
   margin-bottom: 12px;
 }
 
 .reading-view .code-block pre {
   margin: 0;
-  padding-top: 4px;
+  padding: 0 16px 12px;
   background: none;
+  font-size: 0.9em;
+  line-height: 1.5;
 }
 
 .reading-view .code-block-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 8px 0 16px;
+  min-height: 24px;
+  padding: 6px 6px 0 16px;
 }
 
 .reading-view .code-block-lang {
@@ -1388,28 +1414,44 @@ a:hover {
   text-transform: lowercase;
 }
 
+/* Como en Obsidian: el botón de copiar aparece solo al pasar el ratón por el bloque */
 .reading-view .code-block-copy {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
   border: none;
-  border-radius: 6px;
-  background-color: var(--interactive-normal);
-  color: var(--text-muted);
+  border-radius: 4px;
+  background-color: transparent;
+  color: var(--text-faint);
   cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.reading-view .code-block:hover .code-block-copy,
+.reading-view .code-block-copy:focus-visible,
+.reading-view .code-block-copy.copied {
+  opacity: 1;
 }
 
 .reading-view .code-block-copy svg {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   flex-shrink: 0;
 }
 
 .reading-view .code-block-copy:hover {
   background-color: var(--interactive-hover);
   color: var(--text-normal);
+}
+
+@media (hover: none) {
+  .reading-view .code-block-copy {
+    opacity: 1;
+  }
 }
 
 .reading-view .code-block-copy.copied {
