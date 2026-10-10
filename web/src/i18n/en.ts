@@ -291,6 +291,10 @@ export const en: Messages = {
   'settings.templates.folder.desc': 'Notes in this folder are offered when inserting a template.',
   'settings.templates.folder.placeholder': 'Templates',
   'settings.templates.usedIn': 'Used in {variable}.',
+  'settings.files.vault': 'Vault',
+  'settings.files.download': 'Download backup',
+  'settings.files.attachments': 'Attachments',
+  'settings.files.explorer': 'File explorer',
   'settings.vaultPath': 'Vault path',
   'settings.vaultPath.desc':
     "Absolute path on the server. It will be created if it doesn't exist. Changing it requires your password; the app reloads after saving.",

@@ -292,6 +292,10 @@ export const es = {
   'settings.templates.folder.desc': 'Las notas de esta carpeta se ofrecen al insertar una plantilla.',
   'settings.templates.folder.placeholder': 'Plantillas',
   'settings.templates.usedIn': 'Se usa en {variable}.',
+  'settings.files.vault': 'Bóveda',
+  'settings.files.download': 'Descargar copia',
+  'settings.files.attachments': 'Archivos adjuntos',
+  'settings.files.explorer': 'Explorador de archivos',
   'settings.vaultPath': 'Ruta de la bóveda',
   'settings.vaultPath.desc':
     'Ruta absoluta en el servidor. Se creará si no existe. Para cambiarla hace falta la contraseña; al guardar se recargará la aplicación.',

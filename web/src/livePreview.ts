@@ -287,10 +287,14 @@ const livePreviewPlugin = ViewPlugin.fromClass(
   { decorations: (v) => v.decorations }
 );
 
-// Fondo y fuente monoespaciada de los bloques de código, en los dos modos del editor
+const indentGuide = Decoration.mark({ class: 'cm-lp-indent' });
+
+// Fondo y fuente monoespaciada de los bloques ```, y guías verticales de sangría (como en
+// Obsidian) en las líneas sangradas con Tab o 4 espacios, en los dos modos del editor
 function buildCodeBlocks(view: EditorView): DecorationSet {
   const { doc } = view.state;
   const decos: Range<Decoration>[] = [];
+  const fenced = new Set<number>();
   for (const { from, to } of view.visibleRanges) {
     syntaxTree(view.state).iterate({
       from,
@@ -299,9 +303,15 @@ function buildCodeBlocks(view: EditorView): DecorationSet {
         if (node.name !== 'FencedCode' && node.name !== 'CodeBlock') return;
         const first = doc.lineAt(node.from).number;
         const last = doc.lineAt(node.to).number;
+        if (node.name === 'CodeBlock') {
+          // Markdown trata el texto sangrado como código; aquí se ve como texto normal
+          for (let n = first; n <= last; n++) decos.push(line('cm-lp-indented-text').range(doc.line(n).from));
+          return false;
+        }
         // Las vallas ```lang se ven con el color del texto, no atenuadas
         const fences = new Set(node.node.getChildren('CodeMark').map((m) => doc.lineAt(m.from).number));
         for (let n = first; n <= last; n++) {
+          fenced.add(n);
           // La primera y la última línea redondean las esquinas del bloque, como en la vista de lectura
           let cls = 'cm-lp-codeblock';
           if (n === first) cls += ' cm-lp-codeblock-first';
@@ -312,6 +322,19 @@ function buildCodeBlocks(view: EditorView): DecorationSet {
         return false;
       },
     });
+
+    for (let n = doc.lineAt(from).number; n <= doc.lineAt(to).number; n++) {
+      if (fenced.has(n)) continue;
+      const { from: start, text } = doc.line(n);
+      const units = text.match(/^(?: {0,3}\t| {4})*/)![0].match(/ {0,3}\t| {4}/g);
+      if (!units) continue;
+      decos.push(line('cm-lp-indented').range(start));
+      let pos = start;
+      for (const unit of units) {
+        decos.push(indentGuide.range(pos, pos + unit.length));
+        pos += unit.length;
+      }
+    }
   }
   return Decoration.set(decos, true);
 }

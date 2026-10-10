@@ -388,6 +388,7 @@ function NotesSettings() {
     <>
       <h3 className="settings-heading">{t('settings.daily')}</h3>
       {error && <div className="setting-desc" style={{ color: 'var(--text-error, #e5484d)' }}>{error}</div>}
+      <div className="settings-group">
       <NotesField
         name={t('settings.dateFormat')}
         desc={<>{preview(daily.format, DEFAULT_DAILY_FORMAT)}. <Trans k="settings.daily.subfolders" values={{ example: <code>YYYY/MM/YYYY-MM-DD</code> }} /></>}
@@ -412,8 +413,10 @@ function NotesSettings() {
         disabled={disabled}
         onSave={(v) => save('dailyNotes', 'template', v)}
       />
+      </div>
 
       <h3 className="settings-heading">{t('settings.templates')}</h3>
+      <div className="settings-group">
       <NotesField
         name={t('settings.templates.folder')}
         desc={t('settings.templates.folder.desc')}
@@ -438,6 +441,7 @@ function NotesSettings() {
         disabled={disabled}
         onSave={(v) => save('templates', 'timeFormat', v)}
       />
+      </div>
     </>
   );
 }
@@ -481,6 +485,8 @@ function FilesSection() {
   const downloadUrl = settingsApi.downloadVaultUrl({ git: includeGit, trash: includeTrash });
 
   return (
+    <>
+    <h3 className="settings-heading settings-heading-first">{t('settings.files.vault')}</h3>
     <div className="settings-group">
       <div className="setting-item">
         <div className="setting-info">
@@ -498,15 +504,27 @@ function FilesSection() {
           disabled={saving}
         />
       </div>
-      <div className="setting-item">
-        <div className="setting-info">
-          <div className="setting-name">{t('common.download') || 'Descargar vault'}</div>
-          <div className="setting-desc">{t('settings.download.desc') || 'Descarga todo el contenido del vault como archivo ZIP comprimido'}</div>
+      {vaultPath.trim() !== savedPath && (
+        <div className="setting-item">
+          <input
+            className="setting-input"
+            type="password"
+            placeholder={t('password.current')}
+            autoComplete="current-password"
+            value={vaultPassword}
+            onChange={(e) => setVaultPassword(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && vaultPath.trim() && vaultPassword && saveVault()}
+            disabled={saving}
+          />
+          <button onClick={saveVault} disabled={saving || !vaultPath.trim() || !vaultPassword}>
+            {t('common.save')}
+          </button>
         </div>
-        <a className="button" href={downloadUrl} download>
-          {t('common.download')}
-        </a>
-      </div>
+      )}
+    </div>
+
+    <h3 className="settings-heading">{t('settings.files.download')}</h3>
+    <div className="settings-group">
       <div className="setting-item">
         <div className="setting-info">
           <div className="setting-name">{t('settings.download.git')}</div>
@@ -527,24 +545,24 @@ function FilesSection() {
           <span />
         </label>
       </div>
-      {vaultPath.trim() !== savedPath && (
-        <div className="setting-item">
-          <input
-            className="setting-input"
-            type="password"
-            placeholder={t('password.current')}
-            autoComplete="current-password"
-            value={vaultPassword}
-            onChange={(e) => setVaultPassword(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && vaultPath.trim() && vaultPassword && saveVault()}
-            disabled={saving}
-          />
-          <button onClick={saveVault} disabled={saving || !vaultPath.trim() || !vaultPassword}>
-            {t('common.save')}
-          </button>
+      <div className="setting-item">
+        <div className="setting-info">
+          <div className="setting-name">{t('common.download')}</div>
+          <div className="setting-desc">{t('settings.download.desc')}</div>
         </div>
-      )}
+        <a className="button" href={downloadUrl} download>
+          {t('common.download')}
+        </a>
+      </div>
+    </div>
+
+    <h3 className="settings-heading">{t('settings.files.attachments')}</h3>
+    <div className="settings-group">
       <AttachmentsSetting />
+    </div>
+
+    <h3 className="settings-heading">{t('settings.files.explorer')}</h3>
+    <div className="settings-group">
       <div className="setting-item">
         <div className="setting-info">
           <div className="setting-name">{t('settings.hiddenFolders')}</div>
@@ -560,8 +578,10 @@ function FilesSection() {
         value={hiddenFolders}
         onChange={(e) => setHiddenFolders(e.target.value)}
       />
-      <NotesSettings />
     </div>
+
+    <NotesSettings />
+    </>
   );
 }
 

@@ -293,6 +293,10 @@ export const ca: Messages = {
   'settings.templates.folder.desc': "Les notes d'aquesta carpeta s'ofereixen en inserir una plantilla.",
   'settings.templates.folder.placeholder': 'Plantilles',
   'settings.templates.usedIn': "S'utilitza a {variable}.",
+  'settings.files.vault': 'Caixa forta',
+  'settings.files.download': 'Descarrega una còpia',
+  'settings.files.attachments': 'Fitxers adjunts',
+  'settings.files.explorer': 'Explorador de fitxers',
   'settings.vaultPath': 'Ruta de la caixa forta',
   'settings.vaultPath.desc':
     "Ruta absoluta al servidor. Es crearà si no existeix. Per canviar-la cal la contrasenya; en desar es tornarà a carregar l'aplicació.",

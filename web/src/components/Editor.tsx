@@ -9,6 +9,7 @@ import { Annotation, Compartment, EditorState, Transaction } from '@codemirror/s
 import { EditorView, drawSelection, highlightActiveLineGutter, keymap, lineNumbers } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { markdown, markdownKeymap, markdownLanguage } from '@codemirror/lang-markdown';
+import { indentUnit } from '@codemirror/language';
 import { languages } from '@codemirror/language-data';
 import { livePreview, sourceMode, HighlightSyntax, notePath } from '../livePreview';
 import { imageUpload } from '../imageUpload';
@@ -138,6 +139,9 @@ function createState(doc: string, onChange: (doc: string) => void, getPath: () =
       lineNumbersCompartment.of(lineNumbersExtension(useStore.getState().showLineNumbers)),
       imageUpload(getPath),
       wikilinkCompletion,
+      // Tab sangra con un tabulador, como Obsidian (por defecto serían 2 espacios)
+      indentUnit.of('\t'),
+      EditorState.tabSize.of(4),
       keymap.of([...markdownKeymap, ...defaultKeymap, ...historyKeymap, indentWithTab]),
       EditorView.updateListener.of((u) => {
         if (u.docChanged && !u.transactions.some((tr) => tr.annotation(externalChange))) {

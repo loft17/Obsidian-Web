@@ -700,6 +700,26 @@ a:hover {
   padding-bottom: 10px !important;
 }
 
+/* Líneas sangradas con Tab: una guía vertical por nivel de sangría */
+.cm-lp-indented {
+  position: relative;
+}
+
+/* Sin left: la guía queda donde empieza la sangría; top/bottom la estiran a toda la línea */
+.cm-lp-indent::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 1px solid var(--background-modifier-border);
+}
+
+/* Markdown marca el texto sangrado como código, pero se ve como texto normal */
+.cm-lp-indented-text span {
+  font-family: inherit !important;
+  font-size: inherit !important;
+}
+
 .cm-lp-codefence,
 .cm-lp-codefence * {
   color: var(--text-normal) !important;
@@ -2467,4 +2487,8 @@ a:hover {
   border: 1px solid var(--background-modifier-border);
   border-radius: 4px;
   color: var(--text-normal);
+}
+
+.settings-heading-first {
+  margin-top: 0;
 }
