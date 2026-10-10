@@ -242,6 +242,7 @@ export const ca: Messages = {
   'settings.font.default': 'Predeterminada',
   'settings.font.custom': 'Una altra lletra instal·lada…',
   'settings.font.customPlaceholder': 'Nom de la lletra',
+  'settings.font.server': 'Carpeta fonts del servidor',
   'settings.font.sans': 'Sense serifa',
   'settings.font.serif': 'Amb serifa',
   'settings.font.mono': 'Monoespaiades',

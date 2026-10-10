@@ -120,7 +120,7 @@ la propia web.
 - **Sincronización con GitHub**, manual o periódica.
 - **Exportación a PDF** desde el navegador.
 - **Recuento de palabras** y caracteres en la barra de estado.
-- **Tema** oscuro, claro o del sistema, y tamaño de fuente ajustable.
+- **Tema** oscuro, claro o del sistema, tamaño de fuente ajustable y [fuentes](utils/USO.md#-fuentes) a elegir, incluidas las tuyas.
 - **Idioma** de la interfaz: español, inglés o catalán (por defecto, el del navegador).
 
 </td>
@@ -215,6 +215,7 @@ También puedes definirlas en la shell, en la unidad de systemd o en PM2: **esas
 | `VAULTS_ROOT` | sin límite | El vault solo podrá estar dentro de esta carpeta, también al cambiarlo desde *Preferencias*. Ej.: `/srv/vaults`. |
 | `PORT` | `3000` | Solo se usa si `data/config.json` no define un puerto, es decir, antes de la configuración inicial. |
 | `UPDATE_CHECK` | activada | Comprueba cada 6 h si hay una versión nueva en GitHub y avisa al entrar y en *Preferencias → Acerca de*. Con `0` el servidor no se conecta a GitHub. |
+| `FONTS_DIR` | `web/src/fonts/` | Carpeta con fuentes propias (`.woff2`, `.woff`, `.ttf`, `.otf`) para elegir en *Apariencia*. Ver [Fuentes](utils/USO.md#-fuentes). |
 | `REMOTE_IMAGES` | desactivada | Con `1` se cargan imágenes `https:` externas en las notas. Ver [Seguridad](#-seguridad). |
 | `MAX_UPLOAD_MB`, `MIN_PASSWORD_LENGTH`… | ver [Límites](utils/MANTENIMIENTO.md#límites) | Tamaño de notas y adjuntos (20 MB y 50 MB), contraseña, búsqueda y sesiones. |
 
@@ -446,7 +447,7 @@ Se abren desde el icono ⚙️ de engranaje. Las de interfaz se guardan **en el 
 
 | Sección | Opciones | Se guarda en |
 | :--- | :--- | :---: |
-| 👁️ **Apariencia** | Idioma, tema (oscuro / claro / sistema), tamaño de fuente, ajuste rápido con <kbd>Ctrl</kbd>+rueda, barra de título de pestaña, cinta lateral | 🌐 Navegador |
+| 👁️ **Apariencia** | Idioma, tema (oscuro / claro / sistema), [fuentes](utils/USO.md#-fuentes) de la interfaz, del texto y monoespaciada, tamaño de fuente, ajuste rápido con <kbd>Ctrl</kbd>+rueda, barra de título de pestaña, cinta lateral | 🌐 Navegador |
 | ✏️ **Editor** | Modo por defecto (visor / edición), modo de edición (vista previa / fuente), título en línea, longitud de línea legible, números de línea | 🌐 Navegador |
 | 📂 **Archivos** | Carpeta de adjuntos, ruta del vault (exige la contraseña), carpetas ocultas en el explorador (un patrón por línea, `*` como comodín; esta opción se guarda en el navegador), notas diarias (formato, carpeta, plantilla) y plantillas (carpeta, formatos de fecha y hora) | 🖥️ Servidor |
 | 🔄 **Sincronización** | GitHub: repositorio, rama, token, frecuencia, *Sincronizar ahora* | 🖥️ Servidor |

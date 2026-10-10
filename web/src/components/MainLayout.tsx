@@ -21,6 +21,7 @@ import Toasts from './Toasts';
 import { notify } from '../toast';
 import { useSyncNotifications } from '../syncNotify';
 import { useUpdateNotification } from '../updateNotify';
+import { loadServerFonts } from '../serverFonts';
 
 // Cada cuánto se comprueba si la nota abierta ha cambiado en el servidor (ms)
 const EXTERNAL_CHECK_INTERVAL = 15000;
@@ -45,6 +46,11 @@ export default function MainLayout() {
   const t = useT();
   useSyncNotifications();
   useUpdateNotification();
+
+  // Fuentes de la carpeta fonts/ del servidor; se releen al abrir Ajustes por si se han añadido más
+  useEffect(() => {
+    if (settingsOpen || !document.getElementById('server-fonts')) loadServerFonts();
+  }, [settingsOpen]);
 
   // Atajos globales: Ctrl/Cmd+P abrir nota, +S guardar, +E editar/leer, +B barra lateral, +Shift+F buscar
   useEffect(() => {

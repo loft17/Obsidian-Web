@@ -10,6 +10,9 @@ push.sh
 # Datos de la aplicación: config.json (hash de contraseña, ruta del vault) y .secret (firma de cookies)
 data/
 
+# Fuentes propias subidas al servidor (FONTS_DIR)
+web/src/fonts/
+
 # Claves y certificados
 *.pem
 *.key

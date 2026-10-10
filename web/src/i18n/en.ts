@@ -242,6 +242,7 @@ export const en: Messages = {
   'settings.font.default': 'Default',
   'settings.font.custom': 'Other installed font…',
   'settings.font.customPlaceholder': 'Font name',
+  'settings.font.server': 'Server fonts folder',
   'settings.font.sans': 'Sans serif',
   'settings.font.serif': 'Serif',
   'settings.font.mono': 'Monospace',

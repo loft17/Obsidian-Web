@@ -241,6 +241,7 @@ export const es = {
   'settings.font.default': 'Predeterminada',
   'settings.font.custom': 'Otra fuente instalada…',
   'settings.font.customPlaceholder': 'Nombre de la fuente',
+  'settings.font.server': 'Carpeta fonts del servidor',
   'settings.font.sans': 'Sin serifa',
   'settings.font.serif': 'Con serifa',
   'settings.font.mono': 'Monoespaciadas',

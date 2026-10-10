@@ -6,6 +6,7 @@ import { getLang, LANGUAGES, Trans, useI18n, useT, type Lang, type MessageKey } 
 import { IconClose, IconEdit, IconEye, IconFolderNew, IconList, IconLock, IconReset, IconSearch, IconSync, IconUserCircle } from './Icons';
 import { runSync } from '../syncNotify';
 import { BUNDLED_FONTS, isBundledFont, type FontCategory } from '../fonts';
+import { useServerFonts } from '../serverFonts';
 
 interface Props {
   onClose: () => void;
@@ -50,22 +51,23 @@ const fontStack = (name: string, kind: FontKind) =>
 function FontSetting({ kind }: { kind: FontKind }) {
   const font = useStore((s) => s.fonts[kind]);
   const setFont = useStore((s) => s.setFont);
-  const [custom, setCustom] = useState(() => font !== '' && !isBundledFont(font));
+  const serverFamilies = useServerFonts((s) => s.families);
+  // "Otra fuente instalada" se elige a mano o se deduce de una fuente que no está en ninguna lista
+  const [chooseOther, setChooseOther] = useState(false);
+  const known = !font || isBundledFont(font) || serverFamilies.includes(font);
+  const custom = chooseOther || !known;
   const [text, setText] = useState(font);
   const t = useT();
-  useEffect(() => {
-    setText(font);
-    if (font && !isBundledFont(font)) setCustom(true);
-  }, [font]);
+  useEffect(() => setText(font), [font]);
   const save = () => text.trim() !== font && setFont(kind, text);
 
   const choose = (value: string) => {
     if (value === CUSTOM_OPTION) {
-      setCustom(true);
-      setText(isBundledFont(font) ? '' : font);
+      setChooseOther(true);
+      setText(known ? '' : font);
       return;
     }
-    setCustom(false);
+    setChooseOther(false);
     setFont(kind, value);
   };
 
@@ -103,6 +105,15 @@ function FontSetting({ kind }: { kind: FontKind }) {
           onChange={(e) => choose(e.target.value)}
         >
           <option value={DEFAULT_OPTION}>{t('settings.font.default')}</option>
+          {serverFamilies.length > 0 && (
+            <optgroup label={t('settings.font.server')}>
+              {serverFamilies.map((name) => (
+                <option key={name} value={name} style={{ fontFamily: fontStack(name, kind) }}>
+                  {name}
+                </option>
+              ))}
+            </optgroup>
+          )}
           {FONT_GROUPS[kind].map((category) => (
             <optgroup key={category} label={t(FONT_CATEGORY_LABELS[category])}>
               {BUNDLED_FONTS[category].map((name) => (

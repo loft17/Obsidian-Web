@@ -11,6 +11,7 @@ import filesRoutes from './routes/files.js';
 import searchRoutes from './routes/search.js';
 import settingsRoutes from './routes/settings.js';
 import syncRoutes from './routes/sync.js';
+import fontsRoutes from './routes/fonts.js';
 import { createSyncManager } from './sync.js';
 import { createSessionStore, createLoginLimiter } from './sessions.js';
 import { securityHeaders, csrfGuard } from './security.js';
@@ -106,6 +107,7 @@ app.use('/api/settings', settingsRoutes(dataDir, getConfig, loginLimiter, sessio
 app.use('/api/files', express.json({ limit: MAX_NOTE_MB * 1024 * 1024 }), filesRoutes(dataDir, getConfig));
 app.use('/api/search', searchRoutes(dataDir, getConfig));
 app.use('/api/sync', syncRoutes(syncManager, getConfig));
+app.use('/api/fonts', fontsRoutes());
 
 // SPA fallback (serve index.html for client-side routing)
 if (existsSync(distPath)) {

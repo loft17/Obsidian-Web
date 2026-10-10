@@ -5,6 +5,7 @@ Todo lo que puedes hacer en Obsidita una vez instalada. Para instalarla y config
 ## 📑 Índice
 
 - [🧭 La interfaz](#-la-interfaz)
+- [🔤 Fuentes](#-fuentes)
 - [📂 Explorador y pestañas](#-explorador-y-pestañas)
 - [✍️ Editar notas](#️-editar-notas)
 - [👁️ Modo lectura](#️-modo-lectura)
@@ -31,6 +32,55 @@ Todo lo que puedes hacer en Obsidita una vez instalada. Para instalarla y config
 | **Barra de estado** | Recuento de palabras y caracteres de la nota abierta. |
 
 Los avisos (guardado, errores, sincronización, versión nueva disponible) aparecen como notificaciones breves en una esquina.
+
+---
+
+## 🔤 Fuentes
+
+En *Preferencias → Apariencia → Fuente* eliges tres fuentes por separado:
+
+| Ajuste | Dónde se usa |
+| :--- | :--- |
+| **Fuente de la interfaz** | Toda la aplicación: menús, explorador, pestañas, preferencias. |
+| **Fuente del texto** | El editor, el modo lectura y el título de la nota. Si no eliges ninguna, usa la de la interfaz. |
+| **Fuente monoespaciada** | Código en línea, bloques de código y edición como texto plano. |
+
+Cada desplegable ofrece cuatro tipos de fuente:
+
+- **Carpeta fonts del servidor**: las que hayas añadido tú (ver abajo).
+- **Incluidas en Obsidita**: una selección de fuentes libres de Google Fonts (Inter, Lora, Merriweather, Literata, JetBrains Mono, Fira Code…). Se sirven desde tu servidor: no se pide nada a Google y funcionan sin internet.
+- **Otra fuente instalada…**: escribe el nombre de una fuente instalada **en el dispositivo desde el que abres la web**.
+- **Predeterminada**: la de siempre. El botón ↺ también vuelve a ella.
+
+La elección se guarda en el navegador, así que cada dispositivo puede tener la suya.
+
+### Añadir tus propias fuentes
+
+1. Descarga la fuente, por ejemplo de [Google Fonts](https://fonts.google.com) (botón *Get font → Download*) o de cualquier otra web de fuentes libres, y descomprime el ZIP.
+2. Copia los archivos **`.woff2`, `.woff`, `.ttf` u `.otf`** en la carpeta **`web/src/fonts/`** de la app (se crea al arrancar el servidor):
+
+   ```bash
+   cp ~/Descargas/Lora/static/*.ttf /ruta/a/Obsidita/web/src/fonts/
+   ```
+
+3. Abre *Preferencias → Apariencia*: la fuente aparece en el grupo **Carpeta fonts del servidor**. No hace falta reiniciar ni recompilar; la carpeta se relee cada vez que abres las preferencias.
+
+El nombre de la fuente sale del nombre del archivo, con la convención de Google Fonts: todos estos archivos forman **una sola fuente "Lora"** con su negrita y su cursiva:
+
+```text
+Lora-Regular.ttf        Lora-Italic.ttf
+Lora-Bold.ttf           Lora-BoldItalic.ttf
+Lora-VariableFont_wght.ttf          (fuente variable: todos los pesos en un archivo)
+Lora-Italic-VariableFont_wght.ttf
+```
+
+Se reconocen los sufijos `Thin`, `ExtraLight`, `Light`, `Regular`, `Medium`, `SemiBold`, `Bold`, `ExtraBold` y `Black`, solos o seguidos de `Italic`. Un archivo sin sufijo (`MiFuente.otf`) aparece con su nombre tal cual; los `_` se muestran como espacios.
+
+> [!NOTE]
+> - Para usar **otra carpeta**, defínela con [`FONTS_DIR`](../README.md#-variables-de-entorno) en el `.env` (ruta absoluta) y reinicia el servidor. Puede estar, por ejemplo, dentro del vault para que se sincronice con tus notas.
+> - El usuario que ejecuta Obsidita debe poder **leer** la carpeta.
+> - Una fuente instalada en el **sistema** del servidor (`/usr/share/fonts`…) no sirve: el navegador solo ve las fuentes de su propio equipo o las que le envía la web.
+> - `web/src/fonts/` está en `.gitignore`: tus fuentes no se suben al repositorio (revisa su licencia antes de redistribuirlas).
 
 ---
 
